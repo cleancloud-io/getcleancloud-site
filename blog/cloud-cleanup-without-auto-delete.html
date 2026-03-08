@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cloud Cleanup Without Auto-Delete: Why It Matters for Production | CleanCloud Blog</title>
+<meta name="description" content="Learn why cloud cleanup without auto-delete is essential for production environments. Discover safer alternatives to automated deletion tools and how read-only scanning protects your infrastructure.">
+<meta name="keywords" content="cloud cleanup without auto-delete, safe cloud cleanup, aws cleanup without deletion, read-only cloud scanner, finops, cloud hygiene">
+<link rel="canonical" href="https://getcleancloud.com/blog/cloud-cleanup-without-auto-delete.html">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://getcleancloud.com/blog/cloud-cleanup-without-auto-delete.html">
+<meta property="og:title" content="Cloud Cleanup Without Auto-Delete: Why It Matters for Production">
+<meta property="og:description" content="Why read-only scanning beats automated deletion for production AWS and Azure environments.">
+<meta property="og:image" content="https://getcleancloud.com/og-image.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@getcleancloud">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"Article","headline":"Cloud Cleanup Without Auto-Delete: Why It Matters for Production","datePublished":"2026-01-01","author":{"@type":"Organization","name":"CleanCloud"},"publisher":{"@type":"Organization","name":"CleanCloud","url":"https://getcleancloud.com"}}</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f6f7f9;--white:#ffffff;--border:#e2e6ea;--border2:#d0d5dc;--text:#0d1b2a;--text2:#374151;--muted:#6b7a8d;--muted2:#9aa3af;--accent:#0b7a6e;--accent-lt:#e6f4f2;--accent-md:#c2e8e3;--accent-hi:#0d9488;--sans:'Inter',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;--mono:'JetBrains Mono',monospace;--sh-sm:0 1px 3px rgba(13,27,42,.06),0 1px 2px rgba(13,27,42,.04);--sh-md:0 4px 16px rgba(13,27,42,.08),0 2px 4px rgba(13,27,42,.04);--sh-lg:0 12px 40px rgba(13,27,42,.12),0 4px 8px rgba(13,27,42,.06)}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;background-image:linear-gradient(rgba(13,27,42,.022) 1px,transparent 1px),linear-gradient(90deg,rgba(13,27,42,.022) 1px,transparent 1px);background-size:40px 40px}
+a{color:var(--accent-hi);text-decoration:none}
+a:hover{text-decoration:underline}
+
+/* NAV */
+nav{position:sticky;top:0;z-index:100;background:rgba(246,247,249,.93);backdrop-filter:blur(16px);border-bottom:1px solid var(--border)}
+.nav-in{max-width:1120px;margin:0 auto;padding:0 28px;height:58px;display:flex;align-items:center;justify-content:space-between}
+.nav-logo{font-family:var(--mono);font-size:14px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:9px}
+.lm{width:26px;height:26px;border-radius:6px;background:var(--text);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.lm svg{width:14px;height:14px}
+.nav-links{display:flex;align-items:center;gap:2px;list-style:none}
+.nav-links a{font-family:var(--mono);font-size:12px;color:var(--muted);padding:5px 11px;border-radius:5px;transition:color .15s,background .15s}
+.nav-links a:hover{color:var(--text);background:var(--white);text-decoration:none}
+.nav-links a.active{color:var(--text);background:var(--white)}
+.nav-cta{font-family:var(--mono)!important;font-size:12px!important;font-weight:600!important;color:var(--white)!important;background:var(--text)!important;padding:7px 16px!important;border-radius:6px!important}
+.nav-cta:hover{background:#1a2f44!important}
+.gh-star-badge{display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:600;background:var(--bg);border:1px solid var(--border2);border-radius:4px;padding:1px 6px;color:var(--text2);margin-left:3px;line-height:1.6}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:7px;font-family:var(--mono);font-size:12px;font-weight:600;padding:10px 20px;border-radius:7px;transition:transform .15s,box-shadow .15s;text-decoration:none!important;cursor:pointer;border:none;letter-spacing:.01em}
+.btn:hover{transform:translateY(-1px)}
+.btn-dk{background:var(--text);color:#fff;box-shadow:var(--sh-sm)}
+.btn-dk:hover{box-shadow:var(--sh-md)}
+.btn-tl{background:var(--accent-hi);color:#fff;box-shadow:var(--sh-sm)}
+.btn-tl:hover{background:var(--accent);box-shadow:var(--sh-md)}
+.btn-gh{background:var(--white);color:var(--text2);border:1px solid var(--border2);box-shadow:var(--sh-sm)}
+.btn-gh:hover{box-shadow:var(--sh-md);color:var(--text)}
+
+/* ARTICLE LAYOUT */
+.article-outer{max-width:1120px;margin:0 auto;padding:48px 28px 80px;display:grid;grid-template-columns:1fr 260px;gap:56px;position:relative;z-index:1}
+
+/* BACK LINK */
+.back-link{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:11px;font-weight:600;color:var(--muted);padding:5px 11px 5px 8px;border:1px solid var(--border);border-radius:5px;background:var(--white);margin-bottom:28px;transition:all .15s}
+.back-link:hover{color:var(--text);border-color:var(--border2);text-decoration:none;transform:translateX(-2px)}
+
+/* ARTICLE HEADER */
+.article-head{margin-bottom:36px;padding-bottom:28px;border-bottom:1px solid var(--border)}
+.ah-tags{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap}
+.ah-tag{font-family:var(--mono);font-size:10px;font-weight:600;padding:3px 9px;border-radius:4px;text-transform:uppercase;letter-spacing:.06em}
+.tag-featured{background:var(--accent-lt);color:var(--accent);border:1px solid var(--accent-md)}
+.tag-aws{background:#fff8ec;color:#b45309;border:1px solid #fde68a}
+.tag-azure{background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe}
+.tag-finops{background:#f5f3ff;color:#7c3aed;border:1px solid #ddd6fe}
+.article-h1{font-size:clamp(26px,3.5vw,38px);font-weight:800;letter-spacing:-.02em;color:var(--text);line-height:1.2;margin-bottom:18px}
+.article-meta{display:flex;align-items:center;gap:16px;font-family:var(--mono);font-size:11px;color:var(--muted)}
+.am-dot{color:var(--border2)}
+.article-lede{font-size:17px;color:var(--text2);line-height:1.7;margin-top:20px;padding:18px 20px;border-left:3px solid var(--accent-hi);background:var(--accent-lt);border-radius:0 6px 6px 0}
+
+/* PROSE */
+.prose{color:var(--text2);font-size:15px;line-height:1.8}
+.prose p{margin-bottom:20px}
+.prose p strong{color:var(--text);font-weight:700}
+.prose h2{font-size:22px;font-weight:800;letter-spacing:-.02em;color:var(--text);line-height:1.25;margin:44px 0 16px;padding-top:8px;border-top:1px solid var(--border)}
+.prose h3{font-size:16px;font-weight:700;color:var(--text);letter-spacing:-.01em;margin:28px 0 10px}
+.prose ul,.prose ol{padding-left:20px;margin-bottom:20px}
+.prose li{margin-bottom:8px;line-height:1.7}
+.prose li strong{color:var(--text);font-weight:700}
+.prose code{font-family:var(--mono);font-size:12px;background:var(--bg);border:1px solid var(--border);padding:2px 7px;border-radius:4px;color:var(--accent-hi)}
+.prose .hl{font-family:var(--mono);font-size:12px;font-weight:600;background:var(--accent-lt);color:var(--accent);border:1px solid var(--accent-md);padding:2px 8px;border-radius:4px}
+
+/* CALLOUT BOXES */
+.callout{border-radius:8px;padding:18px 20px;margin:24px 0;border:1px solid}
+.callout-warn{background:#fffbeb;border-color:#fde68a}
+.callout-warn .cw-title{font-family:var(--mono);font-size:11px;font-weight:600;color:#b45309;text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px}
+.callout-info{background:var(--accent-lt);border-color:var(--accent-md)}
+.callout-info .cw-title{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px}
+.callout p{margin-bottom:0;font-size:14px;line-height:1.65}
+
+/* STEP LIST */
+.steps{counter-reset:step;list-style:none;padding:0;margin-bottom:20px}
+.steps li{counter-increment:step;display:flex;gap:14px;margin-bottom:16px;align-items:flex-start}
+.steps li::before{content:counter(step);font-family:var(--mono);font-size:11px;font-weight:700;color:var(--accent-hi);background:var(--accent-lt);border:1px solid var(--accent-md);width:24px;height:24px;border-radius:5px;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px}
+.steps li div{font-size:15px;color:var(--text2);line-height:1.7}
+.steps li strong{color:var(--text)}
+
+/* CONFIDENCE TABLE */
+.conf-table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:12px;border:1px solid var(--border);border-radius:8px;overflow:hidden;box-shadow:var(--sh-sm);margin:20px 0}
+.conf-table th{text-align:left;padding:9px 14px;background:var(--bg);color:var(--muted);border-bottom:1px solid var(--border2);font-size:10px;text-transform:uppercase;letter-spacing:.07em}
+.conf-table td{padding:10px 14px;border-bottom:1px solid var(--border);background:var(--white);color:var(--text2);font-size:13px}
+.conf-table tr:last-child td{border-bottom:none}
+.conf-table tr:hover td{background:var(--bg)}
+.c-hi{color:#dc2626;font-weight:600}.c-md{color:#d97706;font-weight:600}.c-lo{color:var(--muted);font-weight:600}
+
+/* CTA BOX */
+.cta-box{background:var(--text);border-radius:12px;padding:36px 40px;margin:44px 0;position:relative;overflow:hidden}
+.cta-box::before{content:'';position:absolute;top:-60px;right:-60px;width:220px;height:220px;border-radius:50%;background:radial-gradient(circle,rgba(13,148,136,.2),transparent 70%);pointer-events:none}
+.cta-box h3{font-size:20px;font-weight:800;color:#fff;letter-spacing:-.02em;margin-bottom:10px}
+.cta-box p{font-family:var(--mono);font-size:12px;color:rgba(255,255,255,.55);line-height:1.65;margin-bottom:0}
+.cta-box .cta-feats{list-style:none;padding:0;margin:16px 0 22px;display:flex;flex-direction:column;gap:7px}
+.cta-box .cta-feats li{font-family:var(--mono);font-size:12px;color:rgba(255,255,255,.75);display:flex;align-items:center;gap:8px}
+.cta-box .cta-feats li::before{content:'✓';color:var(--accent-hi);font-weight:700;flex-shrink:0}
+.cta-btns{display:flex;gap:10px;flex-wrap:wrap;margin-top:4px}
+
+/* CASE STUDY */
+.case{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:24px;margin:16px 0;box-shadow:var(--sh-sm)}
+.case-hd{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.case-ic{width:32px;height:32px;border-radius:7px;background:var(--bg);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.case-ti{font-size:14px;font-weight:700;color:var(--text);letter-spacing:-.01em}
+.case p{font-size:14px;color:var(--text2);line-height:1.7;margin-bottom:10px}
+.case p:last-child{margin-bottom:0}
+.case-result{font-family:var(--mono);font-size:12px;color:var(--accent);background:var(--accent-lt);border:1px solid var(--accent-md);border-radius:5px;padding:8px 12px;margin-top:12px}
+
+/* SIDEBAR */
+.sidebar{display:flex;flex-direction:column;gap:16px;position:sticky;top:74px;align-self:start}
+.sb-card{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:20px;box-shadow:var(--sh-sm)}
+.sb-title{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--text);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px}
+.toc-list{list-style:none;padding:0;display:flex;flex-direction:column;gap:2px}
+.toc-list a{font-family:var(--mono);font-size:11px;color:var(--muted);display:block;padding:5px 8px;border-radius:4px;border-left:2px solid transparent;transition:all .15s;line-height:1.4}
+.toc-list a:hover{color:var(--text);background:var(--bg);border-left-color:var(--accent-hi);text-decoration:none}
+.toc-list a.active{color:var(--accent-hi);border-left-color:var(--accent-hi);background:var(--accent-lt)}
+.sb-install{background:#0d1117;border:1px solid #21262d;border-radius:7px;padding:12px;font-family:var(--mono);font-size:11px;color:#3fb950;line-height:1.7;margin:10px 0}
+.sb-stat{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)}
+.sb-stat:last-child{border-bottom:none;padding-bottom:0}
+.sb-stat-n{font-size:20px;font-weight:800;letter-spacing:-.02em;color:var(--text);line-height:1}
+.sb-stat-n span{color:var(--accent-hi)}
+.sb-stat-l{font-family:var(--mono);font-size:10px;color:var(--muted)}
+
+/* FOOTER */
+footer{border-top:1px solid var(--border);background:var(--white);position:relative;z-index:1}
+.fi{max-width:1120px;margin:0 auto;padding:48px 28px;display:grid;grid-template-columns:2.2fr 1fr 1fr 1fr;gap:48px}
+.fl-logo{font-family:var(--mono);font-size:14px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:9px;margin-bottom:12px}
+.fl-tag{font-family:var(--mono);font-size:12px;color:var(--muted);line-height:1.65;margin-bottom:14px}
+.fl-bgs{display:flex;flex-wrap:wrap;gap:6px}
+.fl-bg{font-family:var(--mono);font-size:10px;padding:3px 9px;border-radius:4px;background:var(--bg);border:1px solid var(--border);color:var(--muted)}
+.fl-ct{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--text);text-transform:uppercase;letter-spacing:.08em;margin-bottom:14px}
+.fl-lk{list-style:none;display:flex;flex-direction:column;gap:9px}
+.fl-lk a{font-family:var(--mono);font-size:12px;color:var(--muted);transition:color .15s}
+.fl-lk a:hover{color:var(--text);text-decoration:none}
+.fb{max-width:1120px;margin:0 auto;padding:18px 28px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.fb-cp{font-family:var(--mono);font-size:11px;color:var(--muted2)}
+.fb-lk{display:flex;gap:18px;list-style:none}
+.fb-lk a{font-family:var(--mono);font-size:11px;color:var(--muted2)}
+.fb-lk a:hover{color:var(--text);text-decoration:none}
+
+@media(max-width:960px){
+  .article-outer{grid-template-columns:1fr}
+  .sidebar{position:static;display:none}
+  .fi{grid-template-columns:1fr 1fr;gap:32px}
+}
+@media(max-width:600px){
+  .nav-links{display:none}
+  .fi{grid-template-columns:1fr}
+  .cta-box{padding:24px 20px}
+  .cta-btns{flex-direction:column}
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-in">
+    <a class="nav-logo" href="/">
+      <div class="lm"><svg viewBox="0 0 14 14" fill="none" stroke="#00ffd0" stroke-width="2"><path d="M2 7L5 10L12 3" stroke-linecap="round" stroke-linejoin="round"/><circle cx="7" cy="7" r="6" stroke="#00ffd0" stroke-width="1.4" opacity=".4"/></svg></div>
+      cleancloud
+    </a>
+    <ul class="nav-links">
+      <li><a href="/#rules">Rules</a></li>
+      <li><a href="/#ci">CI/CD</a></li>
+      <li><a href="/#pricing">Early access</a></li>
+      <li><a href="/#contact">Contact</a></li>
+      <li><a href="/blog/" class="active">Blog</a></li>
+      <li><a href="https://github.com/cleancloud-io/cleancloud/blob/main/docs/rules.md">Docs</a></li>
+      <li>
+        <a href="https://github.com/cleancloud-io/cleancloud" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;padding:5px 8px">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.477 2 12c0 4.418 2.865 8.166 6.839 9.489.5.092.682-.217.682-.482 0-.237-.009-.868-.013-1.703-2.782.604-3.369-1.342-3.369-1.342-.454-1.155-1.11-1.463-1.11-1.463-.908-.62.069-.608.069-.608 1.003.07 1.531 1.031 1.531 1.031.892 1.529 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0112 6.836a9.59 9.59 0 012.504.337c1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.202 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.741 0 .267.18.579.688.481C19.138 20.163 22 16.418 22 12c0-5.523-4.477-10-10-10z"/></svg>
+          GitHub<span class="gh-star-badge">★ <span class="gh-stars-nav">79</span></span>
+        </a>
+      </li>
+      <li><a href="/#contact" class="nav-cta">Get started →</a></li>
+    </ul>
+  </div>
+</nav>
+
+<!-- ARTICLE -->
+<div class="article-outer">
+<main>
+  <a href="/blog/" class="back-link">← Back to Blog</a>
+
+  <header class="article-head">
+    <div class="ah-tags">
+      <span class="ah-tag tag-featured">Featured</span>
+      <span class="ah-tag tag-aws">AWS</span>
+      <span class="ah-tag tag-azure">Azure</span>
+      <span class="ah-tag tag-finops">FinOps</span>
+    </div>
+    <h1 class="article-h1">Cloud Cleanup Without Auto-Delete:<br>Why It Matters for Production</h1>
+    <div class="article-meta">
+      <span>January 2026</span>
+      <span class="am-dot">·</span>
+      <span>7 min read</span>
+      <span class="am-dot">·</span>
+      <span>Cloud hygiene</span>
+    </div>
+    <div class="article-lede">
+      <strong>Cloud cleanup without auto-delete</strong> has become essential for teams managing production infrastructure. While automated deletion tools promise quick cost savings, they carry a hidden risk: deleting the wrong thing.
+    </div>
+  </header>
+
+  <div class="prose">
+
+    <h2 id="problem">The Problem with Automated Cloud Cleanup</h2>
+    <p>Tools that automatically delete cloud resources (like AWS Nuke or similar automation) operate on a simple premise: identify waste, delete it, save money. Sounds efficient, right?</p>
+    <p>The reality is more nuanced. Here&rsquo;s what happens when automated deletion goes wrong:</p>
+
+    <div class="callout callout-warn">
+      <div class="cw-title">⚠️ Real blast radius</div>
+      <p>A misconfigured rule deletes a production database tagged &ldquo;idle&rdquo;. A backup volume flagged as orphaned is actually your disaster recovery snapshot. An EBS volume gets detached mid-operation. Compliance logs are automatically purged. The cost of these incidents? Hours of downtime, lost revenue, damaged customer trust, and potential compliance penalties.</p>
+    </div>
+
+    <p>A $50/month &ldquo;waste&rdquo; resource that prevents a $500,000 outage is not waste — it&rsquo;s insurance.</p>
+
+    <h2 id="safer">Why Read-Only Scanning Is Safer</h2>
+    <p>The alternative approach separates <em>identification</em> from <em>action</em>. Instead of automatically removing resources, read-only tools:</p>
+
+    <ol class="steps">
+      <li><div><strong>Identify candidates</strong> — Find resources that might be orphaned or unused based on deterministic signals.</div></li>
+      <li><div><strong>Provide evidence</strong> — Show exactly why each resource was flagged: days unattached, traffic metrics, connection counts.</div></li>
+      <li><div><strong>Assign confidence levels</strong> — HIGH means near-certain waste; MEDIUM means investigate first.</div></li>
+      <li><div><strong>Let you decide</strong> — You have context the tool doesn&rsquo;t. That &ldquo;unattached&rdquo; volume is your DR backup. That &ldquo;idle&rdquo; database is for quarterly reporting.</div></li>
+    </ol>
+
+    <h2 id="technical">The Technical Foundation: Read-Only by Design</h2>
+    <p>The safest form of cloud cleanup is <span class="hl">read-only scanning</span>. These tools are built with a critical constraint: they <strong>cannot delete anything, even by accident</strong>.</p>
+
+    <h3>AWS IAM — only Describe &amp; List</h3>
+    <p>A read-only scanner requires only:</p>
+    <ul>
+      <li><code>ec2:Describe*</code> — View EC2 resources</li>
+      <li><code>rds:Describe*</code> — View RDS instances</li>
+      <li><code>s3:List*</code> — List S3 buckets</li>
+      <li><code>logs:Describe*</code> — View CloudWatch log groups</li>
+    </ul>
+    <p>Notice what&rsquo;s missing: no <code>Delete</code>, <code>Terminate</code>, <code>Remove</code>, or <code>Modify</code> permissions. Even if the tool has a bug, even if it&rsquo;s compromised — AWS will reject any deletion attempt at the IAM layer.</p>
+
+    <h3>Azure RBAC — Reader role only</h3>
+    <p>In Azure, read-only scanners use the built-in <strong>Reader</strong> role at subscription scope. No write permissions. No deletion capability. Verifiable in your access control logs.</p>
+
+    <h2 id="when">When You Must Use Read-Only Scanning</h2>
+
+    <div class="callout callout-info">
+      <div class="cw-title">ℹ️ Use read-only scanning whenever</div>
+      <p>Your infrastructure serves customers, handles transactions, stores critical data, operates in a regulated industry, or your team has previously experienced a deletion incident.</p>
+    </div>
+
+    <h3>Regulated industries</h3>
+    <p>Healthcare (HIPAA), finance (PCI-DSS, SOX), government (FedRAMP), and similar sectors often require:</p>
+    <ul>
+      <li>Human approval before any deletion</li>
+      <li>Audit trails of who deleted what and why</li>
+      <li>Retention policies that prohibit automated cleanup</li>
+      <li>Evidence-based decision-making for change control</li>
+    </ul>
+
+    <h3>Complex, multi-account environments</h3>
+    <p>The more resources you have, the more edge cases exist. That &ldquo;orphaned&rdquo; volume might be referenced in runbooks, disaster recovery plans, or offline documentation your automation has never read.</p>
+
+    <h2 id="implement">How to Implement Safe Cloud Cleanup</h2>
+
+    <ol class="steps">
+      <li><div><strong>Deploy a read-only scanner</strong> — Choose a tool that requires only Describe/List permissions, runs locally (no data sent to external SaaS), and produces deterministic, auditable output.</div></li>
+      <li><div><strong>Review findings with context</strong> — For each HIGH finding, ask: is it disaster recovery? Referenced in runbooks? Part of a seasonal workload? Required for compliance?</div></li>
+      <li><div><strong>Delete manually with documentation</strong> — Create a snapshot if there&rsquo;s any doubt. Delete via your normal change management process. Document the justification.</div></li>
+      <li><div><strong>Automate the scanning, not the deletion</strong> — Run the scanner weekly via CI/CD. Export findings to JSON. Create Jira tickets. Track waste trends over time. You get the efficiency of automation with the safety of human review.</div></li>
+    </ol>
+
+    <h2 id="confidence">Conservative Confidence Scoring</h2>
+    <p>For teams who want to prioritise their review queue, confidence levels help:</p>
+
+    <table class="conf-table">
+      <thead><tr><th>Level</th><th>Accuracy</th><th>Recommended action</th><th>Example</th></tr></thead>
+      <tbody>
+        <tr><td><span class="c-hi">HIGH</span></td><td>90%+</td><td>Auto-create review ticket, prioritise this sprint</td><td>EBS volume unattached 47 days</td></tr>
+        <tr><td><span class="c-md">MEDIUM</span></td><td>70–90%</td><td>Flag for manual investigation</td><td>NAT gateway with low traffic</td></tr>
+        <tr><td><span class="c-lo">LOW</span></td><td>50–70%</td><td>Informational — review quarterly</td><td>Snapshot older than 90 days</td></tr>
+      </tbody>
+    </table>
+
+    <p>Even HIGH confidence findings get human review — but confidence level determines how urgently you prioritise them.</p>
+
+    <!-- MID-ARTICLE CTA -->
+    <div class="cta-box">
+      <h3>Try cloud cleanup without auto-delete</h3>
+      <p>CleanCloud is a read-only cloud hygiene scanner for AWS and Azure. It physically cannot delete anything — AWS and Azure reject all mutation attempts at the IAM / RBAC layer.</p>
+      <ul class="cta-feats">
+        <li>20 high-signal detection rules for AWS + Azure</li>
+        <li>HIGH / MEDIUM confidence scoring per finding</li>
+        <li>Estimated monthly waste per resource</li>
+        <li>Runs in AWS CloudShell or Azure Cloud Shell in 60 seconds</li>
+      </ul>
+      <div class="cta-btns">
+        <a href="https://pypi.org/project/cleancloud/" target="_blank" rel="noopener" class="btn btn-tl">Install via PyPI ↗</a>
+        <a href="https://github.com/cleancloud-io/cleancloud" target="_blank" rel="noopener" class="btn btn-gh">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.477 2 12c0 4.418 2.865 8.166 6.839 9.489.5.092.682-.217.682-.482 0-.237-.009-.868-.013-1.703-2.782.604-3.369-1.342-3.369-1.342-.454-1.155-1.11-1.463-1.11-1.463-.908-.62.069-.608.069-.608 1.003.07 1.531 1.031 1.531 1.031.892 1.529 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0112 6.836a9.59 9.59 0 012.504.337c1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.202 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.741 0 .267.18.579.688.481C19.138 20.163 22 16.418 22 12c0-5.523-4.477-10-10-10z"/></svg>
+          View on GitHub
+        </a>
+      </div>
+    </div>
+
+    <h2 id="objections">Common Objections</h2>
+
+    <h3>“It’s slower than automation”</h3>
+    <p>True. But speed isn&rsquo;t the goal — safety is. Would you rather save $100/month instantly, or avoid a $500,000 outage from deleting the wrong thing? The math is straightforward once you&rsquo;ve lived through an incident.</p>
+
+    <h3>“We trust our automation”</h3>
+    <p>Every team that has experienced a deletion incident once trusted their automation. The question isn&rsquo;t <em>whether</em> your automation will eventually fail — it&rsquo;s whether you can afford it when it does.</p>
+
+    <h3>“It requires more manual work”</h3>
+    <p>Consider where the manual work actually sits. Automated tools still require configuration, rule management, exception handling, and incident response when they delete the wrong thing. The manual work shifts from &ldquo;configure automation&rdquo; to &ldquo;review findings&rdquo; — and the latter is far less risky.</p>
+
+    <h2 id="cases">Real-World Results</h2>
+
+    <div class="case">
+      <div class="case-hd">
+        <div class="case-ic">🏦</div>
+        <div class="case-ti">Financial services company</div>
+      </div>
+      <p>A major bank evaluated automated cleanup tools but rejected them due to compliance requirements. They needed human approval for all deletions (SOX), audit trails of decision-making, and evidence-based justification for change control.</p>
+      <p>They adopted read-only scanning, running weekly scans and reviewing findings in change control meetings.</p>
+      <div class="case-result">✓ $45,000 annual waste removed over 6 months · Zero deletion incidents · Full SOX audit trail maintained</div>
+    </div>
+
+    <div class="case">
+      <div class="case-hd">
+        <div class="case-ic">💥</div>
+        <div class="case-ti">SaaS startup post-incident</div>
+      </div>
+      <p>A startup used an automated cleanup tool that deleted a production database tagged &ldquo;dev&rdquo; due to a tagging mistake. The 4-hour outage cost $200,000 in lost revenue and SLA credits.</p>
+      <p>They switched to read-only scanning. While more conservative initially, they never experienced another deletion incident.</p>
+      <div class="case-result">✓ Zero incidents post-switch · Peace of mind valued above the missed automation savings</div>
+    </div>
+
+    <h2 id="checklist">Choosing the Right Tool: Checklist</h2>
+    <p>When evaluating tools for cloud cleanup without auto-delete, verify:</p>
+    <ul>
+      <li><strong>Read-only by design</strong> — No delete permissions in IAM policy or RBAC role</li>
+      <li><strong>Evidence-based findings</strong> — Shows exactly why each resource was flagged</li>
+      <li><strong>Conservative confidence levels</strong> — Prefers false negatives over false positives</li>
+      <li><strong>No external dependencies</strong> — Runs locally, no data sent to SaaS</li>
+      <li><strong>Open source</strong> — Auditable code, community trust</li>
+      <li><strong>CI/CD integration</strong> — Can run in pipelines with exit code gates</li>
+      <li><strong>Multiple output formats</strong> — JSON, CSV, Markdown for different consumers</li>
+    </ul>
+
+    <h2 id="conclusion">Conclusion</h2>
+    <p><strong>Cloud cleanup without auto-delete</strong> prioritises safety over speed. Read-only scanning provides the best of both worlds: identify waste efficiently, retain human judgment for the final decision.</p>
+    <p>This is especially critical for production environments serving customers, regulated industries, complex multi-account infrastructures, and any team recovering trust after a deletion incident.</p>
+    <p>The question isn&rsquo;t whether you can automate cloud cleanup — it&rsquo;s whether you can afford the consequences when that automation deletes the wrong thing. For production infrastructure, the answer is almost always: <strong>you can&rsquo;t</strong>.</p>
+
+    <!-- END CTA -->
+    <div class="cta-box">
+      <h3>Ready to clean your cloud safely?</h3>
+      <p>CleanCloud is open-source, MIT licensed, and runs in your environment. No account. No agents. No telemetry.</p>
+      <ul class="cta-feats">
+        <li>Read-only by design — no delete permissions ever</li>
+        <li>AWS and Azure support, 20 detection rules</li>
+        <li>CI/CD gate flags: --fail-on-confidence HIGH</li>
+        <li>JSON, CSV, Markdown output formats</li>
+        <li>MIT License — free forever</li>
+      </ul>
+      <div class="cta-btns">
+        <a href="https://pypi.org/project/cleancloud/" target="_blank" rel="noopener" class="btn btn-tl">Install via PyPI ↗</a>
+        <a href="https://github.com/cleancloud-io/cleancloud" target="_blank" rel="noopener" class="btn btn-gh">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.477 2 12c0 4.418 2.865 8.166 6.839 9.489.5.092.682-.217.682-.482 0-.237-.009-.868-.013-1.703-2.782.604-3.369-1.342-3.369-1.342-.454-1.155-1.11-1.463-1.11-1.463-.908-.62.069-.608.069-.608 1.003.07 1.531 1.031 1.531 1.031.892 1.529 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0112 6.836a9.59 9.59 0 012.504.337c1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.202 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.741 0 .267.18.579.688.481C19.138 20.163 22 16.418 22 12c0-5.523-4.477-10-10-10z"/></svg>
+          View on GitHub
+        </a>
+        <a href="/#contact" class="btn btn-dk">Join early access</a>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+
+  <div class="sb-card">
+    <div class="sb-title">Contents</div>
+    <ul class="toc-list">
+      <li><a href="#problem">The problem with auto-delete</a></li>
+      <li><a href="#safer">Why read-only is safer</a></li>
+      <li><a href="#technical">Technical foundation</a></li>
+      <li><a href="#when">When you must use it</a></li>
+      <li><a href="#implement">How to implement</a></li>
+      <li><a href="#confidence">Confidence scoring</a></li>
+      <li><a href="#objections">Common objections</a></li>
+      <li><a href="#cases">Real-world results</a></li>
+      <li><a href="#checklist">Tool checklist</a></li>
+      <li><a href="#conclusion">Conclusion</a></li>
+    </ul>
+  </div>
+
+  <div class="sb-card">
+    <div class="sb-title">Try CleanCloud</div>
+    <p style="font-family:var(--mono);font-size:11px;color:var(--muted);line-height:1.65;margin-bottom:8px">Scan AWS or Azure in 60 seconds. Read-only. Zero telemetry.</p>
+    <div class="sb-install">
+      <span style="color:#6e7681">$ </span>pipx install cleancloud<br>
+      <span style="color:#6e7681">$ </span>cleancloud scan \<br>
+      &nbsp;&nbsp;--provider aws \<br>
+      &nbsp;&nbsp;--all-regions
+    </div>
+    <a href="https://pypi.org/project/cleancloud/" target="_blank" rel="noopener" class="btn btn-dk" style="width:100%;justify-content:center;margin-top:12px;font-size:11px">Install via PyPI ↗</a>
+  </div>
+
+  <div class="sb-card">
+    <div class="sb-title">By the numbers</div>
+    <div class="sb-stat">
+      <div><div class="sb-stat-n"><span>20</span></div><div class="sb-stat-l">Detection rules</div></div>
+    </div>
+    <div class="sb-stat">
+      <div><div class="sb-stat-n"><span>0</span></div><div class="sb-stat-l">Writes or mutations</div></div>
+    </div>
+    <div class="sb-stat">
+      <div><div class="sb-stat-n">AWS<span>+</span>Az</div><div class="sb-stat-l">Cloud providers</div></div>
+    </div>
+    <div class="sb-stat">
+      <div><div class="sb-stat-n"><span>60</span>s</div><div class="sb-stat-l">First scan time</div></div>
+    </div>
+  </div>
+
+  <div class="sb-card" style="background:var(--text);border-color:var(--text)">
+    <div style="font-family:var(--mono);font-size:11px;font-weight:600;color:var(--accent-md);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Enterprise</div>
+    <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:6px;line-height:1.35">Multi-account &amp; policy gates</div>
+    <p style="font-family:var(--mono);font-size:11px;color:rgba(255,255,255,.5);line-height:1.6;margin-bottom:12px">SSO, VPC-deployable, Slack integration — shaping roadmap now.</p>
+    <a href="/#contact" class="btn btn-tl" style="width:100%;justify-content:center;font-size:11px">Join early access →</a>
+  </div>
+
+</aside>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="fi">
+    <div>
+      <div class="fl-logo">
+        <div class="lm"><svg viewBox="0 0 14 14" fill="none" stroke="#00ffd0" stroke-width="2"><path d="M2 7L5 10L12 3" stroke-linecap="round" stroke-linejoin="round"/><circle cx="7" cy="7" r="6" stroke="#00ffd0" stroke-width="1.4" opacity=".4"/></svg></div>
+        cleancloud
+      </div>
+      <p class="fl-tag">Shift-left cloud hygiene for AWS and Azure.<br>Catch waste in CI — read-only, deterministic, zero telemetry.</p>
+      <div class="fl-bgs">
+        <span class="fl-bg">MIT License</span>
+        <span class="fl-bg">PyPI v1.6.3+</span>
+        <span class="fl-bg">Python 3.8+</span>
+        <span class="fl-bg">Zero writes</span>
+      </div>
+    </div>
+    <div>
+      <p class="fl-ct">Product</p>
+      <ul class="fl-lk">
+        <li><a href="/#rules">Detection rules</a></li>
+        <li><a href="/#ci">CI/CD guide</a></li>
+        <li><a href="/#pricing">Early access</a></li>
+        <li><a href="https://github.com/cleancloud-io/cleancloud/blob/main/docs/example-outputs.md">Example outputs</a></li>
+        <li><a href="https://github.com/cleancloud-io/cleancloud/blob/main/SECURITY.md">Security policy</a></li>
+      </ul>
+    </div>
+    <div>
+      <p class="fl-ct">Docs</p>
+      <ul class="fl-lk">
+        <li><a href="https://github.com/cleancloud-io/cleancloud/blob/main/docs/rules.md">rules.md</a></li>
+        <li><a href="https://github.com/cleancloud-io/cleancloud/blob/main/docs/aws.md">AWS setup</a></li>
+        <li><a href="https://github.com/cleancloud-io/cleancloud/blob/main/docs/azure.md">Azure setup</a></li>
+        <li><a href="https://github.com/cleancloud-io/cleancloud/blob/main/docs/ci.md">CI/CD guide</a></li>
+        <li><a href="https://github.com/cleancloud-io/cleancloud/blob/main/docs/infosec-readiness.md">Infosec readiness</a></li>
+      </ul>
+    </div>
+    <div>
+      <p class="fl-ct">Community</p>
+      <ul class="fl-lk">
+        <li><a href="https://github.com/cleancloud-io/cleancloud" target="_blank" rel="noopener">GitHub</a></li>
+        <li><a href="https://github.com/cleancloud-io/cleancloud/issues" target="_blank" rel="noopener">Issues</a></li>
+        <li><a href="https://github.com/cleancloud-io/cleancloud/discussions" target="_blank" rel="noopener">Discussions</a></li>
+        <li><a href="https://pypi.org/project/cleancloud/" target="_blank" rel="noopener">PyPI</a></li>
+        <li><a href="/blog/">Blog</a></li>
+        <li><a href="mailto:suresh@getcleancloud.com">suresh@getcleancloud.com</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="fb">
+    <p class="fb-cp">&copy; 2025 CleanCloud. MIT License.</p>
+    <ul class="fb-lk">
+      <li><a href="https://github.com/cleancloud-io/cleancloud/blob/main/SECURITY.md">Security</a></li>
+      <li><a href="https://github.com/cleancloud-io/cleancloud/blob/main/LICENSE">License</a></li>
+      <li><a href="mailto:suresh@getcleancloud.com">Contact</a></li>
+    </ul>
+  </div>
+</footer>
+
+<script>
+fetch('https://api.github.com/repos/cleancloud-io/cleancloud')
+  .then(r=>r.json())
+  .then(d=>{if(d.stargazers_count){const n=d.stargazers_count.toLocaleString();document.querySelectorAll('.gh-stars-nav').forEach(el=>el.textContent=n);}})
+  .catch(()=>{});
+
+// Active TOC highlight on scroll
+const headings=document.querySelectorAll('.prose h2[id]');
+const tocLinks=document.querySelectorAll('.toc-list a');
+const observer=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{
+    if(e.isIntersecting){
+      tocLinks.forEach(l=>l.classList.remove('active'));
+      const active=document.querySelector('.toc-list a[href="#'+e.target.id+'"]');
+      if(active)active.classList.add('active');
+    }
+  });
+},{rootMargin:'-20% 0px -70% 0px'});
+headings.forEach(h=>observer.observe(h));
+</script>
+</body>
+</html>

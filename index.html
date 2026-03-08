@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CleanCloud — Find Cloud Waste Before It Ships | AWS &amp; Azure CI/CD Scanner</title>
+<meta name="description" content="CleanCloud is a shift-left cloud hygiene scanner for AWS and Azure. Catch orphaned resources, idle databases, and unattached volumes in CI/CD — read-only, zero telemetry, no agents. 20 high-signal rules. Free and open source.">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://getcleancloud.com/">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://getcleancloud.com/">
+<meta property="og:title" content="CleanCloud — Find Cloud Waste Before It Ships">
+<meta property="og:description" content="Like tfsec for Terraform or trivy for containers — CleanCloud catches orphaned AWS and Azure resources in your CI pipeline. Read-only. Zero telemetry. Free and open source.">
+<meta property="og:image" content="https://getcleancloud.com/og-image.png">
+<meta property="og:site_name" content="CleanCloud">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@getcleancloud">
+<meta name="twitter:title" content="CleanCloud — Find Cloud Waste Before It Ships">
+<meta name="twitter:description" content="Shift-left cloud hygiene for AWS and Azure. 20 rules. Read-only. Zero telemetry. Runs in CI.">
+<meta name="twitter:image" content="https://getcleancloud.com/og-image.png">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"CleanCloud","url":"https://getcleancloud.com","applicationCategory":"DeveloperApplication","operatingSystem":"Linux, macOS, Windows","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"softwareVersion":"1.6.4","license":"https://opensource.org/licenses/MIT","codeRepository":"https://github.com/cleancloud-io/cleancloud"}</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f6f7f9;--white:#ffffff;--border:#e2e6ea;--border2:#d0d5dc;--text:#0d1b2a;--text2:#374151;--muted:#6b7a8d;--muted2:#9aa3af;--accent:#0b7a6e;--accent-lt:#e6f4f2;--accent-md:#c2e8e3;--accent-hi:#0d9488;--sans:'Inter',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;--mono:'JetBrains Mono',monospace;--sh-sm:0 1px 3px rgba(13,27,42,.06),0 1px 2px rgba(13,27,42,.04);--sh-md:0 4px 16px rgba(13,27,42,.08),0 2px 4px rgba(13,27,42,.04);--sh-lg:0 12px 40px rgba(13,27,42,.12),0 4px 8px rgba(13,27,42,.06)}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;background-image:linear-gradient(rgba(13,27,42,.022) 1px,transparent 1px),linear-gradient(90deg,rgba(13,27,42,.022) 1px,transparent 1px);background-size:40px 40px}
+a{color:var(--accent-hi);text-decoration:none}
+a:hover{text-decoration:underline}
+
+nav{position:sticky;top:0;z-index:100;background:rgba(246,247,249,.93);backdrop-filter:blur(16px);border-bottom:1px solid var(--border)}
+.nav-in{max-width:1120px;margin:0 auto;padding:0 28px;height:58px;display:flex;align-items:center;justify-content:space-between}
+.nav-logo{font-family:var(--mono);font-size:14px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:9px}
+.lm{width:26px;height:26px;border-radius:6px;background:var(--text);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.lm svg{width:14px;height:14px}
+.nav-links{display:flex;align-items:center;gap:2px;list-style:none}
+.nav-links a{font-family:var(--mono);font-size:12px;color:var(--muted);padding:5px 11px;border-radius:5px;transition:color .15s,background .15s}
+.nav-links a:hover{color:var(--text);background:var(--white);text-decoration:none}
+.nav-cta{font-family:var(--mono)!important;font-size:12px!important;font-weight:600!important;color:var(--white)!important;background:var(--text)!important;padding:7px 16px!important;border-radius:6px!important}
+.nav-cta:hover{background:#1a2f44!important}
+.gh-star-badge{display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:600;background:var(--bg);border:1px solid var(--border2);border-radius:4px;padding:1px 6px;color:var(--text2);margin-left:3px;line-height:1.6}
+
+.hero{max-width:1120px;margin:0 auto;padding:80px 28px 72px;display:grid;grid-template-columns:52% 1fr;gap:56px;align-items:center;position:relative;z-index:1}
+.hero-ey{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11px;font-weight:500;color:var(--accent);background:var(--accent-lt);border:1px solid var(--accent-md);padding:4px 11px;border-radius:4px;margin-bottom:22px;letter-spacing:.06em;text-transform:uppercase}
+.hero-ey::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--accent-hi);animation:bdot 2s ease-in-out infinite}
+@keyframes bdot{0%,100%{opacity:1}50%{opacity:.3}}
+.hero-h1{font-size:clamp(36px,4.2vw,52px);font-weight:800;line-height:1.1;letter-spacing:-.02em;color:var(--text);margin-bottom:20px}
+.hero-h1 em{font-style:normal;background:linear-gradient(135deg,var(--accent) 0%,var(--accent-hi) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero-p{font-size:16px;color:var(--text2);line-height:1.65;margin-bottom:28px;max-width:460px}
+.hero-install{display:flex;align-items:stretch;background:var(--white);border:1px solid var(--border2);border-radius:8px;overflow:hidden;max-width:460px;box-shadow:var(--sh-sm);margin-bottom:8px}
+.hi-prompt{font-family:var(--mono);font-size:12px;font-weight:600;color:var(--accent-hi);background:var(--accent-lt);padding:11px 13px;border-right:1px solid var(--border);user-select:none;display:flex;align-items:center;flex-shrink:0}
+.hi-code{font-family:var(--mono);font-size:12px;color:var(--text);padding:11px 13px;flex:1;display:flex;align-items:center}
+.copy-btn{background:none;border:none;border-left:1px solid var(--border);padding:11px 13px;cursor:pointer;color:var(--muted2);font-family:var(--mono);font-size:11px;transition:color .15s,background .15s;display:flex;align-items:center;flex-shrink:0}
+.copy-btn:hover{color:var(--accent-hi);background:var(--accent-lt)}
+.hero-acts{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:20px}
+.hero-trust{margin-top:20px;display:flex;align-items:center;flex-wrap:wrap;gap:16px;font-family:var(--mono);font-size:11px;color:var(--muted)}
+.tr-item{display:flex;align-items:center;gap:5px}
+
+.btn{display:inline-flex;align-items:center;gap:7px;font-family:var(--mono);font-size:12px;font-weight:600;padding:10px 20px;border-radius:7px;transition:transform .15s,box-shadow .15s;text-decoration:none!important;cursor:pointer;border:none;letter-spacing:.01em}
+.btn:hover{transform:translateY(-1px)}
+.btn-dk{background:var(--text);color:#fff;box-shadow:var(--sh-sm)}
+.btn-dk:hover{box-shadow:var(--sh-md)}
+.btn-gh{background:var(--white);color:var(--text2);border:1px solid var(--border2);box-shadow:var(--sh-sm)}
+.btn-gh:hover{box-shadow:var(--sh-md);color:var(--text)}
+.btn-tl{background:var(--accent-hi);color:#fff;box-shadow:var(--sh-sm)}
+.btn-tl:hover{background:var(--accent);box-shadow:var(--sh-md)}
+.btn-wh{background:#fff;color:var(--text)}
+.btn-wh:hover{background:#f0f0f0}
+.btn-ow{background:transparent;color:rgba(255,255,255,.75);border:1px solid rgba(255,255,255,.25)}
+.btn-ow:hover{background:rgba(255,255,255,.08);color:#fff}
+
+.term-wrap{position:relative}
+.term-wrap::before{content:'';position:absolute;inset:-1px;border-radius:13px;background:linear-gradient(135deg,var(--accent-md),transparent 60%);z-index:-1}
+.term{background:#0d1117;border:1px solid #21262d;border-radius:12px;overflow:hidden;font-family:var(--mono);font-size:12px;line-height:1.7;box-shadow:var(--sh-lg)}
+.t-hd{background:#161b22;border-bottom:1px solid #21262d;padding:11px 16px;display:flex;align-items:center;gap:7px}
+.td{width:12px;height:12px;border-radius:50%}
+.td.r{background:#ff5f57}.td.y{background:#febc2e}.td.g{background:#28c840}
+.t-ti{margin:0 auto;font-size:11px;color:#6e7681;letter-spacing:.02em}
+.t-bd{padding:18px 20px;overflow:auto;max-height:480px}
+.tl{white-space:pre;display:block}
+.tc{color:#6e7681}.tk{color:#79c0ff}.tv{color:#e6edf3}.tr2{color:#ffa657}
+.tco{color:#3fb950;font-weight:500}.thi{color:#ff7b72}.tme{color:#e3b341}
+.tlo{color:#79c0ff}.tru{color:#d2a8ff}.ts{color:#56d364}.tsep{color:#21262d}
+.cur{display:inline-block;width:7px;height:13px;background:#3fb950;margin-left:2px;vertical-align:text-bottom;animation:cur 1.1s step-end infinite}
+@keyframes cur{0%,100%{opacity:1}50%{opacity:0}}
+
+/* ── PRESS BAR ── */
+.press-bar{background:var(--white);border-bottom:1px solid var(--border);position:relative;z-index:1}
+.press-in{max-width:1120px;margin:0 auto;padding:13px 28px;display:flex;align-items:center;gap:20px;flex-wrap:wrap}
+.press-label{font-family:var(--mono);font-size:10px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.12em;flex-shrink:0;white-space:nowrap}
+.press-sep{width:1px;height:16px;background:var(--border2);flex-shrink:0}
+.press-links{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.press-pill{display:inline-flex;align-items:center;gap:7px;font-family:var(--mono);font-size:11px;font-weight:500;color:var(--text2);background:var(--bg);border:1px solid var(--border);border-radius:5px;padding:5px 12px;text-decoration:none!important;transition:border-color .15s,color .15s,box-shadow .15s,background .15s;white-space:nowrap}
+.press-pill:hover{color:var(--text);border-color:var(--accent-md);background:var(--accent-lt);box-shadow:var(--sh-sm);text-decoration:none}
+.press-dot{width:6px;height:6px;border-radius:50%;background:var(--accent-hi);flex-shrink:0;opacity:.8}
+
+.stats{background:var(--white);border-top:1px solid var(--border);border-bottom:1px solid var(--border);position:relative;z-index:1}
+.stats-in{max-width:1120px;margin:0 auto;padding:0 28px;display:grid;grid-template-columns:repeat(4,1fr)}
+.stat{padding:22px 24px;border-right:1px solid var(--border)}
+.stat:last-child{border-right:none}
+.st-n{font-size:26px;font-weight:800;letter-spacing:-.02em;color:var(--text);line-height:1;margin-bottom:4px}
+.st-n span{color:var(--accent-hi)}
+.st-l{font-family:var(--mono);font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+
+section{position:relative;z-index:1}
+.wrap{max-width:1120px;margin:0 auto;padding:0 28px}
+.sec{padding:80px 0}
+.sec-bd{border-top:1px solid var(--border)}
+.sec-ey{font-family:var(--mono);font-size:11px;font-weight:500;color:var(--accent);text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px}
+.sec-h{font-size:clamp(24px,3vw,32px);font-weight:800;letter-spacing:-.02em;color:var(--text);line-height:1.15;margin-bottom:12px}
+.sec-h em{font-style:normal;color:var(--accent-hi)}
+.sec-sub{font-size:15px;color:var(--text2);line-height:1.65;max-width:520px}
+
+.feat-grid{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-top:44px;background:var(--border);gap:1px;box-shadow:var(--sh-sm)}
+.fc{background:var(--white);padding:28px;transition:background .2s}
+.fc:hover{background:#fafbfc}
+.fc-icon{width:36px;height:36px;border-radius:8px;background:var(--bg);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;margin-bottom:14px;font-size:15px}
+.fc-t{font-size:14px;font-weight:700;color:var(--text);letter-spacing:-.01em;margin-bottom:7px}
+.fc-b{font-family:var(--mono);font-size:11.5px;color:var(--muted);line-height:1.7}
+.pill{display:inline-block;margin-top:14px;font-family:var(--mono);font-size:10px;font-weight:600;padding:3px 9px;border-radius:4px;text-transform:uppercase;letter-spacing:.06em}
+.p-gr{background:#ecfdf5;color:#059669;border:1px solid #a7f3d0}
+.p-bl{background:#eff6ff;color:#2563eb;border:1px solid #bfdbfe}
+.p-am{background:#fffbeb;color:#d97706;border:1px solid #fde68a}
+.p-tl{background:var(--accent-lt);color:var(--accent);border:1px solid var(--accent-md)}
+
+.rules-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:44px}
+.rb-hd{font-family:var(--mono);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);padding:11px 16px;background:var(--white);border:1px solid var(--border2);border-bottom:none;border-radius:8px 8px 0 0;display:flex;align-items:center;justify-content:space-between}
+.pb{font-size:10px;padding:2px 8px;border-radius:4px;font-weight:600}
+.aws-b{background:#fff8ec;color:#b45309;border:1px solid #fde68a}
+.az-b{background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe}
+.rules-list{border:1px solid var(--border2);border-radius:0 0 8px 8px;overflow:hidden;box-shadow:var(--sh-sm)}
+.r-row{display:flex;align-items:center;justify-content:space-between;padding:9px 16px;border-bottom:1px solid var(--border);background:var(--white);transition:background .15s}
+.r-row:last-child{border-bottom:none}
+.r-row:hover{background:var(--bg)}
+.r-nm{font-family:var(--mono);font-size:12px;color:var(--text2)}
+.r-cf{font-family:var(--mono);font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;text-transform:uppercase;letter-spacing:.05em}
+.c-hi{background:#fef2f2;color:#dc2626;border:1px solid #fecaca}
+.c-md{background:#fffbeb;color:#d97706;border:1px solid #fde68a}
+
+.ci-grid{display:grid;grid-template-columns:45% 1fr;gap:52px;align-items:start;margin-top:44px}
+.enf-t{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:12px;border:1px solid var(--border);border-radius:8px;overflow:hidden;box-shadow:var(--sh-sm)}
+.enf-t th{text-align:left;padding:9px 14px;background:var(--bg);color:var(--muted);border-bottom:1px solid var(--border2);font-size:10px;text-transform:uppercase;letter-spacing:.07em}
+.enf-t td{padding:9px 14px;border-bottom:1px solid var(--border);background:var(--white);color:var(--text2)}
+.enf-t tr:last-child td{border-bottom:none}
+.enf-t tr:hover td{background:var(--bg)}
+.enf-t .fl{color:var(--accent-hi);font-weight:500}
+.e0{color:#059669;font-weight:600}.e2{color:#dc2626;font-weight:600}
+.cc{background:#0d1117;border:1px solid #21262d;border-radius:10px;overflow:hidden;box-shadow:var(--sh-md);margin-bottom:14px;font-family:var(--mono);font-size:12px}
+.cc:last-child{margin-bottom:0}
+.cc-hd{background:#161b22;border-bottom:1px solid #21262d;padding:9px 16px;display:flex;align-items:center;justify-content:space-between}
+.cc-fn{font-size:11px;color:#6e7681}
+.cc-lg{font-size:10px;padding:2px 8px;border-radius:4px;background:#21262d;color:#6e7681;border:1px solid #30363d}
+.cc-bd{padding:16px 18px;overflow:auto;line-height:1.65}
+.yk{color:#79c0ff}.yv{color:#a5f3a5}.ys{color:#ffa657}.ya{color:#d2a8ff}
+
+.uc-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:44px}
+.uc{background:var(--white);border:1px solid var(--border);border-radius:10px;overflow:hidden;box-shadow:var(--sh-sm);transition:box-shadow .2s,transform .2s}
+.uc:hover{box-shadow:var(--sh-md);transform:translateY(-2px)}
+.uc-hd{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px}
+.uc-n{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--accent);background:var(--accent-lt);border:1px solid var(--accent-md);width:24px;height:24px;border-radius:5px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.uc-ti{font-size:14px;font-weight:700;color:var(--text);letter-spacing:-.01em}
+.uc-bd{padding:14px 20px;font-family:var(--mono);font-size:12px;color:var(--muted);line-height:1.7}
+.uc-cmd{margin-top:12px;background:#0d1117;border:1px solid #21262d;border-radius:6px;padding:9px 12px;font-family:var(--mono);font-size:11px;color:#56d364}
+
+.tg{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:44px}
+.tc2{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:24px;box-shadow:var(--sh-sm)}
+.tc2-st{color:#f59e0b;font-size:13px;margin-bottom:14px;letter-spacing:2px}
+.tc2-q{font-size:15px;color:var(--text2);line-height:1.65;margin-bottom:16px;font-style:italic}
+.tc2-q::before{content:'\201C'}.tc2-q::after{content:'\201D'}
+.tc2-s{font-family:var(--mono);font-size:11px;color:var(--muted)}
+.tc2-s a{color:var(--muted)}
+
+.pg{display:grid;gap:16px;margin-top:44px}
+.pc{background:var(--white);border:1px solid var(--border);border-radius:12px;padding:28px 28px 32px;box-shadow:var(--sh-sm);position:relative;transition:box-shadow .2s}
+.pc:hover{box-shadow:var(--sh-md)}
+.pc.hi{border:2px solid var(--accent-hi);box-shadow:0 0 0 4px var(--accent-lt),var(--sh-md)}
+.pc.hi::before{content:'Early access';position:absolute;top:-13px;left:50%;transform:translateX(-50%);font-family:var(--mono);font-size:10px;font-weight:600;color:var(--white);background:var(--accent-hi);padding:3px 12px;border-radius:20px;letter-spacing:.04em;text-transform:uppercase;white-space:nowrap}
+.p-tier{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:14px}
+.p-amt{font-size:40px;font-weight:800;letter-spacing:-.03em;color:var(--text);line-height:1;margin-bottom:4px}
+.p-per{font-family:var(--mono);font-size:11px;color:var(--muted);margin-bottom:20px}
+.p-desc{font-size:13px;color:var(--text2);line-height:1.6;padding-bottom:18px;margin-bottom:18px;border-bottom:1px solid var(--border)}
+.p-feats{list-style:none;margin-bottom:24px;display:flex;flex-direction:column;gap:9px}
+.p-feats li{font-family:var(--mono);font-size:12px;color:var(--text2);display:flex;align-items:flex-start;gap:8px}
+.p-feats li::before{content:'\2713';color:var(--accent-hi);flex-shrink:0;font-weight:700}
+
+.contact-grid{display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:start}
+.contact-perk{display:flex;align-items:flex-start;gap:14px;margin-bottom:18px}
+.cp-icon{width:36px;height:36px;border-radius:8px;background:var(--accent-lt);border:1px solid var(--accent-md);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:15px}
+.cp-title{font-size:14px;font-weight:700;color:var(--text);letter-spacing:-.01em;margin-bottom:3px}
+.cp-body{font-family:var(--mono);font-size:12px;color:var(--muted);line-height:1.65}
+.form-card{background:var(--white);border:1px solid var(--border);border-radius:12px;padding:36px;box-shadow:var(--sh-md)}
+.form-field{margin-bottom:20px}
+.form-label{display:block;font-family:var(--mono);font-size:11px;font-weight:600;color:var(--text);text-transform:uppercase;letter-spacing:.07em;margin-bottom:7px}
+.form-input{width:100%;padding:11px 14px;border:1px solid var(--border2);border-radius:7px;font-size:14px;font-family:var(--sans);color:var(--text);background:var(--white);outline:none;transition:border-color .15s,box-shadow .15s}
+.form-input:focus{border-color:var(--accent-hi);box-shadow:0 0 0 3px var(--accent-lt)}
+.form-textarea{width:100%;padding:11px 14px;border:1px solid var(--border2);border-radius:7px;font-size:14px;font-family:var(--sans);color:var(--text);background:var(--white);outline:none;resize:vertical;min-height:110px;transition:border-color .15s,box-shadow .15s}
+.form-textarea:focus{border-color:var(--accent-hi);box-shadow:0 0 0 3px var(--accent-lt)}
+.form-submit{width:100%;padding:13px 20px;background:var(--text);color:#fff;border:none;border-radius:7px;font-family:var(--mono);font-size:13px;font-weight:600;cursor:pointer;transition:background .15s,transform .1s;letter-spacing:.01em}
+.form-submit:hover{background:#1a2f44;transform:translateY(-1px)}
+
+.cta-b{background:var(--text);border-radius:16px;padding:52px 60px;display:flex;align-items:center;justify-content:space-between;gap:40px;position:relative;overflow:hidden;max-width:1064px;margin:0 auto 80px}
+.cta-b::before{content:'';position:absolute;top:-80px;right:-80px;width:300px;height:300px;border-radius:50%;background:radial-gradient(circle,rgba(13,148,136,.25),transparent 70%);pointer-events:none}
+.cta-tx h2{font-size:26px;font-weight:800;color:#fff;letter-spacing:-.02em;margin-bottom:8px}
+.cta-tx p{font-family:var(--mono);font-size:13px;color:rgba(255,255,255,.5)}
+.cta-ac{display:flex;gap:10px;flex-shrink:0}
+
+footer{border-top:1px solid var(--border);background:var(--white);position:relative;z-index:1}
+.fi{max-width:1120px;margin:0 auto;padding:48px 28px;display:grid;grid-template-columns:2.2fr 1fr 1fr 1fr;gap:48px}
+.fl-logo{font-family:var(--mono);font-size:14px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:9px;margin-bottom:12px}
+.fl-tag{font-family:var(--mono);font-size:12px;color:var(--muted);line-height:1.65;margin-bottom:14px}
+.fl-bgs{display:flex;flex-wrap:wrap;gap:6px}
+.fl-bg{font-family:var(--mono);font-size:10px;padding:3px 9px;border-radius:4px;background:var(--bg);border:1px solid var(--border);color:var(--muted)}
+.fl-ct{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--text);text-transform:uppercase;letter-spacing:.08em;margin-bottom:14px}
+.fl-lk{list-style:none;display:flex;flex-direction:column;gap:9px}
+.fl-lk a{font-family:var(--mono);font-size:12px;color:var(--muted);transition:color .15s}
+.fl-lk a:hover{color:var(--text);text-decoration:none}
+.fb{max-width:1120px;margin:0 auto;padding:18px 28px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.fb-cp{font-family:var(--mono);font-size:11px;color:var(--muted2)}
+.fb-lk{display:flex;gap:18px;list-style:none}
+.fb-lk a{font-family:var(--mono);font-size:11px;color:var(--muted2)}
+.fb-lk a:hover{color:var(--text);text-decoration:none}
+
+.rv{opacity:0;transform:translateY(18px);transition:opacity .55s ease,transform .55s ease}
+.rv.in{opacity:1;transform:translateY(0)}
+
+@media(max-width:960px){
+  .hero{grid-template-columns:1fr;gap:44px}
+  .stats-in{grid-template-columns:repeat(2,1fr)}
+  .feat-grid{grid-template-columns:1fr 1fr}
+  .rules-grid{grid-template-columns:1fr}
+  .ci-grid{grid-template-columns:1fr}
+  .uc-grid{grid-template-columns:1fr}
+  .tg{grid-template-columns:1fr}
+  .pg{grid-template-columns:1fr!important}
+  .fi{grid-template-columns:1fr 1fr}
+  .cta-b{flex-direction:column;text-align:center;padding:40px 32px}
+  .cta-ac{justify-content:center}
+  .contact-grid{grid-template-columns:1fr;gap:40px}
+}
+@media(max-width:600px){
+  .nav-links{display:none}
+  .stats-in{grid-template-columns:1fr 1fr}
+  .feat-grid{grid-template-columns:1fr}
+  .fi{grid-template-columns:1fr}
+  .press-in{gap:10px}
+}
+.term-tab{background:none;border:none;border-right:1px solid #21262d;padding:10px 18px;font-family:var(--mono);font-size:11px;font-weight:500;color:#6e7681;cursor:pointer;transition:color .15s,background .15s;letter-spacing:.03em}
+.term-tab:hover{color:#c9d1d9;background:rgba(255,255,255,.04)}
+.term-tab.active{color:#e6edf3;background:#0d1117;border-bottom:2px solid #3b82f6;margin-bottom:-1px}
+.term-tab:first-of-type.active{border-bottom-color:#ff9900}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-in">
+    <a class="nav-logo" href="/">
+      <div class="lm"><svg viewBox="0 0 14 14" fill="none" stroke="#00ffd0" stroke-width="2"><path d="M2 7L5 10L12 3" stroke-linecap="round" stroke-linejoin="round"/><circle cx="7" cy="7" r="6" stroke="#00ffd0" stroke-width="1.4" opacity=".4"/></svg></div>
+      cleancloud
+    </a>
+    <ul class="nav-links">
+      <li><a href="#rules">Rules</a></li>
+      <li><a href="#ci">CI/CD</a></li>
+      <li><a href="#pricing">Early access</a></li>
+      <li><a href="#contact">Contact</a></li>
+      <li><a href="/blog">Blog</a></li>
+      <li><a href="https://github.com/cleancloud-io/cleancloud/blob/main/docs/rules.md">Docs</a></li>
+      <li>
+        <a href="https://github.com/cleancloud-io/cleancloud" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;padding:5px 8px">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.477 2 12c0 4.418 2.865 8.166 6.839 9.489.5.092.682-.217.682-.482 0-.237-.009-.868-.013-1.703-2.782.604-3.369-1.342-3.369-1.342-.454-1.155-1.11-1.463-1.11-1.463-.908-.62.069-.608.069-.608 1.003.07 1.531 1.031 1.531 1.031.892 1.529 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0112 6.836a9.59 9.59 0 012.504.337c1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.202 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.741 0 .267.18.579.688.481C19.138 20.163 22 16.418 22 12c0-5.523-4.477-10-10-10z"/></svg>
+          GitHub<span class="gh-star-badge">&#9733; <span class="gh-stars-nav">80</span></span>
+        </a>
+      </li>
+      <li><a href="#contact" class="nav-cta">Get started &#8594;</a></li>
+    </ul>
+  </div>
+</nav>
+
+<section>
+<div class="hero">
+  <div>
+    <div class="hero-ey">Shift-left cloud hygiene</div>
+    <h1 class="hero-h1">Catch cloud waste<br><em>before it ships.</em></h1>
+    <p class="hero-p">Like <code style="font-family:var(--mono);font-size:13px;background:var(--bg);padding:2px 6px;border-radius:4px;border:1px solid var(--border)">tfsec</code> for Terraform or <code style="font-family:var(--mono);font-size:13px;background:var(--bg);padding:2px 6px;border-radius:4px;border:1px solid var(--border)">trivy</code> for containers &#8212; CleanCloud finds orphaned resources in <strong>AWS and Azure</strong> and enforces hygiene gates in your CI/CD pipeline before waste reaches production.</p>
+    <div class="hero-install">
+      <span class="hi-prompt">$</span>
+      <span class="hi-code">pipx install cleancloud</span>
+      <button class="copy-btn" onclick="doCopy(this,'pipx install cleancloud')" title="Copy">&#10696;</button>
+    </div>
+    <div class="hero-install" style="margin-bottom:6px">
+      <span class="hi-prompt" style="background:#fff3e0;color:#b45309;border-color:#fde68a">AWS</span>
+      <span class="hi-code">cleancloud scan --provider aws --all-regions</span>
+      <button class="copy-btn" onclick="doCopy(this,'cleancloud scan --provider aws --all-regions')" title="Copy">&#10696;</button>
+    </div>
+    <div class="hero-install">
+      <span class="hi-prompt" style="background:#eff6ff;color:#1d4ed8;border-color:#bfdbfe">Azure</span>
+      <span class="hi-code">cleancloud scan --provider azure</span>
+      <button class="copy-btn" onclick="doCopy(this,'cleancloud scan --provider azure')" title="Copy">&#10696;</button>
+    </div>
+    <div class="hero-acts">
+      <a href="https://pypi.org/project/cleancloud/" class="btn btn-dk" target="_blank" rel="noopener">Install via PyPI &#8599;</a>
+      <a href="https://github.com/cleancloud-io/cleancloud" class="btn btn-gh" target="_blank" rel="noopener">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.477 2 12c0 4.418 2.865 8.166 6.839 9.489.5.092.682-.217.682-.482 0-.237-.009-.868-.013-1.703-2.782.604-3.369-1.342-3.369-1.342-.454-1.155-1.11-1.463-1.11-1.463-.908-.62.069-.608.069-.608 1.003.07 1.531 1.031 1.531 1.031.892 1.529 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0112 6.836a9.59 9.59 0 012.504.337c1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.202 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.741 0 .267.18.579.688.481C19.138 20.163 22 16.418 22 12c0-5.523-4.477-10-10-10z"/></svg>
+        &#9733; <span id="gh-stars">80</span> stars
+      </a>
+    </div>
+    <div class="hero-trust">
+      <span class="tr-item">&#10003; Read-only</span>
+      <span class="tr-item">&#10003; Zero telemetry</span>
+      <span class="tr-item">&#10003; No agents</span>
+      <span class="tr-item">&#10003; MIT License</span>
+    </div>
+  </div>
+
+  <div class="term-wrap rv">
+    <div class="term">
+      <div class="t-hd" style="padding:0;gap:0;align-items:stretch">
+        <div style="display:flex;align-items:center;gap:7px;padding:0 14px;border-right:1px solid #21262d;flex-shrink:0">
+          <span class="td r"></span><span class="td y"></span><span class="td g"></span>
+        </div>
+        <button class="term-tab active" id="tab-aws" onclick="switchTab('aws')">
+          <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#ff9900;margin-right:6px;vertical-align:middle"></span>AWS
+        </button>
+        <button class="term-tab" id="tab-azure" onclick="switchTab('azure')">
+          <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#3b82f6;margin-right:6px;vertical-align:middle"></span>Azure
+        </button>
+      </div>
+      <div class="t-bd term-panel" id="panel-aws">
+<span class="tl"><span class="tc">$ cleancloud scan --provider aws --all-regions</span></span>
+<span class="tl"><span class="tc">Scanning us-east-1, us-west-2, eu-west-1...</span></span>
+<span class="tl"> </span>
+<span class="tl"><span class="tk">1. Unattached EBS Volume</span></span>
+<span class="tl">   <span class="tc">Confidence :</span> <span class="thi">High</span>   <span class="tc">Resource :</span> <span class="tr2">vol-0a1b2c3d4e5f67890</span></span>
+<span class="tl">   <span class="tc">Region     :</span> <span class="tv">us-east-1</span>   <span class="tc">Rule :</span> <span class="tru">aws.ebs.volume.unattached</span></span>
+<span class="tl">   <span class="tc">Reason     :</span> <span class="tv">Volume unattached for 47 days</span>   <span class="tc">Cost :</span> <span class="tco">~$40/mo</span></span>
+<span class="tl"> </span>
+<span class="tl"><span class="tk">2. Idle NAT Gateway</span></span>
+<span class="tl">   <span class="tc">Confidence :</span> <span class="tme">Medium</span>   <span class="tc">Resource :</span> <span class="tr2">nat-0abcdef1234567890</span></span>
+<span class="tl">   <span class="tc">Region     :</span> <span class="tv">eu-west-1</span>   <span class="tc">Rule :</span> <span class="tru">aws.ec2.nat_gateway.idle</span></span>
+<span class="tl">   <span class="tc">Reason     :</span> <span class="tv">No traffic for 21 days</span>   <span class="tc">Cost :</span> <span class="tco">~$32/mo</span></span>
+<span class="tl"> </span>
+<span class="tl"><span class="tk">3. Unattached Elastic IP</span></span>
+<span class="tl">   <span class="tc">Confidence :</span> <span class="thi">High</span>   <span class="tc">Resource :</span> <span class="tr2">eipalloc-0a1b2c3d4e5f6</span></span>
+<span class="tl">   <span class="tc">Region     :</span> <span class="tv">us-west-2</span>   <span class="tc">Rule :</span> <span class="tru">aws.ec2.elastic_ip.unattached</span></span>
+<span class="tl">   <span class="tc">Reason     :</span> <span class="tv">Not associated with any instance (92 days)</span></span>
+<span class="tl"> </span>
+<span class="tl"><span class="tsep">&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;</span></span>
+<span class="tl"><span class="ts">&#10003; Scan Summary</span></span>
+<span class="tl">  <span class="tc">Total findings  :</span> <span class="thi">4</span>   <span class="tc">High :</span> <span class="thi">3</span>   <span class="tc">Medium :</span> <span class="tme">1</span></span>
+<span class="tl">  <span class="tc">Est. waste      :</span> <span class="tco">~$112/month</span>   <span class="tc">Regions :</span> <span class="tv">3</span></span>
+<span class="tl"><span class="tc">$ </span><span class="cur"></span></span>
+      </div>
+      <div class="t-bd term-panel" id="panel-azure" style="display:none">
+<span class="tl"><span class="tc">$ cleancloud scan --provider azure</span></span>
+<span class="tl"><span class="tc">Scanning subscriptions: prod (eastus, westeurope)...</span></span>
+<span class="tl"> </span>
+<span class="tl"><span class="tk">1. Idle SQL Database</span></span>
+<span class="tl">   <span class="tc">Confidence :</span> <span class="thi">High</span>   <span class="tc">Resource :</span> <span class="tr2">prod-analytics-db</span></span>
+<span class="tl">   <span class="tc">Region     :</span> <span class="tv">eastus</span>   <span class="tc">Rule :</span> <span class="tru">azure.sql.database.idle</span></span>
+<span class="tl">   <span class="tc">Reason     :</span> <span class="tv">No connections for 34 days</span>   <span class="tc">Cost :</span> <span class="tco">~$62/mo</span></span>
+<span class="tl"> </span>
+<span class="tl"><span class="tk">2. Stopped VM (not deallocated)</span></span>
+<span class="tl">   <span class="tc">Confidence :</span> <span class="thi">High</span>   <span class="tc">Resource :</span> <span class="tr2">staging-worker-vm-03</span></span>
+<span class="tl">   <span class="tc">Region     :</span> <span class="tv">westeurope</span>   <span class="tc">Rule :</span> <span class="tru">azure.vm.stopped_not_deallocated</span></span>
+<span class="tl">   <span class="tc">Reason     :</span> <span class="tv">Still accruing compute charges</span>   <span class="tc">Cost :</span> <span class="tco">~$28/mo</span></span>
+<span class="tl"> </span>
+<span class="tl"><span class="tk">3. Unattached Managed Disk</span></span>
+<span class="tl">   <span class="tc">Confidence :</span> <span class="tme">Medium</span>   <span class="tc">Resource :</span> <span class="tr2">datadisk-old-staging-001</span></span>
+<span class="tl">   <span class="tc">Region     :</span> <span class="tv">eastus</span>   <span class="tc">Rule :</span> <span class="tru">azure.disk.unattached</span></span>
+<span class="tl">   <span class="tc">Reason     :</span> <span class="tv">Unattached for 61 days</span>   <span class="tc">Cost :</span> <span class="tco">~$18/mo</span></span>
+<span class="tl"> </span>
+<span class="tl"><span class="tsep">&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;</span></span>
+<span class="tl"><span class="ts">&#10003; Scan Summary</span></span>
+<span class="tl">  <span class="tc">Total findings  :</span> <span class="thi">4</span>   <span class="tc">High :</span> <span class="thi">3</span>   <span class="tc">Medium :</span> <span class="tme">1</span></span>
+<span class="tl">  <span class="tc">Est. waste      :</span> <span class="tco">~$108/month</span>   <span class="tc">Subscriptions :</span> <span class="tv">1</span></span>
+<span class="tl"><span class="tc">$ </span><span class="cur"></span></span>
+      </div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ═══════════════════ FEATURED IN PRESS BAR ═══════════════════ -->
+<div class="press-bar">
+  <div class="press-in">
+    <span class="press-label">Featured in</span>
+    <div class="press-sep"></div>
+    <div class="press-links">
+      <a href="https://www.lastweekinaws.com/newsletter/15259/" target="_blank" rel="noopener" class="press-pill">
+        <span class="press-dot"></span>
+        Last Week in AWS
+      </a>
+      <a href="https://korben.info/cleancloud-nettoyeur-cloud-aws-azure.html" target="_blank" rel="noopener" class="press-pill">
+        <span class="press-dot"></span>
+        Korben.info
+      </a>
+    </div>
+  </div>
+</div>
+<!-- ════════════════════════════════════════════════════════════════ -->
+
+<div class="stats">
+  <div class="stats-in">
+    <div class="stat"><div class="st-n"><span>20</span></div><div class="st-l">Detection rules</div></div>
+    <div class="stat"><div class="st-n">AWS <span style="color:var(--muted2);font-size:20px">+</span> Azure</div><div class="st-l">Cloud providers</div></div>
+    <div class="stat"><div class="st-n"><span>0</span></div><div class="st-l">Writes / mutations</div></div>
+    <div class="stat"><div class="st-n"><span>60</span>s</div><div class="st-l">First scan, CloudShell</div></div>
+  </div>
+</div>
+
+<section class="sec sec-bd" id="features">
+<div class="wrap">
+  <div class="rv">
+    <p class="sec-ey">Why CleanCloud</p>
+    <h2 class="sec-h">Built for engineers.<br><em>Trusted by security teams.</em></h2>
+  </div>
+  <div class="feat-grid rv">
+    <div class="fc">
+      <div class="fc-icon">&#128274;</div>
+      <div class="fc-t">Read-only by design</div>
+      <p class="fc-b">No deletions, no tag mutations, no side effects &#8212; ever. Pass security review on day one. Safe to run against any production account.</p>
+      <span class="pill p-gr">Compliance-safe</span>
+    </div>
+    <div class="fc">
+      <div class="fc-icon">&#9881;&#65039;</div>
+      <div class="fc-t">CI enforcement gates</div>
+      <p class="fc-b">Fail builds on your terms. <code style="font-family:var(--mono);font-size:11px;background:var(--bg);padding:1px 5px;border-radius:3px">--fail-on-confidence HIGH</code> or <code style="font-family:var(--mono);font-size:11px;background:var(--bg);padding:1px 5px;border-radius:3px">--fail-on-cost 100</code> &#8212; your policy.</p>
+      <span class="pill p-bl">Shift-left</span>
+    </div>
+    <div class="fc">
+      <div class="fc-icon">&#127760;</div>
+      <div class="fc-t">No agents, no SaaS</div>
+      <p class="fc-b">Runs entirely in your environment. No data leaves your perimeter. No credentials stored externally. Fits any enterprise security posture.</p>
+      <span class="pill p-tl">Zero telemetry</span>
+    </div>
+    <div class="fc">
+      <div class="fc-icon">&#128176;</div>
+      <div class="fc-t">Cost-aware findings</div>
+      <p class="fc-b">Every finding carries an estimated monthly waste figure. Aggregate totals let you prioritise by financial impact, not just finding count.</p>
+      <span class="pill p-am">FinOps-native</span>
+    </div>
+    <div class="fc">
+      <div class="fc-icon">&#127919;</div>
+      <div class="fc-t">IaC-friendly heuristics</div>
+      <p class="fc-b">Confidence levels separate obvious waste from ambiguous signals. HIGH rules gate immediately; MEDIUM flags for human review. Low noise by design.</p>
+      <span class="pill p-bl">Low noise</span>
+    </div>
+    <div class="fc">
+      <div class="fc-icon">&#128203;</div>
+      <div class="fc-t">Shareable output formats</div>
+      <p class="fc-b">JSON, CSV, Markdown. Pipe into GitHub PR comments, Slack, or Jira tickets. <code style="font-family:var(--mono);font-size:11px;background:var(--bg);padding:1px 5px;border-radius:3px">--output markdown</code> just works.</p>
+      <span class="pill p-gr">PR-ready</span>
+    </div>
+  </div>
+</div>
+</section>
+
+<section class="sec sec-bd" id="rules">
+<div class="wrap">
+  <div class="rv">
+    <p class="sec-ey">Detection coverage</p>
+    <h2 class="sec-h">20 high-signal rules.<br><em>Zero false-positive tolerance.</em></h2>
+    <p class="sec-sub">Conservative, deterministic, designed to avoid false positives in IaC environments. Start with HIGH confidence and tighten as your team validates.</p>
+  </div>
+  <div class="rules-grid rv">
+    <div>
+      <div class="rb-hd"><span>Detection rules</span><span class="pb aws-b">AWS</span></div>
+      <div class="rules-list">
+        <div class="r-row"><span class="r-nm">Unattached EBS volumes</span><span class="r-cf c-hi">High</span></div>
+        <div class="r-row"><span class="r-nm">Idle RDS instances</span><span class="r-cf c-hi">High</span></div>
+        <div class="r-row"><span class="r-nm">Idle load balancers</span><span class="r-cf c-hi">High</span></div>
+        <div class="r-row"><span class="r-nm">Unattached Elastic IPs</span><span class="r-cf c-hi">High</span></div>
+        <div class="r-row"><span class="r-nm">Idle NAT gateways</span><span class="r-cf c-md">Medium</span></div>
+        <div class="r-row"><span class="r-nm">Old EBS snapshots</span><span class="r-cf c-md">Medium</span></div>
+        <div class="r-row"><span class="r-nm">Detached ENIs</span><span class="r-cf c-md">Medium</span></div>
+        <div class="r-row"><span class="r-nm">CloudWatch infinite retention</span><span class="r-cf c-md">Medium</span></div>
+        <div class="r-row"><span class="r-nm">Untagged resources</span><span class="r-cf c-md">Medium</span></div>
+        <div class="r-row"><span class="r-nm">Old AMIs</span><span class="r-cf c-md">Medium</span></div>
+      </div>
+    </div>
+    <div>
+      <div class="rb-hd"><span>Detection rules</span><span class="pb az-b">Azure</span></div>
+      <div class="rules-list">
+        <div class="r-row"><span class="r-nm">Idle SQL databases</span><span class="r-cf c-hi">High</span></div>
+        <div class="r-row"><span class="r-nm">Unused public IPs</span><span class="r-cf c-hi">High</span></div>
+        <div class="r-row"><span class="r-nm">Empty load balancers</span><span class="r-cf c-hi">High</span></div>
+        <div class="r-row"><span class="r-nm">Empty App Gateways</span><span class="r-cf c-hi">High</span></div>
+        <div class="r-row"><span class="r-nm">Empty App Service Plans</span><span class="r-cf c-hi">High</span></div>
+        <div class="r-row"><span class="r-nm">Stopped VMs (not deallocated)</span><span class="r-cf c-hi">High</span></div>
+        <div class="r-row"><span class="r-nm">Unattached managed disks</span><span class="r-cf c-md">Medium</span></div>
+        <div class="r-row"><span class="r-nm">Old snapshots</span><span class="r-cf c-md">Medium</span></div>
+        <div class="r-row"><span class="r-nm">Idle VNet gateways</span><span class="r-cf c-md">Medium</span></div>
+        <div class="r-row"><span class="r-nm">Untagged resources</span><span class="r-cf c-md">Medium</span></div>
+      </div>
+    </div>
+  </div>
+  <p style="margin-top:14px;font-family:var(--mono);font-size:12px;color:var(--muted)">Full rule details &#8594; <a href="https://github.com/cleancloud-io/cleancloud/blob/main/docs/rules.md">docs/rules.md</a></p>
+</div>
+</section>
+
+<section class="sec sec-bd" id="ci">
+<div class="wrap">
+  <div class="rv">
+    <p class="sec-ey">CI/CD integration</p>
+    <h2 class="sec-h">Gate your pipeline.<br><em>On your terms.</em></h2>
+    <p class="sec-sub">Scans exit <code style="font-family:var(--mono);font-size:13px;background:#ecfdf5;color:#059669;padding:1px 6px;border-radius:4px">0</code> by default &#8212; never breaks your build until you&#8217;re ready. Opt into enforcement incrementally.</p>
+  </div>
+  <div class="ci-grid rv">
+    <div>
+      <table class="enf-t">
+        <thead><tr><th>Flag</th><th>Behaviour</th><th>Exit</th></tr></thead>
+        <tbody>
+          <tr><td class="fl" style="color:var(--muted);font-style:italic">(none)</td><td>Report only</td><td><span class="e0">0</span></td></tr>
+          <tr><td class="fl">--fail-on-confidence HIGH</td><td>Fail on HIGH</td><td><span class="e2">2</span></td></tr>
+          <tr><td class="fl">--fail-on-confidence MEDIUM</td><td>Fail on MEDIUM+</td><td><span class="e2">2</span></td></tr>
+          <tr><td class="fl">--fail-on-cost 50</td><td>Fail if waste &#8805; $50/mo</td><td><span class="e2">2</span></td></tr>
+          <tr><td class="fl">--fail-on-findings</td><td>Fail on any finding</td><td><span class="e2">2</span></td></tr>
+        </tbody>
+      </table>
+      <p style="margin-top:14px;font-family:var(--mono);font-size:12px;color:var(--muted)">Full guide &#8594; <a href="https://github.com/cleancloud-io/cleancloud/blob/main/docs/ci.md">docs/ci.md</a></p>
+    </div>
+    <div>
+      <div class="cc">
+        <div class="cc-hd"><span class="cc-fn">cleancloud.yml</span><span class="cc-lg">GitHub Actions &#8212; AWS OIDC</span></div>
+        <div class="cc-bd">
+<span class="tl"><span class="yk">- uses:</span> <span class="ya">aws-actions/configure-aws-credentials@v4</span></span>
+<span class="tl">  <span class="yk">with:</span></span>
+<span class="tl">    <span class="yk">role-to-assume:</span> <span class="ys">arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/CleanCloudCIReadOnly</span></span>
+<span class="tl">    <span class="yk">aws-region:</span> <span class="yv">us-east-1</span></span>
+<span class="tl"> </span>
+<span class="tl"><span class="yk">- run:</span> <span class="yv">pip install cleancloud</span></span>
+<span class="tl"> </span>
+<span class="tl"><span class="yk">- run:</span> <span class="yv">|</span></span>
+<span class="tl">    <span class="yv">cleancloud scan --provider aws --all-regions \</span></span>
+<span class="tl">      <span class="yv">--fail-on-confidence HIGH \</span></span>
+<span class="tl">      <span class="yv">--output json --output-file scan.json</span></span>
+        </div>
+      </div>
+      <div class="cc">
+        <div class="cc-hd"><span class="cc-fn">cleancloud.yml</span><span class="cc-lg">GitHub Actions &#8212; Azure Workload Identity</span></div>
+        <div class="cc-bd">
+<span class="tl"><span class="yk">- uses:</span> <span class="ya">azure/login@v2</span></span>
+<span class="tl">  <span class="yk">with:</span></span>
+<span class="tl">    <span class="yk">client-id:</span>       <span class="ys">${{ secrets.AZURE_CLIENT_ID }}</span></span>
+<span class="tl">    <span class="yk">tenant-id:</span>       <span class="ys">${{ secrets.AZURE_TENANT_ID }}</span></span>
+<span class="tl">    <span class="yk">subscription-id:</span> <span class="ys">${{ secrets.AZURE_SUBSCRIPTION_ID }}</span></span>
+<span class="tl"> </span>
+<span class="tl"><span class="yk">- run:</span> <span class="yv">pip install cleancloud</span></span>
+<span class="tl"> </span>
+<span class="tl"><span class="yk">- run:</span> <span class="yv">|</span></span>
+<span class="tl">    <span class="yv">cleancloud scan --provider azure \</span></span>
+<span class="tl">      <span class="yv">--fail-on-confidence MEDIUM \</span></span>
+<span class="tl">      <span class="yv">--output json --output-file scan.json</span></span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</section>
+
+<section class="sec sec-bd" id="usecases">
+<div class="wrap">
+  <div class="rv">
+    <p class="sec-ey">Use cases</p>
+    <h2 class="sec-h">One tool, <em>three workflows.</em></h2>
+  </div>
+  <div class="uc-grid rv">
+    <div class="uc">
+      <div class="uc-hd"><span class="uc-n">01</span><span class="uc-ti">One-time audit</span></div>
+      <div class="uc-bd">Run in CloudShell against any account. See all findings with cost estimates in under 60 seconds &#8212; no local setup, no agents.
+        <div class="uc-cmd">$ cleancloud scan --provider aws --all-regions</div>
+      </div>
+    </div>
+    <div class="uc">
+      <div class="uc-hd"><span class="uc-n">02</span><span class="uc-ti">Scheduled hygiene</span></div>
+      <div class="uc-bd">Weekly cron or CI run. Catch drift between deployments before idle resources compound into hundreds per month.
+        <div class="uc-cmd">$ cleancloud scan --provider azure --output markdown</div>
+      </div>
+    </div>
+    <div class="uc">
+      <div class="uc-hd"><span class="uc-n">03</span><span class="uc-ti">CI enforcement gate</span></div>
+      <div class="uc-bd">Block PRs when waste crosses your threshold. Engineers fix it at review time, not production. FinOps meets DevOps at the pull request.
+        <div class="uc-cmd">$ cleancloud scan --fail-on-cost 100</div>
+      </div>
+    </div>
+  </div>
+</div>
+</section>
+
+<section class="sec sec-bd">
+<div class="wrap">
+  <div class="rv">
+    <p class="sec-ey">Community</p>
+    <h2 class="sec-h">What engineers say.</h2>
+  </div>
+  <div class="tg rv">
+    <div class="tc2">
+      <div class="tc2-st">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+      <p class="tc2-q">Solid discovery tool that bubbles up potential savings. Easy to install and use!</p>
+      <p class="tc2-s">&#8212; <a href="https://www.reddit.com/r/AZURE/comments/1rm7an5/comment/o8zfv6a/" target="_blank" rel="noopener">Reddit user, r/AZURE</a></p>
+    </div>
+    <div class="tc2">
+      <div class="tc2-st">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+      <p class="tc2-q">Found several idle resources across 10+ Azure subscriptions. Exactly the kind of tool that should run in every CI pipeline.</p>
+      <p class="tc2-s">&#8212; GitHub early adopter</p>
+    </div>
+  </div>
+</div>
+</section>
+
+<section class="sec sec-bd" id="pricing">
+<div class="wrap">
+  <div class="rv">
+    <p class="sec-ey">Pricing</p>
+    <h2 class="sec-h">Free to start.<br><em>Enterprise access coming soon.</em></h2>
+    <p class="sec-sub">CleanCloud is open source and free forever. Enterprise features are in active development &#8212; join the early access list to shape the roadmap.</p>
+  </div>
+  <div class="pg rv" style="grid-template-columns:1fr 1fr;max-width:760px">
+    <div class="pc">
+      <p class="p-tier">Open Source</p>
+      <div class="p-amt">Free</div>
+      <p class="p-per">forever &#183; MIT License</p>
+      <p class="p-desc">Full CLI, all 20 rules, AWS + Azure. Self-hosted, no account required.</p>
+      <ul class="p-feats">
+        <li>All 20 detection rules</li>
+        <li>AWS &amp; Azure support</li>
+        <li>JSON, CSV, Markdown output</li>
+        <li>GitHub Actions integration</li>
+        <li>CI enforcement flags</li>
+        <li>Run in CloudShell in 60s</li>
+      </ul>
+      <a href="https://github.com/cleancloud-io/cleancloud" class="btn btn-dk" style="justify-content:center;width:100%" target="_blank" rel="noopener">Get started free &#8594;</a>
+    </div>
+    <div class="pc hi">
+      <p class="p-tier">Enterprise</p>
+      <div class="p-amt" style="font-size:26px;padding-top:4px;letter-spacing:-.01em">Early access</div>
+      <p class="p-per">currently free for early adopters</p>
+      <p class="p-desc">Multi-account scanning, policy-as-code, SSO, and VPC-deployable builds &#8212; in active development. Tell us what you need.</p>
+      <ul class="p-feats">
+        <li>Multi-account / AWS Org scanning</li>
+        <li>cleancloud.yaml policy config</li>
+        <li>SSO / SAML (coming soon)</li>
+        <li>VPC / air-gapped deployment</li>
+        <li>Slack &amp; Jira integration</li>
+        <li>Dedicated support channel</li>
+      </ul>
+      <a href="#contact" class="btn btn-tl" style="justify-content:center;width:100%">Join early access &#8594;</a>
+      <p style="font-family:var(--mono);font-size:10px;color:var(--muted);text-align:center;margin-top:10px">No commitment. Help shape what gets built.</p>
+    </div>
+  </div>
+</div>
+</section>
+
+<section class="sec sec-bd" id="contact">
+<div class="wrap">
+  <div class="contact-grid rv">
+    <div>
+      <p class="sec-ey">Get started</p>
+      <h2 class="sec-h">Talk to us.<br><em>We respond fast.</em></h2>
+      <p style="font-size:15px;color:var(--text2);line-height:1.65;margin-top:12px;margin-bottom:32px">Request early access, ask technical questions, or explore enterprise features. We read every message.</p>
+      <div class="contact-perk">
+        <div class="cp-icon">&#9889;</div>
+        <div>
+          <div class="cp-title">Quick eval</div>
+          <div class="cp-body">Run a scan in your AWS CloudShell or Azure Cloud Shell in under 60 seconds &#8212; no credentials needed beyond your portal session.</div>
+        </div>
+      </div>
+      <div class="contact-perk">
+        <div class="cp-icon">&#127970;</div>
+        <div>
+          <div class="cp-title">Enterprise &amp; Teams</div>
+          <div class="cp-body">Multi-account scanning, policy-as-code, SSO, and VPC-deployable builds. We&#8217;ll walk you through it.</div>
+        </div>
+      </div>
+      <div class="contact-perk">
+        <div class="cp-icon">&#128274;</div>
+        <div>
+          <div class="cp-title">Security review</div>
+          <div class="cp-body">Need an IAM Proof Pack or threat model for your InfoSec team? We have it ready.</div>
+        </div>
+      </div>
+      <div style="margin-top:24px;padding:16px 18px;background:var(--bg);border:1px solid var(--border);border-radius:8px">
+        <div style="font-family:var(--mono);font-size:11px;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em">Direct email</div>
+        <a href="mailto:suresh@getcleancloud.com" style="font-family:var(--mono);font-size:13px;color:var(--accent-hi);font-weight:500">suresh@getcleancloud.com</a>
+      </div>
+    </div>
+    <div class="form-card">
+      <form id="contactForm" onsubmit="handleSubmit(event)" novalidate>
+        <div class="form-field">
+          <label class="form-label">Name</label>
+          <input type="text" name="name" required placeholder="Alex Johnson" class="form-input">
+        </div>
+        <div class="form-field">
+          <label class="form-label">Work Email</label>
+          <input type="email" name="email" required placeholder="alex@yourcompany.com" class="form-input">
+        </div>
+        <div class="form-field">
+          <label class="form-label">Company</label>
+          <input type="text" name="company" required placeholder="Acme Corp" class="form-input">
+        </div>
+        <div class="form-field" style="margin-bottom:24px">
+          <label class="form-label">What are you looking to do?</label>
+          <textarea name="message" required rows="4" placeholder="E.g. Evaluate CleanCloud for our AWS production environment..." class="form-textarea"></textarea>
+        </div>
+        <button type="submit" id="submitBtn" class="form-submit">Send Request &#8594;</button>
+        <div id="formMsg" style="display:none;margin-top:14px;padding:12px 16px;border-radius:7px;font-family:var(--mono);font-size:12px;text-align:center"></div>
+      </form>
+    </div>
+  </div>
+</div>
+</section>
+
+<div style="padding:0 28px;margin-bottom:80px">
+  <div class="cta-b rv">
+    <div class="cta-tx">
+      <h2>Scan your cloud in 60 seconds.</h2>
+      <p>No account. No agents. Run it in AWS CloudShell or Azure Cloud Shell right now.</p>
+    </div>
+    <div class="cta-ac">
+      <a href="https://pypi.org/project/cleancloud/" class="btn btn-wh" target="_blank" rel="noopener">Install via PyPI &#8594;</a>
+      <a href="#contact" class="btn btn-ow">Talk to us</a>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div class="fi">
+    <div>
+      <div class="fl-logo">
+        <div class="lm"><svg viewBox="0 0 14 14" fill="none" stroke="#00ffd0" stroke-width="2"><path d="M2 7L5 10L12 3" stroke-linecap="round" stroke-linejoin="round"/><circle cx="7" cy="7" r="6" stroke="#00ffd0" stroke-width="1.4" opacity=".4"/></svg></div>
+        cleancloud
+      </div>
+      <p class="fl-tag">Shift-left cloud hygiene for AWS and Azure.<br>Catch waste in CI &#8212; read-only, deterministic, zero telemetry.</p>
+      <div class="fl-bgs">
+        <span class="fl-bg">MIT License</span>
+        <span class="fl-bg">PyPI v1.6.4+</span>
+        <span class="fl-bg">Python 3.8+</span>
+        <span class="fl-bg">Zero writes</span>
+      </div>
+    </div>
+    <div>
+      <p class="fl-ct">Product</p>
+      <ul class="fl-lk">
+        <li><a href="#rules">Detection rules</a></li>
+        <li><a href="#ci">CI/CD guide</a></li>
+        <li><a href="#pricing">Early access</a></li>
+        <li><a href="https://github.com/cleancloud-io/cleancloud/blob/main/docs/example-outputs.md">Example outputs</a></li>
+        <li><a href="https://github.com/cleancloud-io/cleancloud/blob/main/SECURITY.md">Security policy</a></li>
+      </ul>
+    </div>
+    <div>
+      <p class="fl-ct">Docs</p>
+      <ul class="fl-lk">
+        <li><a href="https://github.com/cleancloud-io/cleancloud/blob/main/docs/rules.md">rules.md</a></li>
+        <li><a href="https://github.com/cleancloud-io/cleancloud/blob/main/docs/aws.md">AWS setup</a></li>
+        <li><a href="https://github.com/cleancloud-io/cleancloud/blob/main/docs/azure.md">Azure setup</a></li>
+        <li><a href="https://github.com/cleancloud-io/cleancloud/blob/main/docs/ci.md">CI/CD guide</a></li>
+        <li><a href="https://github.com/cleancloud-io/cleancloud/blob/main/docs/infosec-readiness.md">Infosec readiness</a></li>
+      </ul>
+    </div>
+    <div>
+      <p class="fl-ct">Community</p>
+      <ul class="fl-lk">
+        <li><a href="https://github.com/cleancloud-io/cleancloud" target="_blank" rel="noopener">GitHub</a></li>
+        <li><a href="https://github.com/cleancloud-io/cleancloud/issues" target="_blank" rel="noopener">Issues</a></li>
+        <li><a href="https://github.com/cleancloud-io/cleancloud/discussions" target="_blank" rel="noopener">Discussions</a></li>
+        <li><a href="https://pypi.org/project/cleancloud/" target="_blank" rel="noopener">PyPI</a></li>
+        <li><a href="/blog">Blog</a></li>
+        <li><a href="mailto:suresh@getcleancloud.com">suresh@getcleancloud.com</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="fb">
+    <p class="fb-cp">&copy; 2026 CleanCloud. MIT License.</p>
+    <ul class="fb-lk">
+      <li><a href="https://github.com/cleancloud-io/cleancloud/blob/main/SECURITY.md">Security</a></li>
+      <li><a href="https://github.com/cleancloud-io/cleancloud/blob/main/LICENSE">License</a></li>
+      <li><a href="mailto:suresh@getcleancloud.com">Contact</a></li>
+    </ul>
+  </div>
+</footer>
+
+<script>
+function switchTab(provider){
+  document.querySelectorAll('.term-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.term-panel').forEach(p=>p.style.display='none');
+  document.getElementById('tab-'+provider).classList.add('active');
+  document.getElementById('panel-'+provider).style.display='block';
+}
+fetch('https://api.github.com/repos/cleancloud-io/cleancloud')
+  .then(r=>r.json())
+  .then(d=>{
+    if(d.stargazers_count){
+      const n=d.stargazers_count.toLocaleString();
+      document.querySelectorAll('#gh-stars,.gh-stars-nav').forEach(el=>el.textContent=n);
+    }
+  }).catch(()=>{});
+function doCopy(btn,text){
+  navigator.clipboard.writeText(text).then(()=>{
+    const orig=btn.textContent;
+    btn.textContent='&#10003;';
+    btn.style.color='var(--accent-hi)';
+    setTimeout(()=>{btn.textContent=orig;btn.style.color='';},1600);
+  });
+}
+async function handleSubmit(e){
+  e.preventDefault();
+  const form=e.target;
+  const btn=document.getElementById('submitBtn');
+  const msg=document.getElementById('formMsg');
+  const data=new FormData(form);
+  const email=data.get('email');
+  if(!email.includes('@')||!email.includes('.')){
+    msg.style.display='block';msg.style.background='#fef2f2';msg.style.color='#dc2626';msg.style.border='1px solid #fecaca';
+    msg.textContent='Please enter a valid work email.';return;
+  }
+  btn.textContent='Sending...';btn.disabled=true;btn.style.opacity='.7';
+  try{
+    const response=await fetch('https://formspree.io/f/xbddrdpr',{method:'POST',headers:{'Accept':'application/json'},body:data});
+    if(response.ok){
+      msg.style.display='block';msg.style.background='#ecfdf5';msg.style.color='#059669';msg.style.border='1px solid #a7f3d0';
+      msg.textContent="&#10003; Message sent &#8212; we'll be in touch shortly.";
+      btn.textContent='Sent &#10003;';btn.style.background='#059669';btn.style.opacity='1';form.reset();
+    }else{
+      const errData=await response.json().catch(()=>({}));
+      throw new Error(errData.error||'Formspree error');
+    }
+  }catch(err){
+    msg.style.display='block';msg.style.background='#fef2f2';msg.style.color='#dc2626';msg.style.border='1px solid #fecaca';
+    msg.textContent='Something went wrong &#8212; email us directly at suresh@getcleancloud.com';
+    btn.textContent='Send Request &#8594;';btn.disabled=false;btn.style.opacity='1';
+  }
+}
+const obs=new IntersectionObserver(entries=>{entries.forEach(e=>{if(e.isIntersecting)e.target.classList.add('in');});},{threshold:0.07});
+document.querySelectorAll('.rv').forEach(el=>obs.observe(el));
+</script>
+</body>
+</html>

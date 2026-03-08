@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Azure VM Stopped vs Deallocated: The Billing Difference That Costs Thousands | CleanCloud</title>
+<meta name="description" content="Azure VMs in 'Stopped' state still charge you for compute. Deallocated VMs don't. Here's exactly what the difference is, why it happens, and how to catch it automatically in CI.">
+<meta name="keywords" content="azure vm stopped vs deallocated cost, does stopped vm cost money azure, azure vm stopped still charging, azure stopped vm billing, azure vm deallocated cost, azure compute cost, microsoft azure virtual machines cost, azure vm state billing">
+<meta name="author" content="Suresh, CleanCloud">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://www.getcleancloud.com/blog/azure-vm-stopped-vs-deallocated/">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://www.getcleancloud.com/blog/azure-vm-stopped-vs-deallocated/">
+<meta property="og:title" content="Azure VM Stopped vs Deallocated: The Billing Difference That Costs Thousands">
+<meta property="og:description" content="Azure VMs in 'Stopped' state still charge you for compute. Deallocated VMs don't. Here's exactly what the difference is and how to catch it in CI.">
+<meta property="og:image" content="https://www.getcleancloud.com/og-image.png">
+<meta property="og:site_name" content="CleanCloud">
+<meta property="article:published_time" content="2026-03-08">
+<meta property="article:tag" content="Azure">
+<meta property="article:tag" content="FinOps">
+<meta property="article:tag" content="Cloud Cost">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@getcleancloud">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "Azure VM Stopped vs Deallocated: The Billing Difference That Costs Thousands",
+  "description": "Azure VMs in Stopped state still charge you for compute. Deallocated VMs don't. Here's exactly what the difference is, why it trips up engineers, and how to catch it automatically in CI.",
+  "author": { "@type": "Person", "name": "Suresh", "url": "https://www.getcleancloud.com" },
+  "publisher": { "@type": "Organization", "name": "CleanCloud", "url": "https://www.getcleancloud.com" },
+  "datePublished": "2026-03-08",
+  "dateModified": "2026-03-08",
+  "mainEntityOfPage": { "@type": "WebPage", "@id": "https://www.getcleancloud.com/blog/azure-vm-stopped-vs-deallocated/" },
+  "keywords": ["azure vm stopped", "azure vm deallocated", "azure billing", "cloud cost", "FinOps", "CleanCloud"]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Does a stopped Azure VM still cost money?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. An Azure VM in the 'Stopped' state — reached by shutting down from inside the OS — still charges you for compute. Only 'Stopped (deallocated)' stops compute billing. This is the most common cause of unexpected Azure VM costs: the VM appears off, but Azure is still charging full compute rates."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What is the difference between stopped and deallocated in Azure?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Stopped means the VM's operating system has shut down but Azure still holds the compute capacity reserved for it. Deallocated means Azure has released the underlying compute resources. A stopped VM still bills for compute; a deallocated VM only bills for storage (managed disks). The Azure Portal shows both states differently: 'Stopped' vs 'Stopped (deallocated)'."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How do I deallocate an Azure VM instead of just stopping it?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Using Azure CLI: az vm deallocate --resource-group MyRG --name MyVM. Using PowerShell: Stop-AzVM -ResourceGroupName MyRG -Name MyVM (the Portal and PowerShell deallocate by default). Using the Azure Portal: click Stop — this deallocates by default. The dangerous path is shutting down from inside the OS (e.g. 'shutdown /s' on Windows or 'sudo shutdown' on Linux), which leaves the VM in Stopped state, not deallocated."
+      }
+    }
+  ]
+}
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500;600&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f6f7f9;--white:#ffffff;--border:#e2e6ea;--border2:#d0d5dc;--text:#0d1b2a;--text2:#374151;--muted:#6b7a8d;--muted2:#9aa3af;--accent:#0b7a6e;--accent-lt:#e6f4f2;--accent-md:#c2e8e3;--accent-hi:#0d9488;--sans:'Inter',system-ui,-apple-system,sans-serif;--mono:'JetBrains Mono',monospace;--serif:'Lora',Georgia,serif;--sh-sm:0 1px 3px rgba(13,27,42,.06),0 1px 2px rgba(13,27,42,.04);--sh-md:0 4px 16px rgba(13,27,42,.08),0 2px 4px rgba(13,27,42,.04);--content-width:720px}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;background-image:linear-gradient(rgba(13,27,42,.022) 1px,transparent 1px),linear-gradient(90deg,rgba(13,27,42,.022) 1px,transparent 1px);background-size:40px 40px}
+a{color:var(--accent-hi);text-decoration:none}
+a:hover{text-decoration:underline}
+nav{position:sticky;top:0;z-index:100;background:rgba(246,247,249,.93);backdrop-filter:blur(16px);border-bottom:1px solid var(--border)}
+.nav-in{max-width:1120px;margin:0 auto;padding:0 28px;height:58px;display:flex;align-items:center;justify-content:space-between}
+.nav-logo{font-family:var(--mono);font-size:14px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:9px;text-decoration:none}
+.lm{width:26px;height:26px;border-radius:6px;background:var(--text);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.lm svg{width:14px;height:14px}
+.nav-links{display:flex;align-items:center;gap:2px;list-style:none}
+.nav-links a{font-family:var(--mono);font-size:12px;color:var(--muted);padding:5px 11px;border-radius:5px;transition:color .15s,background .15s}
+.nav-links a:hover{color:var(--text);background:var(--white);text-decoration:none}
+.nav-cta{font-family:var(--mono)!important;font-size:12px!important;font-weight:600!important;color:var(--white)!important;background:var(--text)!important;padding:7px 16px!important;border-radius:6px!important}
+.nav-cta:hover{background:#1a2f44!important}
+.blog-wrap{max-width:1120px;margin:0 auto;padding:0 28px;position:relative;z-index:1}
+.post-hero{padding:64px 0 48px;max-width:var(--content-width);margin:0 auto}
+.post-breadcrumb{font-family:var(--mono);font-size:11px;color:var(--muted);margin-bottom:20px;display:flex;align-items:center;gap:8px}
+.post-breadcrumb a{color:var(--muted)}
+.post-breadcrumb a:hover{color:var(--accent-hi);text-decoration:none}
+.post-breadcrumb span{color:var(--border2)}
+.post-tags{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px}
+.post-tag{font-family:var(--mono);font-size:10px;font-weight:600;padding:3px 10px;border-radius:4px;text-transform:uppercase;letter-spacing:.06em}
+.tag-azure{background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe}
+.tag-finops{background:#fffbeb;color:#d97706;border:1px solid #fde68a}
+.tag-devops{background:var(--accent-lt);color:var(--accent);border:1px solid var(--accent-md)}
+.post-h1{font-size:clamp(28px,4vw,44px);font-weight:800;line-height:1.12;letter-spacing:-.025em;color:var(--text);margin-bottom:20px}
+.post-h1 em{font-style:normal;background:linear-gradient(135deg,var(--accent) 0%,var(--accent-hi) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.post-lede{font-size:18px;color:var(--text2);line-height:1.7;margin-bottom:28px;font-family:var(--serif);font-style:italic}
+.post-meta{display:flex;align-items:center;gap:20px;padding:16px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border);font-family:var(--mono);font-size:11px;color:var(--muted)}
+.meta-author{display:flex;align-items:center;gap:8px}
+.meta-avatar{width:28px;height:28px;border-radius:50%;background:var(--text);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#00ffd0;flex-shrink:0}
+.meta-dot{color:var(--border2)}
+.post-layout{display:grid;grid-template-columns:var(--content-width) 1fr;gap:60px;padding:48px 0 96px;align-items:start}
+.post-body{min-width:0}
+.post-body h2{font-size:22px;font-weight:800;color:var(--text);letter-spacing:-.02em;line-height:1.2;margin:48px 0 16px;padding-top:8px}
+.post-body h2:first-child{margin-top:0}
+.post-body h3{font-size:16px;font-weight:700;color:var(--text);letter-spacing:-.01em;margin:28px 0 10px}
+.post-body p{font-size:16px;line-height:1.8;color:var(--text2);margin-bottom:20px}
+.post-body p strong{color:var(--text);font-weight:600}
+.post-body ul,.post-body ol{margin:0 0 20px 0;padding-left:24px}
+.post-body li{font-size:16px;line-height:1.75;color:var(--text2);margin-bottom:8px}
+.post-body li strong{color:var(--text)}
+.callout{border-left:3px solid var(--accent-hi);background:var(--accent-lt);border-radius:0 8px 8px 0;padding:18px 20px;margin:28px 0}
+.callout p{margin:0;font-size:15px;color:var(--accent);font-weight:500;line-height:1.65}
+.callout-warn{border-left-color:#d97706;background:#fffbeb}
+.callout-warn p{color:#92400e}
+.callout-danger{border-left-color:#dc2626;background:#fef2f2}
+.callout-danger p{color:#991b1b}
+.code-block{background:#0d1117;border:1px solid #21262d;border-radius:10px;overflow:hidden;margin:24px 0;box-shadow:var(--sh-md);font-family:var(--mono);font-size:12.5px;line-height:1.7}
+.code-hd{background:#161b22;border-bottom:1px solid #21262d;padding:9px 16px;display:flex;align-items:center;justify-content:space-between}
+.code-fn{font-size:11px;color:#6e7681;font-family:var(--mono)}
+.code-lg{font-size:10px;padding:2px 8px;border-radius:4px;background:#21262d;color:#6e7681;border:1px solid #30363d;font-family:var(--mono)}
+.code-bd{padding:16px 18px;overflow-x:auto;color:#e6edf3;white-space:pre}.code-bd pre{margin:0;padding:0;font:inherit;white-space:pre;background:none;color:inherit}
+.code-bd .c{color:#6e7681}
+.code-bd .k{color:#79c0ff}
+.code-bd .v{color:#a5f3a5}
+.code-bd .s{color:#ffa657}
+.code-bd .hi{color:#ff7b72}
+.code-bd .co{color:#3fb950;font-weight:500}
+.code-bd .me{color:#e3b341}
+.code-bd .pu{color:#d2a8ff}
+.post-body code{font-family:var(--mono);font-size:13px;background:var(--bg);border:1px solid var(--border);padding:1px 6px;border-radius:4px;color:var(--accent-hi)}
+.compare-table{width:100%;border-collapse:collapse;font-size:13px;border:1px solid var(--border);border-radius:10px;overflow:hidden;box-shadow:var(--sh-sm);margin:24px 0}
+.compare-table th{text-align:left;padding:10px 14px;background:var(--bg);color:var(--muted);border-bottom:1px solid var(--border2);font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.07em;font-weight:600}
+.compare-table td{padding:10px 14px;border-bottom:1px solid var(--border);background:var(--white);color:var(--text2);font-family:var(--mono);font-size:12px;vertical-align:top}
+.compare-table tr:last-child td{border-bottom:none}
+.compare-table tr:hover td{background:var(--bg)}
+.td-good{color:#059669;font-weight:600}
+.td-bad{color:#dc2626;font-weight:600}
+.td-warn{color:#d97706;font-weight:600}
+.pull-quote{border-top:3px solid var(--text);border-bottom:1px solid var(--border);padding:24px 0 20px;margin:36px 0}
+.pull-quote p{font-family:var(--serif);font-size:20px;font-style:italic;color:var(--text);line-height:1.5;margin:0}
+.stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:28px 0}
+.stat-card{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:20px;text-align:center;box-shadow:var(--sh-sm)}
+.stat-n{font-size:28px;font-weight:800;color:var(--accent-hi);letter-spacing:-.03em;line-height:1;margin-bottom:6px}
+.stat-l{font-family:var(--mono);font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;line-height:1.4}
+.post-cta{background:var(--text);border-radius:12px;padding:32px 36px;margin:48px 0 0;position:relative;overflow:hidden}
+.post-cta::before{content:'';position:absolute;top:-60px;right:-60px;width:200px;height:200px;border-radius:50%;background:radial-gradient(circle,rgba(13,148,136,.3),transparent 70%);pointer-events:none}
+.post-cta h3{font-size:20px;font-weight:800;color:#fff;letter-spacing:-.02em;margin-bottom:8px}
+.post-cta p{font-family:var(--mono);font-size:12px;color:rgba(255,255,255,.55);margin-bottom:20px;line-height:1.65}
+.post-cta-acts{display:flex;gap:10px;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;gap:7px;font-family:var(--mono);font-size:12px;font-weight:600;padding:10px 20px;border-radius:7px;transition:transform .15s,box-shadow .15s;text-decoration:none!important;letter-spacing:.01em}
+.btn:hover{transform:translateY(-1px)}
+.btn-wh{background:#fff;color:var(--text)}
+.btn-wh:hover{background:#f0f0f0}
+.btn-ow{background:transparent;color:rgba(255,255,255,.75);border:1px solid rgba(255,255,255,.25)}
+.btn-ow:hover{background:rgba(255,255,255,.08);color:#fff}
+.post-sidebar{position:sticky;top:78px}
+.toc{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:20px;box-shadow:var(--sh-sm);margin-bottom:20px}
+.toc-title{font-family:var(--mono);font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:14px}
+.toc-list{list-style:none}
+.toc-list li{margin-bottom:4px}
+.toc-list a{font-family:var(--mono);font-size:12px;color:var(--muted);display:block;padding:4px 8px;border-radius:5px;transition:color .15s,background .15s;line-height:1.4}
+.toc-list a:hover{color:var(--accent-hi);background:var(--accent-lt);text-decoration:none}
+.toc-list a.active{color:var(--accent-hi);background:var(--accent-lt);font-weight:500}
+.sidebar-card{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:20px;box-shadow:var(--sh-sm);margin-bottom:16px}
+.sidebar-card-title{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--text);margin-bottom:10px;text-transform:uppercase;letter-spacing:.06em}
+.sidebar-stat{display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);font-family:var(--mono);font-size:11px}
+.sidebar-stat:last-child{border-bottom:none}
+.ss-label{color:var(--muted)}
+.ss-val{font-weight:600;color:var(--accent-hi)}.ss-val.c-hi{color:#dc2626}.ss-val.c-md{color:#d97706}
+.related{border-top:1px solid var(--border);padding:48px 0 80px}
+.related-title{font-family:var(--mono);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:24px}
+.related-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.related-card{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:20px;transition:box-shadow .2s,transform .2s;box-shadow:var(--sh-sm)}
+.related-card:hover{box-shadow:var(--sh-md);transform:translateY(-2px)}
+.rc-tag{font-family:var(--mono);font-size:10px;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px}
+.rc-title{font-size:14px;font-weight:700;color:var(--text);line-height:1.35;letter-spacing:-.01em;margin-bottom:8px}
+.rc-desc{font-family:var(--mono);font-size:11px;color:var(--muted);line-height:1.6}
+footer{border-top:1px solid var(--border);background:var(--white);position:relative;z-index:1}
+.fi{max-width:1120px;margin:0 auto;padding:40px 28px;display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap}
+.f-logo{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:8px}
+.f-links{display:flex;gap:20px;list-style:none}
+.f-links a{font-family:var(--mono);font-size:11px;color:var(--muted2);transition:color .15s}
+.f-links a:hover{color:var(--text);text-decoration:none}
+.f-copy{font-family:var(--mono);font-size:11px;color:var(--muted2)}
+.rv{opacity:0;transform:translateY(16px);transition:opacity .5s ease,transform .5s ease}
+.rv.in{opacity:1;transform:translateY(0)}
+@media(max-width:960px){.post-layout{grid-template-columns:1fr;gap:0}.post-sidebar{position:static;margin-top:48px}.stat-row{grid-template-columns:1fr 1fr}.related-grid{grid-template-columns:1fr}.nav-links{display:none}}
+@media(max-width:600px){.post-h1{font-size:26px}.stat-row{grid-template-columns:1fr}.post-meta{flex-wrap:wrap;gap:10px}}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-in">
+    <a class="nav-logo" href="/">
+      <div class="lm"><svg viewBox="0 0 14 14" fill="none" stroke="#00ffd0" stroke-width="2"><path d="M2 7L5 10L12 3" stroke-linecap="round" stroke-linejoin="round"/><circle cx="7" cy="7" r="6" stroke="#00ffd0" stroke-width="1.4" opacity=".4"/></svg></div>
+      cleancloud
+    </a>
+    <ul class="nav-links">
+      <li><a href="/#rules">Rules</a></li>
+      <li><a href="/#ci">CI/CD</a></li>
+      <li><a href="/#pricing">Early access</a></li>
+      <li><a href="/blog">Blog</a></li>
+      <li><a href="https://github.com/cleancloud-io/cleancloud" target="_blank" rel="noopener">GitHub ★ 80</a></li>
+      <li><a href="/#contact" class="nav-cta">Get started →</a></li>
+    </ul>
+  </div>
+</nav>
+
+<main>
+<div class="blog-wrap">
+
+  <div class="post-hero rv">
+    <div class="post-breadcrumb">
+      <a href="/">Home</a><span>›</span>
+      <a href="/blog">Blog</a><span>›</span>
+      Azure VM Stopped vs Deallocated
+    </div>
+    <div class="post-tags">
+      <span class="post-tag tag-azure">Azure</span>
+      <span class="post-tag tag-finops">FinOps</span>
+      <span class="post-tag tag-devops">Cloud Hygiene</span>
+    </div>
+    <h1 class="post-h1">Azure VM Stopped vs Deallocated:<br><em>The Billing Difference That Costs Thousands</em></h1>
+    <p class="post-lede">Your VM is off. The OS is shut down. So why is Azure still charging you? Because "stopped" and "deallocated" are not the same thing — and the difference can silently drain your budget every single month.</p>
+    <div class="post-meta">
+      <div class="meta-author">
+        <div class="meta-avatar">S</div>
+        <span>Suresh · CleanCloud</span>
+      </div>
+      <span class="meta-dot">·</span>
+      <span>March 2026</span>
+      <span class="meta-dot">·</span>
+      <span>6 min read</span>
+      <span class="meta-dot">·</span>
+      <span>Azure · FinOps</span>
+    </div>
+  </div>
+
+  <div class="post-layout">
+    <article class="post-body rv">
+
+      <h2 id="the-trap">The Trap Every Azure Engineer Falls Into</h2>
+      <p>You're tidying up a dev environment. You SSH into a VM and run <code>sudo shutdown now</code>. Job done — the machine is off, right? Costs stopped?</p>
+      <p>Wrong. Azure will keep billing you for that VM's compute allocation until the end of time, or until someone notices.</p>
+      <p>This is one of the most common and most surprising Azure billing traps. It's not a bug. It's intentional design — but it's design that costs teams real money when they don't know about it.</p>
+
+      <div class="callout-danger callout">
+        <p>⚠️ A VM shut down from <strong>inside the OS</strong> enters "Stopped" state — not "Stopped (deallocated)". Azure continues to charge full compute rates. Only deallocated VMs stop compute billing.</p>
+      </div>
+
+      <h2 id="what-stopped-means">What "Stopped" Actually Means</h2>
+      <p>When an Azure VM enters the <strong>Stopped</strong> state, the guest operating system has shut down. The VM is not running. But from Azure's perspective, the underlying compute resources — the CPU cores, memory, and network interface reservation — are still allocated to your subscription.</p>
+      <p>Azure holds that capacity reserved for you. And you pay for that reservation, whether you use it or not.</p>
+
+      <p>A common question when researching <strong>Azure VM stopped vs deallocated cost</strong>: does a stopped Microsoft Azure Virtual Machine still charge you? The answer is yes — and the billing difference between the two states is the most misunderstood aspect of Azure compute pricing.</p>
+
+      <div class="compare-table" style="overflow:hidden;border-radius:10px;">
+        <table style="width:100%;border-collapse:collapse;">
+          <thead>
+            <tr>
+              <th>State</th>
+              <th>Compute Charges</th>
+              <th>Storage (Disk)</th>
+              <th>Public IP</th>
+              <th>How you get here</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Running</strong></td>
+              <td class="td-bad">✅ Full rate</td>
+              <td class="td-bad">✅ Yes</td>
+              <td class="td-good">✅ Retained</td>
+              <td>Normal operation</td>
+            </tr>
+            <tr>
+              <td><strong>Stopped</strong> <span style="color:#dc2626;font-size:10px">(still billing!)</span></td>
+              <td class="td-bad">✅ Full rate</td>
+              <td class="td-bad">✅ Yes</td>
+              <td class="td-good">✅ Retained</td>
+              <td>OS shutdown, <code>shutdown /s</code>, <code>sudo shutdown</code></td>
+            </tr>
+            <tr>
+              <td><strong>Stopped (deallocated)</strong> <span style="color:#059669;font-size:10px">(safe)</span></td>
+              <td class="td-good">❌ No compute charge</td>
+              <td class="td-bad">✅ Yes</td>
+              <td class="td-warn">⚠️ Dynamic IPs lost</td>
+              <td>Portal Stop, <code>az vm deallocate</code>, PowerShell default</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout-danger callout">
+        <p>⚠️ <strong>Azure VM stopped still charging?</strong> If your Microsoft Azure Virtual Machine shows "Stopped" (not "Stopped (deallocated)") in the portal, you are being billed full compute rates. This is the <code>az_stopped_vm</code> finding CleanCloud surfaces with HIGH confidence.</p>
+      </div>
+
+      <h2 id="how-it-happens">How Engineers Accidentally Stop (Not Deallocate)</h2>
+      <p>There are three main ways teams end up with VMs in the costly Stopped state:</p>
+      <ul>
+        <li><strong>OS-level shutdown:</strong> <code>sudo shutdown -h now</code> on Linux, or <code>shutdown /s</code> on Windows. The OS powers off, but Azure doesn't know you intended to release resources.</li>
+        <li><strong>PowerShell with wrong flag:</strong> <code>Stop-AzVM -Name myVM -ResourceGroupName myRG -StayProvisioned</code> — the <code>-StayProvisioned</code> flag explicitly keeps the compute allocated.</li>
+        <li><strong>Automation scripts from before 2018:</strong> Older Azure automation runbooks used <code>Stop-AzureVM</code> (the classic cmdlet) which defaulted to staying provisioned.</li>
+      </ul>
+
+      <div class="pull-quote">
+        <p>"The machine is off. Why is the bill still on?" — Every Azure engineer, at least once.</p>
+      </div>
+
+      <h2 id="how-to-deallocate">How to Properly Deallocate a VM</h2>
+      <p>The good news: it's easy once you know. There are three correct ways to stop a VM and stop billing.</p>
+
+      <h3>Azure CLI (safest for scripts)</h3>
+      <div class="code-block">
+        <div class="code-hd"><span class="code-fn">az vm deallocate</span><span class="code-lg">bash</span></div>
+        <div class="code-bd"><pre>
+<span class="c"># Deallocate a single VM</span>
+az vm deallocate \
+  --resource-group <span class="s">my-resource-group</span> \
+  --name <span class="s">my-vm-name</span>
+
+<span class="c"># Deallocate all VMs in a resource group</span>
+az vm list \
+  --resource-group <span class="s">my-resource-group</span> \
+  --query <span class="s">"[].name"</span> -o tsv | \
+  xargs -I{} az vm deallocate \
+    --resource-group <span class="s">my-resource-group</span> \
+    --name {}
+
+<span class="c"># Verify state after — should show "deallocated"</span>
+az vm show \
+  --resource-group <span class="s">my-resource-group</span> \
+  --name <span class="s">my-vm-name</span> \
+  --show-details \
+  --query <span class="s">"powerState"</span>
+        </pre></div>
+      </div>
+
+      <h3>PowerShell</h3>
+      <div class="code-block">
+        <div class="code-hd"><span class="code-fn">Stop-AzVM</span><span class="code-lg">PowerShell</span></div>
+        <div class="code-bd"><pre>
+<span class="c"># Default behaviour: deallocates (no -StayProvisioned)</span>
+<span class="k">Stop-AzVM</span> `
+  -ResourceGroupName <span class="s">"my-resource-group"</span> `
+  -Name <span class="s">"my-vm-name"</span>
+
+<span class="c"># DANGER: this stops but keeps compute allocated (still billed!)</span>
+<span class="hi"># Stop-AzVM -ResourceGroupName "myRG" -Name "myVM" -StayProvisioned</span>
+        </pre></div>
+      </div>
+
+      <h3>Azure Portal</h3>
+      <p>Clicking <strong>Stop</strong> in the Azure Portal deallocates the VM by default since 2018. The VM status will show as <code>Stopped (deallocated)</code> in the portal. If it just shows <code>Stopped</code> without the "(deallocated)" suffix — you're still being billed.</p>
+
+      <h2 id="real-cost">The Real Cost Impact</h2>
+      <p>Let's put numbers on this. A Standard D4s v3 VM (4 vCPUs, 16GB RAM) in UK South costs approximately £0.22/hour on pay-as-you-go pricing. A dev VM "stopped" for a weekend but not deallocated costs:</p>
+
+      <div class="stat-row">
+        <div class="stat-card">
+          <div class="stat-n">£10</div>
+          <div class="stat-l">One weekend<br>stopped not deallocated</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-n">£48</div>
+          <div class="stat-l">One month<br>for a forgotten dev VM</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-n">£580</div>
+          <div class="stat-l">Annual cost<br>per forgotten VM</div>
+        </pre></div>
+      </div>
+
+      <p>Multiply that by a team of 10 engineers, each with 2–3 dev VMs they occasionally shut down the "wrong" way, and you're looking at thousands of pounds per year in invisible, easily avoidable waste.</p>
+
+      <h2 id="catch-in-ci">How CleanCloud Catches This Automatically</h2>
+      <p>CleanCloud's <code>az_stopped_vm</code> rule specifically targets Microsoft Azure Virtual Machines in the Stopped state. It queries your Azure subscription, distinguishes <code>VM stopped</code> from <code>VM deallocated</code>, and surfaces findings in your CI pipeline before your next deploy. The output is deterministic and actionable:</p>
+
+      <div class="code-block">
+        <div class="code-hd"><span class="code-fn">cleancloud scan --provider azure</span><span class="code-lg">terminal</span></div>
+        <div class="code-bd"><pre>
+<span class="k">$ cleancloud scan --provider azure --subscription-id $AZURE_SUBSCRIPTION_ID</span>
+
+<span class="co">CleanCloud v1.6.4 · read-only · zero telemetry · Microsoft Azure</span>
+
+<span class="me">FINDINGS</span>
+────────────────────────────────────────────────────────
+Rule       : <span class="v">az_stopped_vm</span>
+Confidence : <span class="hi">High</span>
+Est. waste : <span class="co">$42/month</span>
+Resource   : <span class="s">vm-dev-test-01</span>
+State      : <span class="hi">Stopped (not deallocated)</span>
+
+Rule       : <span class="v">az_stopped_vm</span>
+Confidence : <span class="hi">High</span>
+Est. waste : <span class="co">$31/month</span>
+Resource   : <span class="s">ci-runner-uksouth</span>
+State      : <span class="hi">Stopped (not deallocated)</span>
+
+────────────────────────────────────────────────────────
+<span class="hi">2 HIGH findings · Est. ~$73/month · Exit code 1</span>
+        </pre></div>
+      </div>
+
+      <p>Because CleanCloud is read-only and deterministic, you can add this as a required CI check without worrying about it mutating your infrastructure. It never touches your VMs — it just tells you what needs attention.</p>
+
+      <h2 id="github-actions">Adding the Check to GitHub Actions</h2>
+      <div class="code-block">
+        <div class="code-hd"><span class="code-fn">.github/workflows/cloud-hygiene.yml</span><span class="code-lg">YAML</span></div>
+        <div class="code-bd"><pre>
+<span class="k">name:</span> <span class="s">Cloud Hygiene Gate</span>
+
+<span class="k">on:</span>
+  <span class="k">pull_request:</span>
+    <span class="k">branches:</span> [<span class="s">main</span>]
+  <span class="k">schedule:</span>
+    - <span class="k">cron:</span> <span class="s">'0 8 * * 1-5'</span>  <span class="c"># Weekday morning scan</span>
+
+<span class="k">jobs:</span>
+  <span class="k">azure-hygiene:</span>
+    <span class="k">runs-on:</span> ubuntu-latest
+    <span class="k">permissions:</span>
+      <span class="k">id-token:</span> write
+      <span class="k">contents:</span> read
+    <span class="k">steps:</span>
+      - <span class="k">uses:</span> azure/login@v2
+        <span class="k">with:</span>
+          <span class="k">client-id:</span>     <span class="s">${{ secrets.AZURE_CLIENT_ID }}</span>
+          <span class="k">tenant-id:</span>     <span class="s">${{ secrets.AZURE_TENANT_ID }}</span>
+          <span class="k">subscription-id:</span> <span class="s">${{ secrets.AZURE_SUBSCRIPTION_ID }}</span>
+
+      - <span class="k">run:</span> pip install cleancloud
+
+      - <span class="k">name:</span> <span class="s">Scan for cloud hygiene issues</span>
+        <span class="k">run:</span> |
+          cleancloud scan \
+            --provider azure \
+            --fail-on HIGH
+        <span class="c">  # Exit 1 on HIGH findings → fails the build
+          # az_stopped_vm is included in the full scan automatically</span>
+        </pre></div>
+      </div>
+
+      <h2 id="other-hidden-costs">All 10 Azure Rules CleanCloud Checks</h2>
+      <p>Stopped VMs are the most visible example, but CleanCloud's full Azure scan covers 10 rules across the same theme — resources that bill when you think they shouldn't:</p>
+
+      <div class="compare-table" style="overflow:hidden;border-radius:10px;">
+        <table style="width:100%;border-collapse:collapse;">
+          <thead>
+            <tr><th>Rule</th><th>What it detects</th><th>Confidence</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>az_stopped_vm</code></td><td>VMs in Stopped (not deallocated) state — still billing compute</td><td class="td-bad">High</td></tr>
+            <tr><td><code>az_idle_sql_database</code></td><td>SQL databases with no connections or queries in 7+ days</td><td class="td-bad">High</td></tr>
+            <tr><td><code>az_idle_public_ip</code></td><td>Public IP addresses not associated with any resource</td><td class="td-bad">High</td></tr>
+            <tr><td><code>az_empty_load_balancer</code></td><td>Load balancers with no backend pool members</td><td class="td-bad">High</td></tr>
+            <tr><td><code>az_empty_app_gateway</code></td><td>Application Gateways with no backend targets</td><td class="td-bad">High</td></tr>
+            <tr><td><code>az_empty_app_service_plan</code></td><td>App Service Plans with zero apps or slots deployed</td><td class="td-bad">High</td></tr>
+            <tr><td><code>az_unattached_disk</code></td><td>Managed disks not attached to any VM</td><td class="td-warn">Medium</td></tr>
+            <tr><td><code>az_old_snapshot</code></td><td>Disk snapshots older than 90 days with no recent restore activity</td><td class="td-warn">Medium</td></tr>
+            <tr><td><code>az_idle_vnet_gateway</code></td><td>VNet Gateways with no active connections or traffic</td><td class="td-warn">Medium</td></tr>
+            <tr><td><code>az_untagged_resource</code></td><td>Resources missing required cost allocation tags</td><td class="td-warn">Medium</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>All 10 rules run in a single scan. CleanCloud never modifies any resource — it surfaces findings and exits. Full rule details at <a href="https://github.com/cleancloud-io/cleancloud/blob/main/docs/rules.md" target="_blank" rel="noopener">docs/rules.md</a>.</p>
+
+      <div class="callout">
+        <p>💡 CleanCloud's read-only scan covers all of these Azure waste patterns in a single run. Zero writes to your environment, zero telemetry, and deterministic output — safe enough for production-adjacent accounts.</p>
+      </div>
+
+      <h2 id="summary">Summary: The Three Things to Remember</h2>
+      <ol>
+        <li><strong>Never rely on OS-level shutdown</strong> to stop Azure billing. Use <code>az vm deallocate</code> or the Azure Portal Stop button.</li>
+        <li><strong>Check the portal for "(deallocated)"</strong> — if the status just says "Stopped" without that suffix, you're still paying.</li>
+        <li><strong>Automate the check.</strong> Add CleanCloud to your CI pipeline — it runs all 10 Azure rules in a single scan and exits 1 on HIGH findings, so stopped VMs and other waste are caught before they compound into multi-month surprises.</li>
+      </ol>
+
+      <div class="post-cta rv">
+        <h3>Catch stopped VMs before they compound</h3>
+        <p>CleanCloud scans your Azure subscription in under 60 seconds — read-only, zero telemetry, no agents required. Works with OIDC for secure CI/CD integration.</p>
+        <div class="post-cta-acts">
+          <a href="https://pypi.org/project/cleancloud/" class="btn btn-wh" target="_blank" rel="noopener">Install via PyPI →</a>
+          <a href="https://github.com/cleancloud-io/cleancloud" class="btn btn-ow" target="_blank" rel="noopener">View on GitHub</a>
+        </pre></div>
+      </div>
+
+    </article>
+
+    <aside class="post-sidebar rv">
+      <div class="toc">
+        <div class="toc-title">On this page</div>
+        <ul class="toc-list">
+          <li><a href="#the-trap">The trap engineers fall into</a></li>
+          <li><a href="#what-stopped-means">What "Stopped" actually means</a></li>
+          <li><a href="#how-it-happens">How it happens accidentally</a></li>
+          <li><a href="#real-cost">The real cost impact</a></li>
+          <li><a href="#how-to-deallocate">How to properly deallocate</a></li>
+          <li><a href="#catch-in-ci">Catching it in CI</a></li>
+          <li><a href="#github-actions">GitHub Actions setup</a></li>
+          <li><a href="#other-hidden-costs">All 10 Azure rules</a></li>
+          <li><a href="#summary">Summary</a></li>
+        </ul>
+      </div>
+      <div class="sidebar-card">
+        <div class="sidebar-card-title">CleanCloud Azure rules</div>
+        <div class="sidebar-stat"><span class="ss-label">az_stopped_vm</span><span class="ss-val c-hi">High</span></div>
+        <div class="sidebar-stat"><span class="ss-label">az_idle_sql_database</span><span class="ss-val c-hi">High</span></div>
+        <div class="sidebar-stat"><span class="ss-label">az_idle_public_ip</span><span class="ss-val c-hi">High</span></div>
+        <div class="sidebar-stat"><span class="ss-label">az_empty_load_balancer</span><span class="ss-val c-hi">High</span></div>
+        <div class="sidebar-stat"><span class="ss-label">az_empty_app_gateway</span><span class="ss-val c-hi">High</span></div>
+        <div class="sidebar-stat"><span class="ss-label">az_empty_app_service_plan</span><span class="ss-val c-hi">High</span></div>
+        <div class="sidebar-stat"><span class="ss-label">az_unattached_disk</span><span class="ss-val c-md">Medium</span></div>
+        <div class="sidebar-stat"><span class="ss-label">az_old_snapshot</span><span class="ss-val c-md">Medium</span></div>
+        <div class="sidebar-stat"><span class="ss-label">az_idle_vnet_gateway</span><span class="ss-val c-md">Medium</span></div>
+        <div class="sidebar-stat"><span class="ss-label">az_untagged_resource</span><span class="ss-val c-md">Medium</span></div>
+      </div>
+      <div class="sidebar-card" style="background:#0d1117;border-color:#21262d">
+        <div style="font-family:var(--mono);font-size:10px;color:#6e7681;margin-bottom:8px">Quick scan</div>
+        <div style="font-family:var(--mono);font-size:12px;color:#3fb950;line-height:1.8">
+          $ pip install cleancloud<br>
+          $ az login<br>
+          $ cleancloud scan \<br>
+          &nbsp;&nbsp;--provider azure
+        </pre></div>
+      </div>
+    </aside>
+  </div>
+
+  <div class="related rv">
+    <div class="related-title">Related posts</div>
+    <div class="related-grid">
+      <div class="related-card">
+        <div class="rc-tag">FinOps</div>
+        <div class="rc-title"><a href="/blog/shift-left-cloud-cost-optimization.html">Shift-Left Cloud Cost Optimization</a></div>
+        <div class="rc-desc">Catch waste in CI before it ever hits your bill.</div>
+      </div>
+      <div class="related-card">
+        <div class="rc-tag">CI/CD</div>
+        <div class="rc-title"><a href="/blog/github-actions-cloud-cost-gate.html">GitHub Actions Cloud Cost Gate</a></div>
+        <div class="rc-desc">Block wasteful infrastructure before it merges.</div>
+      </div>
+      <div class="related-card">
+        <div class="rc-tag">Cloud Hygiene</div>
+        <div class="rc-title"><a href="/blog/cloud-cleanup-without-auto-delete.html">Cloud Cleanup Without Auto-Delete</a></div>
+        <div class="rc-desc">Why read-only scanning is safer for production.</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</main>
+
+<footer>
+  <div class="fi">
+    <div class="f-logo">
+      <div class="lm"><svg viewBox="0 0 14 14" fill="none" stroke="#00ffd0" stroke-width="2"><path d="M2 7L5 10L12 3" stroke-linecap="round" stroke-linejoin="round"/><circle cx="7" cy="7" r="6" stroke="#00ffd0" stroke-width="1.4" opacity=".4"/></svg></div>
+      cleancloud
+    </div>
+    <ul class="f-links">
+      <li><a href="/">Home</a></li>
+      <li><a href="/blog">Blog</a></li>
+      <li><a href="https://github.com/cleancloud-io/cleancloud" target="_blank" rel="noopener">GitHub</a></li>
+      <li><a href="https://pypi.org/project/cleancloud/" target="_blank" rel="noopener">PyPI</a></li>
+      <li><a href="/cdn-cgi/l/email-protection#3447414651475c74535140575851555a57585b41501a575b59">Contact</a></li>
+    </ul>
+    <span class="f-copy">© 2026 CleanCloud. MIT License.</span>
+  </div>
+</footer>
+
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+const obs = new IntersectionObserver(entries => { entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('in'); }); }, { threshold: 0.06 });
+document.querySelectorAll('.rv').forEach(el => obs.observe(el));
+const headings = document.querySelectorAll('.post-body h2, .post-body h3');
+const tocLinks = document.querySelectorAll('.toc-list a');
+const tocObs = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      tocLinks.forEach(l => l.classList.remove('active'));
+      const id = entry.target.getAttribute('id');
+      const active = document.querySelector(`.toc-list a[href="#${id}"]`);
+      if (active) active.classList.add('active');
+    }
+  });
+}, { rootMargin: '-20% 0px -70% 0px' });
+headings.forEach(h => tocObs.observe(h));
+</script>
+</body>
+</html>

@@ -1,0 +1,1273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- ── SEO ── -->
+<title>Shift-Left Cloud Cost Optimization: Catch Waste in CI Before It Hits Your Bill | CleanCloud</title>
+<meta name="description" content="Most FinOps tools tell you what happened to your cloud bill. Shift-left cloud cost optimization catches waste before it deploys — in CI, at PR time, before it ever costs a penny. Here's how.">
+<meta name="keywords" content="shift-left cloud cost optimization, cloud waste CI pipeline, cloud hygiene CI/CD, prevent cloud waste, shift-left FinOps, orphaned resources CI, cloud cost enforcement pipeline">
+<meta name="author" content="Suresh, CleanCloud">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://www.getcleancloud.com/blog/shift-left-cloud-cost-optimization/">
+
+<!-- ── Open Graph ── -->
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://www.getcleancloud.com/blog/shift-left-cloud-cost-optimization/">
+<meta property="og:title" content="Shift-Left Cloud Cost Optimization: Catch Waste in CI Before It Hits Your Bill">
+<meta property="og:description" content="Most FinOps tools tell you what happened to your cloud bill. Shift-left cloud cost optimization catches waste before it deploys — in CI, at PR time, before it ever costs a penny.">
+<meta property="og:image" content="https://www.getcleancloud.com/og-image.png">
+<meta property="og:site_name" content="CleanCloud">
+<meta property="article:published_time" content="2026-03-08">
+<meta property="article:author" content="Suresh">
+<meta property="article:tag" content="FinOps">
+<meta property="article:tag" content="CI/CD">
+<meta property="article:tag" content="Cloud Cost">
+<meta property="article:tag" content="DevOps">
+
+<!-- ── Twitter Card ── -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@getcleancloud">
+<meta name="twitter:title" content="Shift-Left Cloud Cost Optimization: Catch Waste in CI Before It Hits Your Bill">
+<meta name="twitter:description" content="Most FinOps tools tell you what happened to your cloud bill. Shift-left catches waste in CI — before it deploys.">
+
+<!-- ── Schema.org Article ── -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "Shift-Left Cloud Cost Optimization: Catch Waste in CI Before It Hits Your Bill",
+  "description": "Most FinOps tools tell you what happened to your cloud bill. Shift-left cloud cost optimization catches waste before it deploys — in CI, at PR time, before it ever costs a penny.",
+  "author": {
+    "@type": "Person",
+    "name": "Suresh",
+    "url": "https://www.getcleancloud.com"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "CleanCloud",
+    "url": "https://www.getcleancloud.com",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://www.getcleancloud.com/og-image.png"
+    }
+  },
+  "datePublished": "2026-03-08",
+  "dateModified": "2026-03-08",
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://www.getcleancloud.com/blog/shift-left-cloud-cost-optimization/"
+  },
+  "keywords": ["shift-left cloud cost", "cloud hygiene", "CI/CD", "FinOps", "cloud waste", "DevOps"],
+  "articleSection": "Engineering"
+}
+</script>
+
+<!-- ── FAQ Schema (boosts featured snippets) ── -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "What is shift-left cloud cost optimization?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Shift-left cloud cost optimization means catching cloud waste and hygiene issues earlier in the development lifecycle — ideally in the CI/CD pipeline at pull request time — rather than discovering them on a monthly bill after resources have been running for weeks or months."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How do you catch cloud waste in a CI pipeline?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Tools like CleanCloud scan your live AWS or Azure environment during CI runs, identify orphaned resources, untagged assets, idle databases, and unattached volumes, and fail the build when findings exceed a configured confidence or cost threshold. This catches waste at the source — the pull request — before it ever reaches production."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What is the difference between FinOps and shift-left cloud cost?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Traditional FinOps is reactive: it analyses your bill, allocates costs to teams, and recommends changes after spend has occurred. Shift-left cloud cost is proactive: it enforces hygiene rules at CI time, before infrastructure is provisioned, so waste never reaches production in the first place."
+      }
+    }
+  ]
+}
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500;600&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+
+<style>
+:root {
+  --bg: #f6f7f9;
+  --white: #ffffff;
+  --border: #e2e6ea;
+  --border2: #d0d5dc;
+  --text: #0d1b2a;
+  --text2: #374151;
+  --muted: #6b7a8d;
+  --muted2: #9aa3af;
+  --accent: #0b7a6e;
+  --accent-lt: #e6f4f2;
+  --accent-md: #c2e8e3;
+  --accent-hi: #0d9488;
+  --sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --mono: 'JetBrains Mono', monospace;
+  --serif: 'Lora', Georgia, serif;
+  --sh-sm: 0 1px 3px rgba(13,27,42,.06), 0 1px 2px rgba(13,27,42,.04);
+  --sh-md: 0 4px 16px rgba(13,27,42,.08), 0 2px 4px rgba(13,27,42,.04);
+  --sh-lg: 0 12px 40px rgba(13,27,42,.12), 0 4px 8px rgba(13,27,42,.06);
+  --content-width: 720px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 15px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image:
+    linear-gradient(rgba(13,27,42,.022) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(13,27,42,.022) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+a { color: var(--accent-hi); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* ── NAV ── */
+nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(246,247,249,.93);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border);
+}
+.nav-in {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 0 28px;
+  height: 58px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.nav-logo {
+  font-family: var(--mono);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  text-decoration: none;
+}
+.lm {
+  width: 26px; height: 26px;
+  border-radius: 6px;
+  background: var(--text);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.lm svg { width: 14px; height: 14px; }
+.nav-links { display: flex; align-items: center; gap: 2px; list-style: none; }
+.nav-links a {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--muted);
+  padding: 5px 11px;
+  border-radius: 5px;
+  transition: color .15s, background .15s;
+}
+.nav-links a:hover { color: var(--text); background: var(--white); text-decoration: none; }
+.nav-cta {
+  font-family: var(--mono) !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  color: var(--white) !important;
+  background: var(--text) !important;
+  padding: 7px 16px !important;
+  border-radius: 6px !important;
+}
+.nav-cta:hover { background: #1a2f44 !important; }
+
+/* ── BLOG LAYOUT ── */
+.blog-wrap {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 0 28px;
+  position: relative;
+  z-index: 1;
+}
+
+/* ── HERO ── */
+.post-hero {
+  padding: 64px 0 48px;
+  max-width: var(--content-width);
+  margin: 0 auto;
+}
+.post-breadcrumb {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--muted);
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.post-breadcrumb a { color: var(--muted); }
+.post-breadcrumb a:hover { color: var(--accent-hi); text-decoration: none; }
+.post-breadcrumb span { color: var(--border2); }
+.post-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+.post-tag {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+.tag-finops { background: #fffbeb; color: #d97706; border: 1px solid #fde68a; }
+.tag-cicd   { background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; }
+.tag-devops { background: var(--accent-lt); color: var(--accent); border: 1px solid var(--accent-md); }
+.tag-aws    { background: #fff8ec; color: #b45309; border: 1px solid #fde68a; }
+.tag-azure  { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+
+.post-h1 {
+  font-size: clamp(28px, 4vw, 44px);
+  font-weight: 800;
+  line-height: 1.12;
+  letter-spacing: -.025em;
+  color: var(--text);
+  margin-bottom: 20px;
+}
+.post-h1 em {
+  font-style: normal;
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hi) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.post-lede {
+  font-size: 18px;
+  color: var(--text2);
+  line-height: 1.7;
+  margin-bottom: 28px;
+  font-family: var(--serif);
+  font-style: italic;
+}
+.post-meta {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 16px 0;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--muted);
+}
+.meta-author { display: flex; align-items: center; gap: 8px; }
+.meta-avatar {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  background: var(--text);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: #00ffd0;
+  flex-shrink: 0;
+}
+.meta-dot { color: var(--border2); }
+
+/* ── ARTICLE BODY ── */
+.post-layout {
+  display: grid;
+  grid-template-columns: var(--content-width) 1fr;
+  gap: 60px;
+  padding: 48px 0 96px;
+  align-items: start;
+}
+.post-body { min-width: 0; }
+.post-body h2 {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: -.02em;
+  line-height: 1.2;
+  margin: 48px 0 16px;
+  padding-top: 8px;
+}
+.post-body h2:first-child { margin-top: 0; }
+.post-body h3 {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -.01em;
+  margin: 28px 0 10px;
+}
+.post-body p {
+  font-size: 16px;
+  line-height: 1.8;
+  color: var(--text2);
+  margin-bottom: 20px;
+}
+.post-body p strong { color: var(--text); font-weight: 600; }
+.post-body ul, .post-body ol {
+  margin: 0 0 20px 0;
+  padding-left: 24px;
+}
+.post-body li {
+  font-size: 16px;
+  line-height: 1.75;
+  color: var(--text2);
+  margin-bottom: 8px;
+}
+.post-body li strong { color: var(--text); }
+
+/* Callout boxes */
+.callout {
+  border-left: 3px solid var(--accent-hi);
+  background: var(--accent-lt);
+  border-radius: 0 8px 8px 0;
+  padding: 18px 20px;
+  margin: 28px 0;
+}
+.callout p {
+  margin: 0;
+  font-size: 15px;
+  color: var(--accent);
+  font-weight: 500;
+  line-height: 1.65;
+}
+.callout-warn {
+  border-left-color: #d97706;
+  background: #fffbeb;
+}
+.callout-warn p { color: #92400e; }
+
+/* Code blocks */
+.code-block {
+  background: #0d1117;
+  border: 1px solid #21262d;
+  border-radius: 10px;
+  overflow: hidden;
+  margin: 24px 0;
+  box-shadow: var(--sh-md);
+  font-family: var(--mono);
+  font-size: 12.5px;
+  line-height: 1.7;
+}
+.code-hd {
+  background: #161b22;
+  border-bottom: 1px solid #21262d;
+  padding: 9px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.code-fn { font-size: 11px; color: #6e7681; font-family: var(--mono); }
+.code-lg {
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: #21262d;
+  color: #6e7681;
+  border: 1px solid #30363d;
+  font-family: var(--mono);
+}
+.code-bd { padding: 16px 18px; overflow-x: auto; color: #e6edf3; }
+.code-bd .c  { color: #6e7681; }
+.code-bd .k  { color: #79c0ff; }
+.code-bd .v  { color: #a5f3a5; }
+.code-bd .s  { color: #ffa657; }
+.code-bd .hi { color: #ff7b72; }
+.code-bd .co { color: #3fb950; font-weight: 500; }
+.code-bd .me { color: #e3b341; }
+.code-bd .pu { color: #d2a8ff; }
+
+/* Inline code */
+.post-body code {
+  font-family: var(--mono);
+  font-size: 13px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  padding: 1px 6px;
+  border-radius: 4px;
+  color: var(--accent-hi);
+}
+
+/* Comparison table */
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: var(--sh-sm);
+  margin: 24px 0;
+}
+.compare-table th {
+  text-align: left;
+  padding: 10px 14px;
+  background: var(--bg);
+  color: var(--muted);
+  border-bottom: 1px solid var(--border2);
+  font-family: var(--mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  font-weight: 600;
+}
+.compare-table td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--white);
+  color: var(--text2);
+  font-family: var(--mono);
+  font-size: 12px;
+  vertical-align: top;
+}
+.compare-table tr:last-child td { border-bottom: none; }
+.compare-table tr:hover td { background: var(--bg); }
+.td-good { color: #059669; font-weight: 600; }
+.td-bad  { color: #dc2626; font-weight: 600; }
+.td-warn { color: #d97706; font-weight: 600; }
+
+/* Pull quote */
+.pull-quote {
+  border-top: 3px solid var(--text);
+  border-bottom: 1px solid var(--border);
+  padding: 24px 0 20px;
+  margin: 36px 0;
+}
+.pull-quote p {
+  font-family: var(--serif);
+  font-size: 20px;
+  font-style: italic;
+  color: var(--text);
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* Stat callout */
+.stat-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin: 28px 0;
+}
+.stat-card {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 20px;
+  text-align: center;
+  box-shadow: var(--sh-sm);
+}
+.stat-n {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--accent-hi);
+  letter-spacing: -.03em;
+  line-height: 1;
+  margin-bottom: 6px;
+}
+.stat-l {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  line-height: 1.4;
+}
+
+/* CTA box */
+.post-cta {
+  background: var(--text);
+  border-radius: 12px;
+  padding: 32px 36px;
+  margin: 48px 0 0;
+  position: relative;
+  overflow: hidden;
+}
+.post-cta::before {
+  content: '';
+  position: absolute;
+  top: -60px; right: -60px;
+  width: 200px; height: 200px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(13,148,136,.3), transparent 70%);
+  pointer-events: none;
+}
+.post-cta h3 {
+  font-size: 20px;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: -.02em;
+  margin-bottom: 8px;
+}
+.post-cta p {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: rgba(255,255,255,.55);
+  margin-bottom: 20px;
+  line-height: 1.65;
+}
+.post-cta-acts { display: flex; gap: 10px; flex-wrap: wrap; }
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 10px 20px;
+  border-radius: 7px;
+  transition: transform .15s, box-shadow .15s;
+  text-decoration: none !important;
+  letter-spacing: .01em;
+}
+.btn:hover { transform: translateY(-1px); }
+.btn-wh { background: #fff; color: var(--text); }
+.btn-wh:hover { background: #f0f0f0; }
+.btn-ow { background: transparent; color: rgba(255,255,255,.75); border: 1px solid rgba(255,255,255,.25); }
+.btn-ow:hover { background: rgba(255,255,255,.08); color: #fff; }
+
+/* ── SIDEBAR ── */
+.post-sidebar { position: sticky; top: 78px; }
+.toc {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 20px;
+  box-shadow: var(--sh-sm);
+  margin-bottom: 20px;
+}
+.toc-title {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  color: var(--muted);
+  margin-bottom: 14px;
+}
+.toc-list { list-style: none; }
+.toc-list li { margin-bottom: 4px; }
+.toc-list a {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--muted);
+  display: block;
+  padding: 4px 8px;
+  border-radius: 5px;
+  transition: color .15s, background .15s;
+  line-height: 1.4;
+}
+.toc-list a:hover {
+  color: var(--accent-hi);
+  background: var(--accent-lt);
+  text-decoration: none;
+}
+.toc-list a.active {
+  color: var(--accent-hi);
+  background: var(--accent-lt);
+  font-weight: 500;
+}
+
+.sidebar-card {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 20px;
+  box-shadow: var(--sh-sm);
+  margin-bottom: 16px;
+}
+.sidebar-card-title {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 10px;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+.sidebar-stat {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--border);
+  font-family: var(--mono);
+  font-size: 11px;
+}
+.sidebar-stat:last-child { border-bottom: none; }
+.ss-label { color: var(--muted); }
+.ss-val { font-weight: 600; color: var(--accent-hi); }
+
+/* ── RELATED POSTS ── */
+.related {
+  border-top: 1px solid var(--border);
+  padding: 48px 0 80px;
+}
+.related-title {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  color: var(--muted);
+  margin-bottom: 24px;
+}
+.related-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+.related-card {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 20px;
+  transition: box-shadow .2s, transform .2s;
+  box-shadow: var(--sh-sm);
+}
+.related-card:hover {
+  box-shadow: var(--sh-md);
+  transform: translateY(-2px);
+}
+.rc-tag {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  margin-bottom: 8px;
+}
+.rc-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.35;
+  letter-spacing: -.01em;
+  margin-bottom: 8px;
+}
+.rc-desc {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+/* ── FOOTER ── */
+footer {
+  border-top: 1px solid var(--border);
+  background: var(--white);
+  position: relative;
+  z-index: 1;
+}
+.fi {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 40px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+.f-logo {
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.f-links { display: flex; gap: 20px; list-style: none; }
+.f-links a {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--muted2);
+  transition: color .15s;
+}
+.f-links a:hover { color: var(--text); text-decoration: none; }
+.f-copy { font-family: var(--mono); font-size: 11px; color: var(--muted2); }
+
+/* ── ANIMATIONS ── */
+.rv { opacity: 0; transform: translateY(16px); transition: opacity .5s ease, transform .5s ease; }
+.rv.in { opacity: 1; transform: translateY(0); }
+
+@media (max-width: 960px) {
+  .post-layout { grid-template-columns: 1fr; gap: 0; }
+  .post-sidebar { position: static; margin-top: 48px; }
+  .stat-row { grid-template-columns: 1fr 1fr; }
+  .related-grid { grid-template-columns: 1fr; }
+  .nav-links { display: none; }
+}
+@media (max-width: 600px) {
+  .post-h1 { font-size: 26px; }
+  .stat-row { grid-template-columns: 1fr; }
+  .post-meta { flex-wrap: wrap; gap: 10px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ── NAV ── -->
+<nav>
+  <div class="nav-in">
+    <a class="nav-logo" href="/">
+      <div class="lm">
+        <svg viewBox="0 0 14 14" fill="none" stroke="#00ffd0" stroke-width="2">
+          <path d="M2 7L5 10L12 3" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="7" cy="7" r="6" stroke="#00ffd0" stroke-width="1.4" opacity=".4"/>
+        </svg>
+      </div>
+      cleancloud
+    </a>
+    <ul class="nav-links">
+      <li><a href="/#rules">Rules</a></li>
+      <li><a href="/#ci">CI/CD</a></li>
+      <li><a href="/#pricing">Early access</a></li>
+      <li><a href="/blog">Blog</a></li>
+      <li><a href="https://github.com/cleancloud-io/cleancloud" target="_blank" rel="noopener">GitHub ★ 80</a></li>
+      <li><a href="/#contact" class="nav-cta">Get started →</a></li>
+    </ul>
+  </div>
+</nav>
+
+<!-- ── MAIN ── -->
+<main>
+<div class="blog-wrap">
+
+  <!-- HERO -->
+  <div class="post-hero rv">
+    <div class="post-breadcrumb">
+      <a href="/">Home</a>
+      <span>›</span>
+      <a href="/blog">Blog</a>
+      <span>›</span>
+      Shift-Left Cloud Cost Optimization
+    </div>
+
+    <div class="post-tags">
+      <span class="post-tag tag-finops">FinOps</span>
+      <span class="post-tag tag-cicd">CI/CD</span>
+      <span class="post-tag tag-devops">DevOps</span>
+      <span class="post-tag tag-aws">AWS</span>
+      <span class="post-tag tag-azure">Azure</span>
+    </div>
+
+    <h1 class="post-h1">
+      Shift-Left Cloud Cost Optimization:<br>
+      <em>Catch Waste in CI Before It Hits Your Bill</em>
+    </h1>
+
+    <p class="post-lede">
+      Every FinOps tool on the market can tell you what happened to your cloud bill.
+      That's not a differentiator anymore — it's a commodity.
+      The next generation of cloud cost management catches waste before it deploys.
+    </p>
+
+    <div class="post-meta">
+      <div class="meta-author">
+        <div class="meta-avatar">S</div>
+        <span>Suresh · CleanCloud</span>
+      </div>
+      <span class="meta-dot">·</span>
+      <span>March 8, 2026</span>
+      <span class="meta-dot">·</span>
+      <span>8 min read</span>
+    </div>
+  </div>
+
+  <!-- LAYOUT: BODY + SIDEBAR -->
+  <div class="post-layout">
+
+    <!-- ── ARTICLE BODY ── -->
+    <article class="post-body rv">
+
+      <h2 id="the-problem">The Cloud Bill Arrives. You've Already Paid.</h2>
+
+      <p>
+        Picture a scene most SRE and platform teams know well. A developer spins up an environment for a migration project. The project completes. The environment gets forgotten. Six weeks later, someone notices a line item on the bill — an EBS volume, a NAT gateway, a stopped VM that was never deallocated — quietly burning money every hour.
+      </p>
+
+      <p>
+        This is the fundamental problem with reactive cloud cost management. <strong>By the time your dashboard flags it, you've already paid.</strong> The waste happened the moment the resource was provisioned with no owner tag, no lifecycle policy, and no hygiene gate to catch it.
+      </p>
+
+      <div class="stat-row">
+        <div class="stat-card">
+          <div class="stat-n">$44.5B</div>
+          <div class="stat-l">Cloud waste projected in 2025</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-n">~21%</div>
+          <div class="stat-l">Of enterprise cloud spend wasted on average</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-n">6–8wk</div>
+          <div class="stat-l">Typical lag from provisioning to bill review</div>
+        </div>
+      </div>
+
+      <p>
+        Traditional FinOps tooling — cost dashboards, tagging strategies, reserved instance recommendations — addresses the symptom, not the cause. It tells you what happened. It rarely tells you why. And it almost never prevents it from happening again.
+      </p>
+
+      <div class="pull-quote">
+        <p>"The orphaned S3 bucket didn't become waste when it hit your invoice. It became waste the moment it was provisioned — and nobody flagged it."</p>
+      </div>
+
+      <p>
+        This is why shift-left cloud cost optimization matters — and why it's the most significant change in cloud financial management since the birth of FinOps.
+      </p>
+
+      <h2 id="what-is-shift-left">What Is Shift-Left Cloud Cost Optimization?</h2>
+
+      <p>
+        The term "shift-left" comes from software testing. For decades, testing happened at the end of the development cycle — after code was written, integrated, and prepared for release. Shift-left testing moved quality checks earlier: into the IDE, into the PR, into the CI pipeline. The result was fewer bugs in production, faster feedback loops, and lower cost of remediation.
+      </p>
+
+      <p>
+        <strong>Shift-left cloud cost applies the same principle to infrastructure spend.</strong> Rather than discovering waste on a monthly bill and working backwards to find the cause, shift-left cost optimization enforces hygiene rules at the point of provisioning — in the CI/CD pipeline, at pull request time, before a single resource is deployed.
+      </p>
+
+      <p>The contrast with traditional FinOps is stark:</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>Dimension</th>
+            <th>Traditional FinOps</th>
+            <th>Shift-Left Cost</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>When it fires</td>
+            <td class="td-bad">After deployment, on billing cycle</td>
+            <td class="td-good">Before deployment, at PR/CI time</td>
+          </tr>
+          <tr>
+            <td>What it sees</td>
+            <td>Billing data, utilisation metrics</td>
+            <td>Live infrastructure state, IaC plans</td>
+          </tr>
+          <tr>
+            <td>Who acts on it</td>
+            <td>FinOps team → engineers (delayed)</td>
+            <td>Engineers (immediate, in workflow)</td>
+          </tr>
+          <tr>
+            <td>Cost of remediation</td>
+            <td class="td-bad">High — weeks of waste already paid</td>
+            <td class="td-good">Zero — never deployed</td>
+          </tr>
+          <tr>
+            <td>Security team approval</td>
+            <td class="td-good">Easy — read-only dashboards</td>
+            <td class="td-good">Easy if read-only, hard if mutative</td>
+          </tr>
+          <tr>
+            <td>Developer friction</td>
+            <td class="td-bad">High — external review process</td>
+            <td class="td-good">Low — part of normal CI flow</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p>
+        The cost of fixing a cloud hygiene problem in a PR is essentially zero — it's a diff, a comment, a changed tag. The cost of fixing the same problem six weeks after deployment is real money already spent, plus the time to identify and remediate.
+      </p>
+
+      <h2 id="why-now">Why Shift-Left Cost Is Happening Now</h2>
+
+      <p>
+        Security shifted left a decade ago. DevSecOps, Snyk, tfsec, Checkov — developer-first security tooling is now standard practice. The same structural forces that drove that shift are now acting on cloud cost.
+      </p>
+
+      <p>
+        Three things are converging to make shift-left cost inevitable:
+      </p>
+
+      <h3>1. IaC is now the default</h3>
+      <p>
+        Terraform, Pulumi, CDK, and Bicep mean that most infrastructure is defined in code before it's provisioned. That code lives in pull requests. Pull requests have reviewers and CI gates. <strong>There is now a natural enforcement point that didn't exist when infrastructure was clicked together in a console.</strong>
+      </p>
+
+      <h3>2. Platform teams own the inner loop</h3>
+      <p>
+        Platform engineering has put the CI/CD pipeline firmly under platform team control. These teams already enforce security policies, linting rules, and test coverage gates. Adding a cloud hygiene gate is the same motion — same tooling, same workflows, same approval model.
+      </p>
+
+      <h3>3. The FinOps bill of goods has run out</h3>
+      <p>
+        Reserved instances, savings plans, and rightsizing recommendations have squeezed the easy gains. The remaining waste lives in orphaned resources, idle databases, and untagged assets that no dashboard will ever surface reliably. That's exactly what shift-left hygiene catches.
+      </p>
+
+      <h2 id="what-it-catches">What Shift-Left Cloud Hygiene Actually Catches</h2>
+
+      <p>
+        Not all cloud waste is equal. Some waste is visible in billing data — high utilisation costs, oversized instances, under-reserved capacity. But a significant portion is <strong>invisible to billing tools</strong> because it doesn't show up as a cost anomaly. It shows up as a steady, unremarkable background cost.
+      </p>
+
+      <p>
+        This is the category shift-left hygiene is uniquely positioned to catch:
+      </p>
+
+      <ul>
+        <li><strong>Unattached EBS volumes and managed disks</strong> — provisioned for a workload that was later migrated or deleted. Still billing every hour.</li>
+        <li><strong>Idle NAT Gateways</strong> — no traffic for 21+ days, but still incurring the hourly fixed charge.</li>
+        <li><strong>Stopped VMs not deallocated</strong> — Azure's most common silent cost: a stopped VM that's still incurring compute charges because it was stopped, not deallocated.</li>
+        <li><strong>Untagged resources</strong> — resources with no owner tag become orphaned by default. Nobody claims them. Nobody deletes them.</li>
+        <li><strong>Empty App Service Plans</strong> — a plan with no apps attached is pure waste, but it looks unremarkable in a cost dashboard.</li>
+        <li><strong>CloudWatch log groups with no retention policy</strong> — growing unbounded, silently increasing storage costs month over month.</li>
+        <li><strong>Unattached Elastic IPs</strong> — AWS charges for Elastic IPs that aren't associated with a running instance. Easy to miss, common in post-migration cleanup.</li>
+      </ul>
+
+      <div class="callout">
+        <p>
+          The common thread: these resources were all provisioned intentionally, became orphaned through normal lifecycle events (migrations, decommissions, environment teardowns), and were never caught because no automated hygiene gate existed at provisioning time.
+        </p>
+      </div>
+
+      <h2 id="how-to-implement">How to Implement Shift-Left Cloud Cost in CI/CD</h2>
+
+      <p>
+        There are three maturity levels for shift-left cloud cost enforcement. Most teams start at level one and progress as trust builds.
+      </p>
+
+      <h3>Level 1: Report-only scan (zero friction, immediate value)</h3>
+      <p>
+        Run a hygiene scan in CI that generates a findings report but never fails the build. This gives your team visibility into what's accumulating without blocking any deployments. The point is to establish a baseline and build trust in the signal quality.
+      </p>
+
+      <div class="code-block">
+        <div class="code-hd">
+          <span class="code-fn">github-actions.yml</span>
+          <span class="code-lg">Level 1 — observe only</span>
+        </div>
+        <div class="code-bd"><pre>
+<span class="c"># Scans and reports — never fails the build</span>
+<span class="k">- name:</span> <span class="v">CleanCloud hygiene scan</span>
+  <span class="k">run:</span> <span class="v">|</span>
+    <span class="v">pip install cleancloud</span>
+    <span class="v">cleancloud scan \</span>
+      <span class="v">--provider aws \</span>
+      <span class="v">--all-regions \</span>
+      <span class="v">--output json \</span>
+      <span class="v">--output-file findings.json</span>
+<span class="c"># Exit 0 always — findings are visible, not blocking</span></pre>
+        </div>
+      </div>
+
+      <h3>Level 2: Soft enforcement on HIGH confidence findings</h3>
+      <p>
+        Once the team has validated that HIGH confidence findings are genuine waste (not false positives), add the <code>--fail-on-confidence HIGH</code> flag. This gates deployments when there's near-certainty of waste — unattached volumes over 14 days, idle load balancers with zero connections, stopped VMs not deallocated.
+      </p>
+
+      <div class="code-block">
+        <div class="code-hd">
+          <span class="code-fn">github-actions.yml</span>
+          <span class="code-lg">Level 2 — fail on HIGH confidence</span>
+        </div>
+        <div class="code-bd"><pre>
+<span class="k">- name:</span> <span class="v">Configure AWS credentials (OIDC)</span>
+  <span class="k">uses:</span> <span class="pu">aws-actions/configure-aws-credentials@v4</span>
+  <span class="k">with:</span>
+    <span class="k">role-to-assume:</span> <span class="s">arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/CleanCloudCIReadOnly</span>
+    <span class="k">aws-region:</span> <span class="v">us-east-1</span>
+
+<span class="k">- name:</span> <span class="v">CleanCloud hygiene gate</span>
+  <span class="k">run:</span> <span class="v">|</span>
+    <span class="v">pip install cleancloud</span>
+    <span class="v">cleancloud scan \</span>
+      <span class="v">--provider aws \</span>
+      <span class="v">--all-regions \</span>
+      <span class="v">--fail-on-confidence HIGH \</span>
+      <span class="v">--output json \</span>
+      <span class="v">--output-file findings.json</span>
+<span class="c"># Exit 2 if HIGH confidence findings detected</span></pre>
+        </div>
+      </div>
+
+      <h3>Level 3: Cost-threshold enforcement</h3>
+      <p>
+        The most powerful gate: fail the build when estimated waste exceeds a monthly cost threshold. This makes the financial impact explicit and gives engineers a direct cost reason to fix hygiene issues before merging.
+      </p>
+
+      <div class="code-block">
+        <div class="code-hd">
+          <span class="code-fn">github-actions.yml</span>
+          <span class="code-lg">Level 3 — fail on cost threshold</span>
+        </div>
+        <div class="code-bd"><pre>
+<span class="k">- name:</span> <span class="v">CleanCloud cost gate</span>
+  <span class="k">run:</span> <span class="v">|</span>
+    <span class="v">cleancloud scan \</span>
+      <span class="v">--provider aws \</span>
+      <span class="v">--all-regions \</span>
+      <span class="v">--fail-on-cost 100 \</span>    <span class="c"># fail if waste ≥ $100/month</span>
+      <span class="v">--output markdown \</span>
+      <span class="v">--output-file findings.md</span>
+
+<span class="k">- name:</span> <span class="v">Post findings to PR</span>
+  <span class="k">if:</span> <span class="v">always()</span>
+  <span class="k">uses:</span> <span class="pu">marocchino/sticky-pull-request-comment@v2</span>
+  <span class="k">with:</span>
+    <span class="k">path:</span> <span class="v">findings.md</span></pre>
+        </div>
+      </div>
+
+      <div class="callout-warn callout">
+        <p>
+          <strong>Important:</strong> Always use <code>if: always()</code> on the reporting step. If the scan fails the build, you still want the findings posted to the PR. Without this, the report is skipped on a failed build — exactly when engineers need it most.
+        </p>
+      </div>
+
+      <h2 id="security-first">Why Security Teams Love Shift-Left Hygiene</h2>
+
+      <p>
+        The biggest adoption barrier for any CI tool in an enterprise is getting it through InfoSec review. Most cost optimisation tools fail this test because they require write access — to modify tags, resize instances, or delete resources.
+      </p>
+
+      <p>
+        A read-only hygiene scanner with zero telemetry is a fundamentally different security conversation. There is no data leaving the environment. There are no mutation APIs in the permission set. There is no agent running in production. The entire tool runs as a short-lived job in CI, reads your cloud state, and exits.
+      </p>
+
+      <p>
+        The IAM policy required is intentionally minimal — only <code>Describe*</code>, <code>List*</code>, and <code>Get*</code> operations. No <code>Delete*</code>. No <code>Tag*</code>. No <code>Modify*</code>. This is approved by security teams in days, not weeks.
+      </p>
+
+      <div class="callout">
+        <p>
+          For regulated environments — NHS, financial services, central government — read-only, zero-telemetry tooling is often the <em>only</em> category of tooling that can be approved without months of security review. That's a significant adoption advantage over tools that touch your infrastructure.
+        </p>
+      </div>
+
+      <h2 id="faq">Frequently Asked Questions</h2>
+
+      <h3>What is shift-left cloud cost optimization?</h3>
+      <p>
+        Shift-left cloud cost optimization means catching cloud waste and hygiene issues earlier in the development lifecycle — ideally in the CI/CD pipeline at pull request time — rather than discovering them on a monthly bill. The term "shift-left" refers to moving a task earlier (left) on the development timeline.
+      </p>
+
+      <h3>How do you catch cloud waste in a CI pipeline?</h3>
+      <p>
+        A read-only cloud hygiene scanner like CleanCloud runs during your CI jobs, connects to your AWS or Azure account using short-lived OIDC credentials, scans for orphaned resources, untagged assets, idle databases, and unattached volumes, and fails the build (or reports) when findings exceed a configured confidence or cost threshold.
+      </p>
+
+      <h3>What is the difference between FinOps and shift-left cloud cost?</h3>
+      <p>
+        Traditional FinOps is reactive: it analyses your bill, allocates costs to teams, and recommends changes after spend has occurred. Shift-left cloud cost is proactive: it enforces hygiene rules at CI time, before infrastructure is provisioned, so waste never reaches production in the first place. Both are needed — they operate at different layers of the problem.
+      </p>
+
+      <h3>Does shift-left cloud hygiene replace FinOps dashboards?</h3>
+      <p>
+        No — they're complementary. FinOps dashboards give you visibility into existing spend and help with reservation strategy and chargeback. Shift-left hygiene prevents new waste from accumulating. Used together, they cover the full lifecycle: prevent new waste at the source, and manage existing spend intelligently.
+      </p>
+
+      <h2 id="getting-started">Getting Started in 60 Seconds</h2>
+
+      <p>
+        The fastest way to see what shift-left cloud hygiene catches in your environment is to run a scan directly in AWS CloudShell or Azure Cloud Shell. No local setup. No IAM policy creation. Your existing portal session credentials are sufficient.
+      </p>
+
+      <div class="code-block">
+        <div class="code-hd">
+          <span class="code-fn">AWS CloudShell</span>
+          <span class="code-lg">No local setup required</span>
+        </div>
+        <div class="code-bd"><pre>
+<span class="c"># Paste into AWS CloudShell — uses your existing session</span>
+<span class="co">pip install cleancloud && cleancloud scan --provider aws --region eu-west-1</span></pre>
+        </div>
+      </div>
+
+      <div class="code-block">
+        <div class="code-hd">
+          <span class="code-fn">Azure Cloud Shell</span>
+          <span class="code-lg">No local setup required</span>
+        </div>
+        <div class="code-bd"><pre>
+<span class="c"># Paste into Azure Cloud Shell — uses your existing az login session</span>
+<span class="co">pip install cleancloud && cleancloud scan --provider azure</span></pre>
+        </div>
+      </div>
+
+      <p>
+        Within 60 seconds you'll see every orphaned resource, untagged asset, and idle service in your account — with confidence levels and estimated monthly waste per finding.
+      </p>
+
+      <!-- CTA -->
+      <div class="post-cta">
+        <h3>Try CleanCloud in your pipeline today</h3>
+        <p>Read-only. Zero telemetry. No agents. 20 high-signal rules for AWS and Azure. Free and open source.</p>
+        <div class="post-cta-acts">
+          <a href="https://pypi.org/project/cleancloud/" class="btn btn-wh" target="_blank" rel="noopener">Install via PyPI →</a>
+          <a href="https://github.com/cleancloud-io/cleancloud" class="btn btn-ow" target="_blank" rel="noopener">★ View on GitHub</a>
+        </div>
+      </div>
+
+    </article>
+
+    <!-- ── SIDEBAR ── -->
+    <aside class="post-sidebar rv">
+
+      <div class="toc">
+        <div class="toc-title">In this article</div>
+        <ul class="toc-list">
+          <li><a href="#the-problem">The Problem with Reactive Cost</a></li>
+          <li><a href="#what-is-shift-left">What Is Shift-Left Cost?</a></li>
+          <li><a href="#why-now">Why It's Happening Now</a></li>
+          <li><a href="#what-it-catches">What It Catches</a></li>
+          <li><a href="#how-to-implement">How to Implement in CI/CD</a></li>
+          <li><a href="#security-first">Why Security Teams Love It</a></li>
+          <li><a href="#faq">FAQ</a></li>
+          <li><a href="#getting-started">Getting Started</a></li>
+        </ul>
+      </div>
+
+      <div class="sidebar-card">
+        <div class="sidebar-card-title">CleanCloud at a glance</div>
+        <div class="sidebar-stat">
+          <span class="ss-label">Detection rules</span>
+          <span class="ss-val">20</span>
+        </div>
+        <div class="sidebar-stat">
+          <span class="ss-label">Cloud providers</span>
+          <span class="ss-val">AWS + Azure</span>
+        </div>
+        <div class="sidebar-stat">
+          <span class="ss-label">Writes / mutations</span>
+          <span class="ss-val">Zero</span>
+        </div>
+        <div class="sidebar-stat">
+          <span class="ss-label">Telemetry</span>
+          <span class="ss-val">None</span>
+        </div>
+        <div class="sidebar-stat">
+          <span class="ss-label">License</span>
+          <span class="ss-val">MIT</span>
+        </div>
+        <div class="sidebar-stat">
+          <span class="ss-label">Version</span>
+          <span class="ss-val">v1.6.4</span>
+        </div>
+      </div>
+
+      <div class="sidebar-card">
+        <div class="sidebar-card-title">Quick install</div>
+        <div style="background:#0d1117;border:1px solid #21262d;border-radius:7px;padding:10px 13px;font-family:var(--mono);font-size:12px;color:#56d364;margin-bottom:10px">
+          pip install cleancloud
+        </div>
+        <a href="https://github.com/cleancloud-io/cleancloud" target="_blank" rel="noopener" style="display:block;text-align:center;font-family:var(--mono);font-size:12px;font-weight:600;color:var(--accent-hi);padding:9px;border:1px solid var(--accent-md);border-radius:7px;background:var(--accent-lt);transition:background .15s;text-decoration:none">
+          ★ Star on GitHub →
+        </a>
+      </div>
+
+    </aside>
+
+  </div><!-- end post-layout -->
+
+  <!-- RELATED POSTS -->
+  <div class="related rv">
+    <div class="related-title">More from the CleanCloud blog</div>
+    <div class="related-grid">
+      <div class="related-card">
+        <div class="rc-tag">AWS</div>
+        <div class="rc-title">The Hidden Cost of Unattached EBS Volumes in Large AWS Accounts</div>
+        <div class="rc-desc">How a single unattached volume pattern compounds across multi-region accounts — and how to catch it in CI.</div>
+      </div>
+      <div class="related-card">
+        <div class="rc-tag">Azure</div>
+        <div class="rc-title">Azure VM Stopped vs Deallocated: The Difference That Costs You Thousands</div>
+        <div class="rc-desc">Stopped VMs in Azure still bill for compute. Deallocated ones don't. Here's how to enforce the difference at the pipeline level.</div>
+      </div>
+      <div class="related-card">
+        <div class="rc-tag">Security</div>
+        <div class="rc-title">How to Get a Cloud Hygiene Tool Through Enterprise Security Review in One Week</div>
+        <div class="rc-desc">The IAM Proof Pack approach: what read-only, zero-telemetry tooling means for InfoSec approval timelines in regulated environments.</div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- end blog-wrap -->
+</main>
+
+<!-- ── FOOTER ── -->
+<footer>
+  <div class="fi">
+    <div class="f-logo">
+      <div class="lm">
+        <svg viewBox="0 0 14 14" fill="none" stroke="#00ffd0" stroke-width="2">
+          <path d="M2 7L5 10L12 3" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="7" cy="7" r="6" stroke="#00ffd0" stroke-width="1.4" opacity=".4"/>
+        </svg>
+      </div>
+      cleancloud
+    </div>
+    <ul class="f-links">
+      <li><a href="/">Home</a></li>
+      <li><a href="/blog">Blog</a></li>
+      <li><a href="https://github.com/cleancloud-io/cleancloud" target="_blank" rel="noopener">GitHub</a></li>
+      <li><a href="https://pypi.org/project/cleancloud/" target="_blank" rel="noopener">PyPI</a></li>
+      <li><a href="mailto:suresh@getcleancloud.com">Contact</a></li>
+    </ul>
+    <span class="f-copy">© 2026 CleanCloud. MIT License.</span>
+  </div>
+</footer>
+
+<script>
+// Scroll reveal
+const obs = new IntersectionObserver(entries => {
+  entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('in'); });
+}, { threshold: 0.06 });
+document.querySelectorAll('.rv').forEach(el => obs.observe(el));
+
+// TOC active state
+const headings = document.querySelectorAll('.post-body h2, .post-body h3');
+const tocLinks = document.querySelectorAll('.toc-list a');
+const tocObs = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      tocLinks.forEach(l => l.classList.remove('active'));
+      const id = entry.target.getAttribute('id');
+      const active = document.querySelector(`.toc-list a[href="#${id}"]`);
+      if (active) active.classList.add('active');
+    }
+  });
+}, { rootMargin: '-20% 0px -70% 0px' });
+headings.forEach(h => { if (h.id) tocObs.observe(h); });
+</script>
+
+</body>
+</html>
