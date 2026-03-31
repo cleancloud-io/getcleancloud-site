@@ -4,13 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Blog — CleanCloud | Cloud Hygiene &amp; FinOps Insights</title>
-<meta name="description" content="Safe cloud hygiene practices, shift-left FinOps, CI/CD gate patterns, and real-world AWS and Azure hygiene insights.">
-<meta name="keywords" content="cloud hygiene blog, aws cleanup tips, safe cloud cleanup, devops best practices, finops, shift-left cloud">
+<meta name="description" content="Safe cloud hygiene practices, shift-left FinOps, CI/CD gate patterns, and real-world AWS, Azure and GCP hygiene insights.">
+<meta name="keywords" content="cloud hygiene blog, aws cleanup tips, safe cloud cleanup, devops best practices, finops, shift-left cloud, gcp hygiene">
 <link rel="canonical" href="https://getcleancloud.com/blog/">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://getcleancloud.com/blog/">
 <meta property="og:title" content="Blog — CleanCloud">
-<meta property="og:description" content="Cloud hygiene, FinOps, and shift-left practices for AWS and Azure teams.">
+<meta property="og:description" content="Cloud hygiene, FinOps, and shift-left practices for AWS, Azure, and GCP teams.">
 <meta property="og:image" content="https://getcleancloud.com/og-image.png">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:site" content="@getcleancloud">
@@ -146,8 +146,6 @@ footer{border-top:1px solid var(--border);background:var(--white);position:relat
     <ul class="nav-links">
       <li><a href="/#rules">Rules</a></li>
       <li><a href="/#ci">CI/CD</a></li>
-      <li><a href="/#pricing">Early access</a></li>
-      <li><a href="/#contact">Contact</a></li>
       <li><a href="/blog/" class="active">Blog</a></li>
       <li><a href="https://github.com/cleancloud-io/cleancloud/blob/main/docs/rules.md">Docs</a></li>
       <li>
@@ -156,7 +154,7 @@ footer{border-top:1px solid var(--border);background:var(--white);position:relat
           GitHub<span class="gh-star-badge">&#9733; <span class="gh-stars-nav">80</span></span>
         </a>
       </li>
-      <li><a href="/#contact" class="nav-cta">Get started &#8594;</a></li>
+      <li><a href="/#contact" class="nav-cta">Contact us &#8594;</a></li>
     </ul>
   </div>
 </nav>
@@ -165,7 +163,7 @@ footer{border-top:1px solid var(--border);background:var(--white);position:relat
   <div class="blog-hero-in">
     <div class="blog-hero-ey">CleanCloud Blog</div>
     <h1>Cloud hygiene insights.<br><em>For engineers who ship.</em></h1>
-    <p>Safe cleanup practices, shift-left FinOps, CI/CD gate patterns, and real-world AWS &amp; Azure hygiene &#8212; no fluff, no auto-delete.</p>
+    <p>Safe cleanup practices, shift-left FinOps, CI/CD gate patterns, and real-world AWS, Azure &amp; GCP hygiene &#8212; no fluff, no auto-delete.</p>
   </div>
 </div>
 
@@ -175,6 +173,7 @@ footer{border-top:1px solid var(--border);background:var(--white);position:relat
     <a href="#" class="filter-tag">Cloud hygiene</a>
     <a href="#" class="filter-tag">AWS</a>
     <a href="#" class="filter-tag">Azure</a>
+    <a href="#" class="filter-tag">GCP</a>
     <a href="#" class="filter-tag">CI/CD</a>
     <a href="#" class="filter-tag">FinOps</a>
   </div>
@@ -290,7 +289,7 @@ footer{border-top:1px solid var(--border);background:var(--white);position:relat
 
     <div class="sb-card rv">
       <div class="sb-title">Try it now</div>
-      <p style="font-family:var(--mono);font-size:11.5px;color:var(--muted);line-height:1.65;margin-bottom:10px">Scan your AWS or Azure account in under 60 seconds. No account. No agents. Zero telemetry.</p>
+      <p style="font-family:var(--mono);font-size:11.5px;color:var(--muted);line-height:1.65;margin-bottom:10px">Scan your AWS, Azure or GCP account in under 60 seconds. No account. No agents. Zero telemetry.</p>
       <div class="sb-install">
         <span style="color:#6e7681">$ </span>pipx install cleancloud<br>
         <span style="color:#6e7681">$ </span>cleancloud scan --provider aws
@@ -339,6 +338,7 @@ footer{border-top:1px solid var(--border);background:var(--white);position:relat
         <a href="#" class="sb-tag">Cloud hygiene</a>
         <a href="#" class="sb-tag">AWS</a>
         <a href="#" class="sb-tag">Azure</a>
+        <a href="#" class="sb-tag">GCP</a>
         <a href="#" class="sb-tag">FinOps</a>
         <a href="#" class="sb-tag">CI/CD</a>
         <a href="#" class="sb-tag">Shift-left</a>
@@ -347,11 +347,11 @@ footer{border-top:1px solid var(--border);background:var(--white);position:relat
       </div>
     </div>
 
-    <div class="sb-card rv" style="background:var(--text);border-color:var(--text)">
-      <div style="font-family:var(--mono);font-size:11px;font-weight:600;color:var(--accent-md);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">Enterprise</div>
-      <div style="font-size:14px;font-weight:700;color:#fff;line-height:1.35;margin-bottom:8px">Multi-account scanning &amp; policy gates</div>
-      <p style="font-family:var(--mono);font-size:11px;color:rgba(255,255,255,.5);line-height:1.65;margin-bottom:14px">SSO, VPC-deployable builds, and Slack integration &#8212; in active development. Shape the roadmap.</p>
-      <a href="/#contact" class="btn btn-tl" style="width:100%;justify-content:center;font-size:11px">Join early access &#8594;</a>
+    <div class="sb-card rv">
+      <div class="sb-title">Get involved</div>
+      <p style="font-family:var(--mono);font-size:11.5px;color:var(--muted);line-height:1.65;margin-bottom:14px">Bug reports, rule ideas, and PRs welcome. Open source, MIT License.</p>
+      <a href="https://github.com/cleancloud-io/cleancloud/discussions" target="_blank" rel="noopener" class="btn btn-dk" style="width:100%;justify-content:center;font-size:11px;margin-bottom:8px">Discussions &#8599;</a>
+      <a href="https://github.com/cleancloud-io/cleancloud/issues" target="_blank" rel="noopener" class="btn btn-tl" style="width:100%;justify-content:center;font-size:11px">Open an issue &#8599;</a>
     </div>
 
   </aside>
@@ -364,11 +364,11 @@ footer{border-top:1px solid var(--border);background:var(--white);position:relat
         <div class="lm"><svg viewBox="0 0 14 14" fill="none" stroke="#00ffd0" stroke-width="2"><path d="M2 7L5 10L12 3" stroke-linecap="round" stroke-linejoin="round"/><circle cx="7" cy="7" r="6" stroke="#00ffd0" stroke-width="1.4" opacity=".4"/></svg></div>
         cleancloud
       </div>
-      <p class="fl-tag">Shift-left cloud hygiene for AWS and Azure.<br>Catch waste in CI &#8212; read-only, deterministic, zero telemetry.</p>
+      <p class="fl-tag">Shift-left cloud hygiene for AWS, Azure, and GCP.<br>Catch waste in CI &#8212; read-only, deterministic, zero telemetry.</p>
       <div class="fl-bgs">
         <span class="fl-bg">MIT License</span>
-        <span class="fl-bg">PyPI v1.6.4+</span>
-        <span class="fl-bg">Python 3.8+</span>
+        <span class="fl-bg">PyPI v1.11.0+</span>
+        <span class="fl-bg">Python 3.10+</span>
         <span class="fl-bg">Zero writes</span>
       </div>
     </div>
@@ -377,7 +377,6 @@ footer{border-top:1px solid var(--border);background:var(--white);position:relat
       <ul class="fl-lk">
         <li><a href="/#rules">Detection rules</a></li>
         <li><a href="/#ci">CI/CD guide</a></li>
-        <li><a href="/#pricing">Early access</a></li>
         <li><a href="https://github.com/cleancloud-io/cleancloud/blob/main/docs/example-outputs.md">Example outputs</a></li>
         <li><a href="https://github.com/cleancloud-io/cleancloud/blob/main/SECURITY.md">Security policy</a></li>
       </ul>
@@ -388,6 +387,7 @@ footer{border-top:1px solid var(--border);background:var(--white);position:relat
         <li><a href="https://github.com/cleancloud-io/cleancloud/blob/main/docs/rules.md">rules.md</a></li>
         <li><a href="https://github.com/cleancloud-io/cleancloud/blob/main/docs/aws.md">AWS setup</a></li>
         <li><a href="https://github.com/cleancloud-io/cleancloud/blob/main/docs/azure.md">Azure setup</a></li>
+        <li><a href="https://github.com/cleancloud-io/cleancloud/blob/main/docs/gcp.md">GCP setup</a></li>
         <li><a href="https://github.com/cleancloud-io/cleancloud/blob/main/docs/ci.md">CI/CD guide</a></li>
         <li><a href="https://github.com/cleancloud-io/cleancloud/blob/main/docs/infosec-readiness.md">Infosec readiness</a></li>
       </ul>

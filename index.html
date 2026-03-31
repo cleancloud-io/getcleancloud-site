@@ -3,22 +3,22 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CleanCloud — Find Cloud Waste Before It Ships | AWS &amp; Azure CI/CD Scanner</title>
-<meta name="description" content="CleanCloud is a shift-left cloud hygiene scanner for AWS and Azure. Catch orphaned resources, idle databases, and unattached volumes in CI/CD — read-only, zero telemetry, no agents. 20 high-signal rules. Free and open source.">
+<title>CleanCloud — Find Cloud Waste Before It Ships | AWS, Azure &amp; GCP CI/CD Scanner</title>
+<meta name="description" content="CleanCloud is a shift-left cloud hygiene scanner for AWS, Azure, and GCP. Catch orphaned resources, idle databases, and unattached volumes in CI/CD — read-only, zero telemetry, no agents. 30 high-signal rules. Free and open source.">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="https://getcleancloud.com/">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://getcleancloud.com/">
 <meta property="og:title" content="CleanCloud — Find Cloud Waste Before It Ships">
-<meta property="og:description" content="Like tfsec for Terraform or trivy for containers — CleanCloud catches orphaned AWS and Azure resources in your CI pipeline. Read-only. Zero telemetry. Free and open source.">
+<meta property="og:description" content="Like tfsec for Terraform or trivy for containers — CleanCloud catches orphaned AWS, Azure, and GCP resources in your CI pipeline. Read-only. Zero telemetry. Free and open source.">
 <meta property="og:image" content="https://getcleancloud.com/og-image.png">
 <meta property="og:site_name" content="CleanCloud">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:site" content="@getcleancloud">
 <meta name="twitter:title" content="CleanCloud — Find Cloud Waste Before It Ships">
-<meta name="twitter:description" content="Shift-left cloud hygiene for AWS and Azure. 20 rules. Read-only. Zero telemetry. Runs in CI.">
+<meta name="twitter:description" content="Shift-left cloud hygiene for AWS, Azure, and GCP. 30 rules. Read-only. Zero telemetry. Runs in CI.">
 <meta name="twitter:image" content="https://getcleancloud.com/og-image.png">
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"CleanCloud","url":"https://getcleancloud.com","applicationCategory":"DeveloperApplication","operatingSystem":"Linux, macOS, Windows","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"softwareVersion":"1.6.4","license":"https://opensource.org/licenses/MIT","codeRepository":"https://github.com/cleancloud-io/cleancloud"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"CleanCloud","url":"https://getcleancloud.com","applicationCategory":"DeveloperApplication","operatingSystem":"Linux, macOS, Windows","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"softwareVersion":"1.11.0","license":"https://opensource.org/licenses/MIT","codeRepository":"https://github.com/cleancloud-io/cleancloud"}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -263,8 +263,6 @@ footer{border-top:1px solid var(--border);background:var(--white);position:relat
     <ul class="nav-links">
       <li><a href="#rules">Rules</a></li>
       <li><a href="#ci">CI/CD</a></li>
-      <li><a href="#pricing">Early access</a></li>
-      <li><a href="#contact">Contact</a></li>
       <li><a href="/blog">Blog</a></li>
       <li><a href="https://github.com/cleancloud-io/cleancloud/blob/main/docs/rules.md">Docs</a></li>
       <li>
@@ -273,7 +271,7 @@ footer{border-top:1px solid var(--border);background:var(--white);position:relat
           GitHub<span class="gh-star-badge">&#9733; <span class="gh-stars-nav">80</span></span>
         </a>
       </li>
-      <li><a href="#contact" class="nav-cta">Get started &#8594;</a></li>
+      <li><a href="#contact" class="nav-cta">Contact us &#8594;</a></li>
     </ul>
   </div>
 </nav>
@@ -283,7 +281,7 @@ footer{border-top:1px solid var(--border);background:var(--white);position:relat
   <div>
     <div class="hero-ey">Shift-left cloud hygiene</div>
     <h1 class="hero-h1">Catch cloud waste<br><em>before it ships.</em></h1>
-    <p class="hero-p">Like <code style="font-family:var(--mono);font-size:13px;background:var(--bg);padding:2px 6px;border-radius:4px;border:1px solid var(--border)">tfsec</code> for Terraform or <code style="font-family:var(--mono);font-size:13px;background:var(--bg);padding:2px 6px;border-radius:4px;border:1px solid var(--border)">trivy</code> for containers &#8212; CleanCloud finds orphaned resources in <strong>AWS and Azure</strong> and enforces hygiene gates in your CI/CD pipeline before waste reaches production.</p>
+    <p class="hero-p">Like <code style="font-family:var(--mono);font-size:13px;background:var(--bg);padding:2px 6px;border-radius:4px;border:1px solid var(--border)">tfsec</code> for Terraform or <code style="font-family:var(--mono);font-size:13px;background:var(--bg);padding:2px 6px;border-radius:4px;border:1px solid var(--border)">trivy</code> for containers &#8212; CleanCloud finds orphaned resources in <strong>AWS, Azure, and GCP</strong> and enforces hygiene gates in your CI/CD pipeline before waste reaches production.</p>
     <div class="hero-install">
       <span class="hi-prompt">$</span>
       <span class="hi-code">pipx install cleancloud</span>
@@ -294,10 +292,15 @@ footer{border-top:1px solid var(--border);background:var(--white);position:relat
       <span class="hi-code">cleancloud scan --provider aws --all-regions</span>
       <button class="copy-btn" onclick="doCopy(this,'cleancloud scan --provider aws --all-regions')" title="Copy">&#10696;</button>
     </div>
-    <div class="hero-install">
+    <div class="hero-install" style="margin-bottom:6px">
       <span class="hi-prompt" style="background:#eff6ff;color:#1d4ed8;border-color:#bfdbfe">Azure</span>
       <span class="hi-code">cleancloud scan --provider azure</span>
       <button class="copy-btn" onclick="doCopy(this,'cleancloud scan --provider azure')" title="Copy">&#10696;</button>
+    </div>
+    <div class="hero-install">
+      <span class="hi-prompt" style="background:#e8f5e9;color:#1b5e20;border-color:#a5d6a7">GCP</span>
+      <span class="hi-code">cleancloud scan --provider gcp --project my-project</span>
+      <button class="copy-btn" onclick="doCopy(this,'cleancloud scan --provider gcp --project my-project')" title="Copy">&#10696;</button>
     </div>
     <div class="hero-acts">
       <a href="https://pypi.org/project/cleancloud/" class="btn btn-dk" target="_blank" rel="noopener">Install via PyPI &#8599;</a>
@@ -325,6 +328,9 @@ footer{border-top:1px solid var(--border);background:var(--white);position:relat
         </button>
         <button class="term-tab" id="tab-azure" onclick="switchTab('azure')">
           <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#3b82f6;margin-right:6px;vertical-align:middle"></span>Azure
+        </button>
+        <button class="term-tab" id="tab-gcp" onclick="switchTab('gcp')">
+          <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#34a853;margin-right:6px;vertical-align:middle"></span>GCP
         </button>
       </div>
       <div class="t-bd term-panel" id="panel-aws">
@@ -377,6 +383,31 @@ footer{border-top:1px solid var(--border);background:var(--white);position:relat
 <span class="tl">  <span class="tc">Est. waste      :</span> <span class="tco">~$108/month</span>   <span class="tc">Subscriptions :</span> <span class="tv">1</span></span>
 <span class="tl"><span class="tc">$ </span><span class="cur"></span></span>
       </div>
+      <div class="t-bd term-panel" id="panel-gcp" style="display:none">
+<span class="tl"><span class="tc">$ cleancloud scan --provider gcp --project my-project</span></span>
+<span class="tl"><span class="tc">Scanning project: my-project (us-central1, us-east1)...</span></span>
+<span class="tl"> </span>
+<span class="tl"><span class="tk">1. Unattached Persistent Disk</span></span>
+<span class="tl">   <span class="tc">Confidence :</span> <span class="thi">High</span>   <span class="tc">Resource :</span> <span class="tr2">data-disk-staging-04</span></span>
+<span class="tl">   <span class="tc">Region     :</span> <span class="tv">us-central1</span>   <span class="tc">Rule :</span> <span class="tru">gcp.compute.disk.unattached</span></span>
+<span class="tl">   <span class="tc">Reason     :</span> <span class="tv">Unattached for 38 days</span>   <span class="tc">Cost :</span> <span class="tco">~$17/mo</span></span>
+<span class="tl"> </span>
+<span class="tl"><span class="tk">2. Idle Cloud SQL Instance</span></span>
+<span class="tl">   <span class="tc">Confidence :</span> <span class="thi">High</span>   <span class="tc">Resource :</span> <span class="tr2">analytics-postgres-dev</span></span>
+<span class="tl">   <span class="tc">Region     :</span> <span class="tv">us-east1</span>   <span class="tc">Rule :</span> <span class="tru">gcp.cloudsql.instance.idle</span></span>
+<span class="tl">   <span class="tc">Reason     :</span> <span class="tv">No connections for 28 days</span>   <span class="tc">Cost :</span> <span class="tco">~$52/mo</span></span>
+<span class="tl"> </span>
+<span class="tl"><span class="tk">3. Unused Static IP Address</span></span>
+<span class="tl">   <span class="tc">Confidence :</span> <span class="thi">High</span>   <span class="tc">Resource :</span> <span class="tr2">static-ip-old-lb</span></span>
+<span class="tl">   <span class="tc">Region     :</span> <span class="tv">us-central1</span>   <span class="tc">Rule :</span> <span class="tru">gcp.compute.address.unused</span></span>
+<span class="tl">   <span class="tc">Reason     :</span> <span class="tv">Not associated with any resource (55 days)</span></span>
+<span class="tl"> </span>
+<span class="tl"><span class="tsep">&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;</span></span>
+<span class="tl"><span class="ts">&#10003; Scan Summary</span></span>
+<span class="tl">  <span class="tc">Total findings  :</span> <span class="thi">3</span>   <span class="tc">High :</span> <span class="thi">3</span>   <span class="tc">Medium :</span> <span class="tme">0</span></span>
+<span class="tl">  <span class="tc">Est. waste      :</span> <span class="tco">~$69/month</span>   <span class="tc">Project :</span> <span class="tv">my-project</span></span>
+<span class="tl"><span class="tc">$ </span><span class="cur"></span></span>
+      </div>
     </div>
   </div>
 </div>
@@ -403,8 +434,8 @@ footer{border-top:1px solid var(--border);background:var(--white);position:relat
 
 <div class="stats">
   <div class="stats-in">
-    <div class="stat"><div class="st-n"><span>20</span></div><div class="st-l">Detection rules</div></div>
-    <div class="stat"><div class="st-n">AWS <span style="color:var(--muted2);font-size:20px">+</span> Azure</div><div class="st-l">Cloud providers</div></div>
+    <div class="stat"><div class="st-n"><span>30</span></div><div class="st-l">Detection rules</div></div>
+    <div class="stat"><div class="st-n">AWS <span style="color:var(--muted2);font-size:20px">+</span> Azure <span style="color:var(--muted2);font-size:20px">+</span> GCP</div><div class="st-l">Cloud providers</div></div>
     <div class="stat"><div class="st-n"><span>0</span></div><div class="st-l">Writes / mutations</div></div>
     <div class="stat"><div class="st-n"><span>60</span>s</div><div class="st-l">First scan, CloudShell</div></div>
   </div>
@@ -461,12 +492,12 @@ footer{border-top:1px solid var(--border);background:var(--white);position:relat
 <div class="wrap">
   <div class="rv">
     <p class="sec-ey">Detection coverage</p>
-    <h2 class="sec-h">20 high-signal rules.<br><em>Zero false-positive tolerance.</em></h2>
+    <h2 class="sec-h">30 high-signal rules.<br><em>Zero false-positive tolerance.</em></h2>
     <p class="sec-sub">Conservative, deterministic, designed to avoid false positives in IaC environments. Start with HIGH confidence and tighten as your team validates.</p>
   </div>
-  <div class="rules-grid rv">
+  <div class="rules-grid rv" style="grid-template-columns:repeat(3,1fr)">
     <div>
-      <div class="rb-hd"><span>Detection rules</span><span class="pb aws-b">AWS</span></div>
+      <div class="rb-hd"><span>13 rules</span><span class="pb aws-b">AWS</span></div>
       <div class="rules-list">
         <div class="r-row"><span class="r-nm">Unattached EBS volumes</span><span class="r-cf c-hi">High</span></div>
         <div class="r-row"><span class="r-nm">Idle RDS instances</span><span class="r-cf c-hi">High</span></div>
@@ -474,14 +505,17 @@ footer{border-top:1px solid var(--border);background:var(--white);position:relat
         <div class="r-row"><span class="r-nm">Unattached Elastic IPs</span><span class="r-cf c-hi">High</span></div>
         <div class="r-row"><span class="r-nm">Idle NAT gateways</span><span class="r-cf c-md">Medium</span></div>
         <div class="r-row"><span class="r-nm">Old EBS snapshots</span><span class="r-cf c-md">Medium</span></div>
+        <div class="r-row"><span class="r-nm">Old RDS snapshots</span><span class="r-cf c-md">Medium</span></div>
         <div class="r-row"><span class="r-nm">Detached ENIs</span><span class="r-cf c-md">Medium</span></div>
         <div class="r-row"><span class="r-nm">CloudWatch infinite retention</span><span class="r-cf c-md">Medium</span></div>
         <div class="r-row"><span class="r-nm">Untagged resources</span><span class="r-cf c-md">Medium</span></div>
         <div class="r-row"><span class="r-nm">Old AMIs</span><span class="r-cf c-md">Medium</span></div>
+        <div class="r-row"><span class="r-nm">Stopped EC2 instances</span><span class="r-cf c-md">Medium</span></div>
+        <div class="r-row"><span class="r-nm">Unused security groups</span><span class="r-cf c-md">Medium</span></div>
       </div>
     </div>
     <div>
-      <div class="rb-hd"><span>Detection rules</span><span class="pb az-b">Azure</span></div>
+      <div class="rb-hd"><span>12 rules</span><span class="pb az-b">Azure</span></div>
       <div class="rules-list">
         <div class="r-row"><span class="r-nm">Idle SQL databases</span><span class="r-cf c-hi">High</span></div>
         <div class="r-row"><span class="r-nm">Unused public IPs</span><span class="r-cf c-hi">High</span></div>
@@ -493,6 +527,18 @@ footer{border-top:1px solid var(--border);background:var(--white);position:relat
         <div class="r-row"><span class="r-nm">Old snapshots</span><span class="r-cf c-md">Medium</span></div>
         <div class="r-row"><span class="r-nm">Idle VNet gateways</span><span class="r-cf c-md">Medium</span></div>
         <div class="r-row"><span class="r-nm">Untagged resources</span><span class="r-cf c-md">Medium</span></div>
+        <div class="r-row"><span class="r-nm">Idle App Services</span><span class="r-cf c-md">Medium</span></div>
+        <div class="r-row"><span class="r-nm">Unused Container Registries</span><span class="r-cf c-md">Medium</span></div>
+      </div>
+    </div>
+    <div>
+      <div class="rb-hd"><span>5 rules</span><span class="pb" style="background:#e8f5e9;color:#1b5e20;border-color:#a5d6a7">GCP</span></div>
+      <div class="rules-list">
+        <div class="r-row"><span class="r-nm">Unattached persistent disks</span><span class="r-cf c-hi">High</span></div>
+        <div class="r-row"><span class="r-nm">Idle Cloud SQL instances</span><span class="r-cf c-hi">High</span></div>
+        <div class="r-row"><span class="r-nm">Unused static IP addresses</span><span class="r-cf c-hi">High</span></div>
+        <div class="r-row"><span class="r-nm">Unattached reserved IPs</span><span class="r-cf c-md">Medium</span></div>
+        <div class="r-row"><span class="r-nm">Old disk snapshots</span><span class="r-cf c-md">Medium</span></div>
       </div>
     </div>
   </div>
@@ -576,7 +622,7 @@ footer{border-top:1px solid var(--border);background:var(--white);position:relat
     <div class="uc">
       <div class="uc-hd"><span class="uc-n">02</span><span class="uc-ti">Scheduled hygiene</span></div>
       <div class="uc-bd">Weekly cron or CI run. Catch drift between deployments before idle resources compound into hundreds per month.
-        <div class="uc-cmd">$ cleancloud scan --provider azure --output markdown</div>
+        <div class="uc-cmd">$ cleancloud scan --provider gcp --project my-project</div>
       </div>
     </div>
     <div class="uc">
@@ -610,68 +656,25 @@ footer{border-top:1px solid var(--border);background:var(--white);position:relat
 </div>
 </section>
 
-<section class="sec sec-bd" id="pricing">
-<div class="wrap">
-  <div class="rv">
-    <p class="sec-ey">Pricing</p>
-    <h2 class="sec-h">Free to start.<br><em>Enterprise access coming soon.</em></h2>
-    <p class="sec-sub">CleanCloud is open source and free forever. Enterprise features are in active development &#8212; join the early access list to shape the roadmap.</p>
-  </div>
-  <div class="pg rv" style="grid-template-columns:1fr 1fr;max-width:760px">
-    <div class="pc">
-      <p class="p-tier">Open Source</p>
-      <div class="p-amt">Free</div>
-      <p class="p-per">forever &#183; MIT License</p>
-      <p class="p-desc">Full CLI, all 20 rules, AWS + Azure. Self-hosted, no account required.</p>
-      <ul class="p-feats">
-        <li>All 20 detection rules</li>
-        <li>AWS &amp; Azure support</li>
-        <li>JSON, CSV, Markdown output</li>
-        <li>GitHub Actions integration</li>
-        <li>CI enforcement flags</li>
-        <li>Run in CloudShell in 60s</li>
-      </ul>
-      <a href="https://github.com/cleancloud-io/cleancloud" class="btn btn-dk" style="justify-content:center;width:100%" target="_blank" rel="noopener">Get started free &#8594;</a>
-    </div>
-    <div class="pc hi">
-      <p class="p-tier">Enterprise</p>
-      <div class="p-amt" style="font-size:26px;padding-top:4px;letter-spacing:-.01em">Early access</div>
-      <p class="p-per">currently free for early adopters</p>
-      <p class="p-desc">Multi-account scanning, policy-as-code, SSO, and VPC-deployable builds &#8212; in active development. Tell us what you need.</p>
-      <ul class="p-feats">
-        <li>Multi-account / AWS Org scanning</li>
-        <li>cleancloud.yaml policy config</li>
-        <li>SSO / SAML (coming soon)</li>
-        <li>VPC / air-gapped deployment</li>
-        <li>Slack &amp; Jira integration</li>
-        <li>Dedicated support channel</li>
-      </ul>
-      <a href="#contact" class="btn btn-tl" style="justify-content:center;width:100%">Join early access &#8594;</a>
-      <p style="font-family:var(--mono);font-size:10px;color:var(--muted);text-align:center;margin-top:10px">No commitment. Help shape what gets built.</p>
-    </div>
-  </div>
-</div>
-</section>
-
 <section class="sec sec-bd" id="contact">
 <div class="wrap">
   <div class="contact-grid rv">
     <div>
-      <p class="sec-ey">Get started</p>
+      <p class="sec-ey">Get in touch</p>
       <h2 class="sec-h">Talk to us.<br><em>We respond fast.</em></h2>
-      <p style="font-size:15px;color:var(--text2);line-height:1.65;margin-top:12px;margin-bottom:32px">Request early access, ask technical questions, or explore enterprise features. We read every message.</p>
+      <p style="font-size:15px;color:var(--text2);line-height:1.65;margin-top:12px;margin-bottom:32px">Evaluating CleanCloud for production, have a technical question, or want to discuss a custom setup? We read every message.</p>
       <div class="contact-perk">
         <div class="cp-icon">&#9889;</div>
         <div>
           <div class="cp-title">Quick eval</div>
-          <div class="cp-body">Run a scan in your AWS CloudShell or Azure Cloud Shell in under 60 seconds &#8212; no credentials needed beyond your portal session.</div>
+          <div class="cp-body">Run a scan in your AWS CloudShell, Azure Cloud Shell, or Google Cloud Shell in under 60 seconds &#8212; no credentials needed beyond your portal session.</div>
         </div>
       </div>
       <div class="contact-perk">
         <div class="cp-icon">&#127970;</div>
         <div>
-          <div class="cp-title">Enterprise &amp; Teams</div>
-          <div class="cp-body">Multi-account scanning, policy-as-code, SSO, and VPC-deployable builds. We&#8217;ll walk you through it.</div>
+          <div class="cp-title">Production support</div>
+          <div class="cp-body">Multi-account scanning, CI/CD setup, IAM policy review, or just want help getting the most out of it &#8212; reach out directly.</div>
         </div>
       </div>
       <div class="contact-perk">
@@ -704,7 +707,7 @@ footer{border-top:1px solid var(--border);background:var(--white);position:relat
           <label class="form-label">What are you looking to do?</label>
           <textarea name="message" required rows="4" placeholder="E.g. Evaluate CleanCloud for our AWS production environment..." class="form-textarea"></textarea>
         </div>
-        <button type="submit" id="submitBtn" class="form-submit">Send Request &#8594;</button>
+        <button type="submit" id="submitBtn" class="form-submit">Send message &#8594;</button>
         <div id="formMsg" style="display:none;margin-top:14px;padding:12px 16px;border-radius:7px;font-family:var(--mono);font-size:12px;text-align:center"></div>
       </form>
     </div>
@@ -716,7 +719,7 @@ footer{border-top:1px solid var(--border);background:var(--white);position:relat
   <div class="cta-b rv">
     <div class="cta-tx">
       <h2>Scan your cloud in 60 seconds.</h2>
-      <p>No account. No agents. Run it in AWS CloudShell or Azure Cloud Shell right now.</p>
+      <p>No account. No agents. Run it in AWS CloudShell, Azure Cloud Shell, or Google Cloud Shell right now.</p>
     </div>
     <div class="cta-ac">
       <a href="https://pypi.org/project/cleancloud/" class="btn btn-wh" target="_blank" rel="noopener">Install via PyPI &#8594;</a>
@@ -732,11 +735,11 @@ footer{border-top:1px solid var(--border);background:var(--white);position:relat
         <div class="lm"><svg viewBox="0 0 14 14" fill="none" stroke="#00ffd0" stroke-width="2"><path d="M2 7L5 10L12 3" stroke-linecap="round" stroke-linejoin="round"/><circle cx="7" cy="7" r="6" stroke="#00ffd0" stroke-width="1.4" opacity=".4"/></svg></div>
         cleancloud
       </div>
-      <p class="fl-tag">Shift-left cloud hygiene for AWS and Azure.<br>Catch waste in CI &#8212; read-only, deterministic, zero telemetry.</p>
+      <p class="fl-tag">Shift-left cloud hygiene for AWS, Azure, and GCP.<br>Catch waste in CI &#8212; read-only, deterministic, zero telemetry.</p>
       <div class="fl-bgs">
         <span class="fl-bg">MIT License</span>
-        <span class="fl-bg">PyPI v1.6.4+</span>
-        <span class="fl-bg">Python 3.8+</span>
+        <span class="fl-bg">PyPI v1.11.0+</span>
+        <span class="fl-bg">Python 3.10+</span>
         <span class="fl-bg">Zero writes</span>
       </div>
     </div>
@@ -745,7 +748,6 @@ footer{border-top:1px solid var(--border);background:var(--white);position:relat
       <ul class="fl-lk">
         <li><a href="#rules">Detection rules</a></li>
         <li><a href="#ci">CI/CD guide</a></li>
-        <li><a href="#pricing">Early access</a></li>
         <li><a href="https://github.com/cleancloud-io/cleancloud/blob/main/docs/example-outputs.md">Example outputs</a></li>
         <li><a href="https://github.com/cleancloud-io/cleancloud/blob/main/SECURITY.md">Security policy</a></li>
       </ul>
@@ -756,6 +758,7 @@ footer{border-top:1px solid var(--border);background:var(--white);position:relat
         <li><a href="https://github.com/cleancloud-io/cleancloud/blob/main/docs/rules.md">rules.md</a></li>
         <li><a href="https://github.com/cleancloud-io/cleancloud/blob/main/docs/aws.md">AWS setup</a></li>
         <li><a href="https://github.com/cleancloud-io/cleancloud/blob/main/docs/azure.md">Azure setup</a></li>
+        <li><a href="https://github.com/cleancloud-io/cleancloud/blob/main/docs/gcp.md">GCP setup</a></li>
         <li><a href="https://github.com/cleancloud-io/cleancloud/blob/main/docs/ci.md">CI/CD guide</a></li>
         <li><a href="https://github.com/cleancloud-io/cleancloud/blob/main/docs/infosec-readiness.md">Infosec readiness</a></li>
       </ul>
@@ -830,9 +833,10 @@ async function handleSubmit(e){
   }catch(err){
     msg.style.display='block';msg.style.background='#fef2f2';msg.style.color='#dc2626';msg.style.border='1px solid #fecaca';
     msg.textContent='Something went wrong &#8212; email us directly at suresh@getcleancloud.com';
-    btn.textContent='Send Request &#8594;';btn.disabled=false;btn.style.opacity='1';
+    btn.textContent='Send message &#8594;';btn.disabled=false;btn.style.opacity='1';
   }
 }
+
 const obs=new IntersectionObserver(entries=>{entries.forEach(e=>{if(e.isIntersecting)e.target.classList.add('in');});},{threshold:0.07});
 document.querySelectorAll('.rv').forEach(el=>obs.observe(el));
 </script>

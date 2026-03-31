@@ -10,7 +10,7 @@
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://getcleancloud.com/blog/cloud-cleanup-without-auto-delete.html">
 <meta property="og:title" content="Cloud Cleanup Without Auto-Delete: Why It Matters for Production">
-<meta property="og:description" content="Why read-only scanning beats automated deletion for production AWS and Azure environments.">
+<meta property="og:description" content="Why read-only scanning beats automated deletion for production AWS, Azure, and GCP environments.">
 <meta property="og:image" content="https://getcleancloud.com/og-image.png">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:site" content="@getcleancloud">
@@ -181,8 +181,6 @@ footer{border-top:1px solid var(--border);background:var(--white);position:relat
     <ul class="nav-links">
       <li><a href="/#rules">Rules</a></li>
       <li><a href="/#ci">CI/CD</a></li>
-      <li><a href="/#pricing">Early access</a></li>
-      <li><a href="/#contact">Contact</a></li>
       <li><a href="/blog/" class="active">Blog</a></li>
       <li><a href="https://github.com/cleancloud-io/cleancloud/blob/main/docs/rules.md">Docs</a></li>
       <li>
@@ -191,7 +189,7 @@ footer{border-top:1px solid var(--border);background:var(--white);position:relat
           GitHub<span class="gh-star-badge">★ <span class="gh-stars-nav">79</span></span>
         </a>
       </li>
-      <li><a href="/#contact" class="nav-cta">Get started →</a></li>
+      <li><a href="/#contact" class="nav-cta">Contact us →</a></li>
     </ul>
   </div>
 </nav>
@@ -305,9 +303,9 @@ footer{border-top:1px solid var(--border);background:var(--white);position:relat
     <!-- MID-ARTICLE CTA -->
     <div class="cta-box">
       <h3>Try cloud cleanup without auto-delete</h3>
-      <p>CleanCloud is a read-only cloud hygiene scanner for AWS and Azure. It physically cannot delete anything — AWS and Azure reject all mutation attempts at the IAM / RBAC layer.</p>
+      <p>CleanCloud is a read-only cloud hygiene scanner for AWS, Azure, and GCP. It physically cannot delete anything — cloud providers reject all mutation attempts at the IAM / RBAC / IAM layer.</p>
       <ul class="cta-feats">
-        <li>20 high-signal detection rules for AWS + Azure</li>
+        <li>30 high-signal detection rules for AWS, Azure, and GCP</li>
         <li>HIGH / MEDIUM confidence scoring per finding</li>
         <li>Estimated monthly waste per resource</li>
         <li>Runs in AWS CloudShell or Azure Cloud Shell in 60 seconds</li>
@@ -377,7 +375,7 @@ footer{border-top:1px solid var(--border);background:var(--white);position:relat
       <p>CleanCloud is open-source, MIT licensed, and runs in your environment. No account. No agents. No telemetry.</p>
       <ul class="cta-feats">
         <li>Read-only by design — no delete permissions ever</li>
-        <li>AWS and Azure support, 20 detection rules</li>
+        <li>AWS, Azure and GCP support, 30 detection rules</li>
         <li>CI/CD gate flags: --fail-on-confidence HIGH</li>
         <li>JSON, CSV, Markdown output formats</li>
         <li>MIT License — free forever</li>
@@ -388,7 +386,7 @@ footer{border-top:1px solid var(--border);background:var(--white);position:relat
           <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.477 2 12c0 4.418 2.865 8.166 6.839 9.489.5.092.682-.217.682-.482 0-.237-.009-.868-.013-1.703-2.782.604-3.369-1.342-3.369-1.342-.454-1.155-1.11-1.463-1.11-1.463-.908-.62.069-.608.069-.608 1.003.07 1.531 1.031 1.531 1.031.892 1.529 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0112 6.836a9.59 9.59 0 012.504.337c1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.202 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.741 0 .267.18.579.688.481C19.138 20.163 22 16.418 22 12c0-5.523-4.477-10-10-10z"/></svg>
           View on GitHub
         </a>
-        <a href="/#contact" class="btn btn-dk">Join early access</a>
+        <a href="https://github.com/cleancloud-io/cleancloud/discussions" target="_blank" rel="noopener" class="btn btn-dk">GitHub Discussions</a>
       </div>
     </div>
 
@@ -416,7 +414,7 @@ footer{border-top:1px solid var(--border);background:var(--white);position:relat
 
   <div class="sb-card">
     <div class="sb-title">Try CleanCloud</div>
-    <p style="font-family:var(--mono);font-size:11px;color:var(--muted);line-height:1.65;margin-bottom:8px">Scan AWS or Azure in 60 seconds. Read-only. Zero telemetry.</p>
+    <p style="font-family:var(--mono);font-size:11px;color:var(--muted);line-height:1.65;margin-bottom:8px">Scan AWS, Azure or GCP in 60 seconds. Read-only. Zero telemetry.</p>
     <div class="sb-install">
       <span style="color:#6e7681">$ </span>pipx install cleancloud<br>
       <span style="color:#6e7681">$ </span>cleancloud scan \<br>
@@ -429,24 +427,23 @@ footer{border-top:1px solid var(--border);background:var(--white);position:relat
   <div class="sb-card">
     <div class="sb-title">By the numbers</div>
     <div class="sb-stat">
-      <div><div class="sb-stat-n"><span>20</span></div><div class="sb-stat-l">Detection rules</div></div>
+      <div><div class="sb-stat-n"><span>30</span></div><div class="sb-stat-l">Detection rules</div></div>
     </div>
     <div class="sb-stat">
       <div><div class="sb-stat-n"><span>0</span></div><div class="sb-stat-l">Writes or mutations</div></div>
     </div>
     <div class="sb-stat">
-      <div><div class="sb-stat-n">AWS<span>+</span>Az</div><div class="sb-stat-l">Cloud providers</div></div>
+      <div><div class="sb-stat-n" style="font-size:13px">AWS+Az+GCP</div><div class="sb-stat-l">Cloud providers</div></div>
     </div>
     <div class="sb-stat">
       <div><div class="sb-stat-n"><span>60</span>s</div><div class="sb-stat-l">First scan time</div></div>
     </div>
   </div>
 
-  <div class="sb-card" style="background:var(--text);border-color:var(--text)">
-    <div style="font-family:var(--mono);font-size:11px;font-weight:600;color:var(--accent-md);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Enterprise</div>
-    <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:6px;line-height:1.35">Multi-account &amp; policy gates</div>
-    <p style="font-family:var(--mono);font-size:11px;color:rgba(255,255,255,.5);line-height:1.6;margin-bottom:12px">SSO, VPC-deployable, Slack integration — shaping roadmap now.</p>
-    <a href="/#contact" class="btn btn-tl" style="width:100%;justify-content:center;font-size:11px">Join early access →</a>
+  <div class="sb-card">
+    <div class="sb-title">Get involved</div>
+    <p style="font-family:var(--mono);font-size:11px;color:var(--muted);line-height:1.65;margin-bottom:12px">Bug reports, rule ideas, and PRs welcome. Open source, MIT License.</p>
+    <a href="https://github.com/cleancloud-io/cleancloud/discussions" target="_blank" rel="noopener" class="btn btn-dk" style="width:100%;justify-content:center;font-size:11px">Discussions ↗</a>
   </div>
 
 </aside>
@@ -460,11 +457,11 @@ footer{border-top:1px solid var(--border);background:var(--white);position:relat
         <div class="lm"><svg viewBox="0 0 14 14" fill="none" stroke="#00ffd0" stroke-width="2"><path d="M2 7L5 10L12 3" stroke-linecap="round" stroke-linejoin="round"/><circle cx="7" cy="7" r="6" stroke="#00ffd0" stroke-width="1.4" opacity=".4"/></svg></div>
         cleancloud
       </div>
-      <p class="fl-tag">Shift-left cloud hygiene for AWS and Azure.<br>Catch waste in CI — read-only, deterministic, zero telemetry.</p>
+      <p class="fl-tag">Shift-left cloud hygiene for AWS, Azure, and GCP.<br>Catch waste in CI — read-only, deterministic, zero telemetry.</p>
       <div class="fl-bgs">
         <span class="fl-bg">MIT License</span>
-        <span class="fl-bg">PyPI v1.6.3+</span>
-        <span class="fl-bg">Python 3.8+</span>
+        <span class="fl-bg">PyPI v1.11.0+</span>
+        <span class="fl-bg">Python 3.10+</span>
         <span class="fl-bg">Zero writes</span>
       </div>
     </div>
@@ -473,7 +470,6 @@ footer{border-top:1px solid var(--border);background:var(--white);position:relat
       <ul class="fl-lk">
         <li><a href="/#rules">Detection rules</a></li>
         <li><a href="/#ci">CI/CD guide</a></li>
-        <li><a href="/#pricing">Early access</a></li>
         <li><a href="https://github.com/cleancloud-io/cleancloud/blob/main/docs/example-outputs.md">Example outputs</a></li>
         <li><a href="https://github.com/cleancloud-io/cleancloud/blob/main/SECURITY.md">Security policy</a></li>
       </ul>
@@ -484,6 +480,7 @@ footer{border-top:1px solid var(--border);background:var(--white);position:relat
         <li><a href="https://github.com/cleancloud-io/cleancloud/blob/main/docs/rules.md">rules.md</a></li>
         <li><a href="https://github.com/cleancloud-io/cleancloud/blob/main/docs/aws.md">AWS setup</a></li>
         <li><a href="https://github.com/cleancloud-io/cleancloud/blob/main/docs/azure.md">Azure setup</a></li>
+        <li><a href="https://github.com/cleancloud-io/cleancloud/blob/main/docs/gcp.md">GCP setup</a></li>
         <li><a href="https://github.com/cleancloud-io/cleancloud/blob/main/docs/ci.md">CI/CD guide</a></li>
         <li><a href="https://github.com/cleancloud-io/cleancloud/blob/main/docs/infosec-readiness.md">Infosec readiness</a></li>
       </ul>
@@ -501,7 +498,7 @@ footer{border-top:1px solid var(--border);background:var(--white);position:relat
     </div>
   </div>
   <div class="fb">
-    <p class="fb-cp">&copy; 2025 CleanCloud. MIT License.</p>
+    <p class="fb-cp">&copy; 2026 CleanCloud. MIT License.</p>
     <ul class="fb-lk">
       <li><a href="https://github.com/cleancloud-io/cleancloud/blob/main/SECURITY.md">Security</a></li>
       <li><a href="https://github.com/cleancloud-io/cleancloud/blob/main/LICENSE">License</a></li>
