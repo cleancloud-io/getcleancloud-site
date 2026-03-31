@@ -601,6 +601,23 @@ footer{border-top:1px solid var(--border);background:var(--white);position:relat
 <span class="tl">      <span class="yv">--output json --output-file scan.json</span></span>
         </div>
       </div>
+      <div class="cc">
+        <div class="cc-hd"><span class="cc-fn">cleancloud.yml</span><span class="cc-lg">GitHub Actions &#8212; GCP Workload Identity</span></div>
+        <div class="cc-bd">
+<span class="tl"><span class="yk">- uses:</span> <span class="ya">google-github-actions/auth@v2</span></span>
+<span class="tl">  <span class="yk">with:</span></span>
+<span class="tl">    <span class="yk">workload_identity_provider:</span> <span class="ys">${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}</span></span>
+<span class="tl">    <span class="yk">service_account:</span>            <span class="ys">${{ secrets.GCP_SERVICE_ACCOUNT }}</span></span>
+<span class="tl"> </span>
+<span class="tl"><span class="yk">- run:</span> <span class="yv">pip install cleancloud</span></span>
+<span class="tl"> </span>
+<span class="tl"><span class="yk">- run:</span> <span class="yv">|</span></span>
+<span class="tl">    <span class="yv">cleancloud scan --provider gcp \</span></span>
+<span class="tl">      <span class="yv">--project ${{ vars.GCP_PROJECT_ID }} \</span></span>
+<span class="tl">      <span class="yv">--fail-on-confidence HIGH \</span></span>
+<span class="tl">      <span class="yv">--output json --output-file scan.json</span></span>
+        </div>
+      </div>
     </div>
   </div>
 </div>
