@@ -187,8 +187,9 @@ nav {
 .lm svg { width: 14px; height: 14px; }
 .nav-links { display: flex; align-items: center; gap: 2px; list-style: none; }
 .nav-links a {
-  font-family: var(--mono);
-  font-size: 12px;
+  font-family: var(--sans);
+  font-size: 14px;
+  font-weight: 600;
   color: var(--muted);
   padding: 5px 11px;
   border-radius: 5px;
@@ -196,8 +197,8 @@ nav {
 }
 .nav-links a:hover { color: var(--text); background: var(--white); text-decoration: none; }
 .nav-cta {
-  font-family: var(--mono) !important;
-  font-size: 12px !important;
+  font-family: var(--sans) !important;
+  font-size: 14px !important;
   font-weight: 600 !important;
   color: var(--white) !important;
   background: var(--text) !important;
@@ -398,6 +399,10 @@ nav {
   font-family: var(--mono);
 }
 .code-bd { padding: 16px 18px; overflow-x: auto; color: #e6edf3; }
+.inst-tabs{display:flex;gap:0;margin-left:auto}
+.inst-tab{background:none;border:none;border-left:1px solid #30363d;padding:4px 12px;font-family:var(--mono);font-size:10px;font-weight:500;color:#6e7681;cursor:pointer;transition:color .15s,background .15s}
+.inst-tab:hover{color:#c9d1d9;background:rgba(255,255,255,.05)}
+.inst-tab.active{color:#e6edf3;background:#0d1117}
 .code-bd .c  { color: #6e7681; }
 .code-bd .k  { color: #79c0ff; }
 .code-bd .v  { color: #a5f3a5; }
@@ -530,8 +535,8 @@ nav {
   margin-bottom: 8px;
 }
 .post-cta p {
-  font-family: var(--mono);
-  font-size: 12px;
+  font-family: var(--sans);
+  font-size: 15px;
   color: rgba(255,255,255,.55);
   margin-bottom: 20px;
   line-height: 1.65;
@@ -541,8 +546,8 @@ nav {
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  font-family: var(--mono);
-  font-size: 12px;
+  font-family: var(--sans);
+  font-size: 14px;
   font-weight: 600;
   padding: 10px 20px;
   border-radius: 7px;
@@ -711,13 +716,13 @@ footer {
 }
 .f-links { display: flex; gap: 20px; list-style: none; }
 .f-links a {
-  font-family: var(--mono);
-  font-size: 11px;
+  font-family: var(--sans);
+  font-size: 13px;
   color: var(--muted2);
   transition: color .15s;
 }
 .f-links a:hover { color: var(--text); text-decoration: none; }
-.f-copy { font-family: var(--mono); font-size: 11px; color: var(--muted2); }
+.f-copy { font-family: var(--sans); font-size: 13px; color: var(--muted2); }
 
 /* ── ANIMATIONS ── */
 .rv { opacity: 0; transform: translateY(16px); transition: opacity .5s ease, transform .5s ease; }
@@ -973,8 +978,9 @@ footer {
         <div class="code-hd">
           <span class="code-fn">github-actions.yml</span>
           <span class="code-lg">Level 1 — observe only</span>
+          <div class="inst-tabs"><button class="inst-tab active" onclick="switchInstall('sl1',this)">pip</button><button class="inst-tab" onclick="switchInstall('sl1',this)">Docker</button></div>
         </div>
-        <div class="code-bd"><pre>
+        <div class="code-bd inst-panel" id="sl1-0"><pre>
 <span class="c"># Scans and reports — never fails the build</span>
 <span class="k">- name:</span> <span class="v">CleanCloud hygiene scan</span>
   <span class="k">run:</span> <span class="v">|</span>
@@ -984,6 +990,17 @@ footer {
       <span class="v">--all-regions \</span>
       <span class="v">--output json \</span>
       <span class="v">--output-file findings.json</span>
+<span class="c"># Exit 0 always — findings are visible, not blocking</span></pre>
+        </div>
+        <div class="code-bd inst-panel" id="sl1-1" style="display:none"><pre>
+<span class="c"># No Python required — works on any CI runner</span>
+<span class="k">- name:</span> <span class="v">CleanCloud hygiene scan</span>
+  <span class="k">run:</span> <span class="v">|</span>
+    <span class="v">docker run --rm \</span>
+      <span class="v">-e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_SESSION_TOKEN \</span>
+      <span class="v">getcleancloud/cleancloud scan \</span>
+      <span class="v">--provider aws --all-regions \</span>
+      <span class="v">--output json --output-file findings.json</span>
 <span class="c"># Exit 0 always — findings are visible, not blocking</span></pre>
         </div>
       </div>
@@ -997,8 +1014,9 @@ footer {
         <div class="code-hd">
           <span class="code-fn">github-actions.yml</span>
           <span class="code-lg">Level 2 — fail on HIGH confidence</span>
+          <div class="inst-tabs"><button class="inst-tab active" onclick="switchInstall('sl2',this)">pip</button><button class="inst-tab" onclick="switchInstall('sl2',this)">Docker</button></div>
         </div>
-        <div class="code-bd"><pre>
+        <div class="code-bd inst-panel" id="sl2-0"><pre>
 <span class="k">- name:</span> <span class="v">Configure AWS credentials (OIDC)</span>
   <span class="k">uses:</span> <span class="pu">aws-actions/configure-aws-credentials@v4</span>
   <span class="k">with:</span>
@@ -1016,6 +1034,23 @@ footer {
       <span class="v">--output-file findings.json</span>
 <span class="c"># Exit 2 if HIGH confidence findings detected</span></pre>
         </div>
+        <div class="code-bd inst-panel" id="sl2-1" style="display:none"><pre>
+<span class="k">- name:</span> <span class="v">Configure AWS credentials (OIDC)</span>
+  <span class="k">uses:</span> <span class="pu">aws-actions/configure-aws-credentials@v4</span>
+  <span class="k">with:</span>
+    <span class="k">role-to-assume:</span> <span class="s">arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/CleanCloudCIReadOnly</span>
+    <span class="k">aws-region:</span> <span class="v">us-east-1</span>
+
+<span class="k">- name:</span> <span class="v">CleanCloud hygiene gate</span>
+  <span class="k">run:</span> <span class="v">|</span>
+    <span class="v">docker run --rm \</span>
+      <span class="v">-e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_SESSION_TOKEN \</span>
+      <span class="v">getcleancloud/cleancloud scan \</span>
+      <span class="v">--provider aws --all-regions \</span>
+      <span class="v">--fail-on-confidence HIGH \</span>
+      <span class="v">--output json --output-file findings.json</span>
+<span class="c"># Exit 2 if HIGH confidence findings detected</span></pre>
+        </div>
       </div>
 
       <h3>Level 3: Cost-threshold enforcement</h3>
@@ -1027,8 +1062,9 @@ footer {
         <div class="code-hd">
           <span class="code-fn">github-actions.yml</span>
           <span class="code-lg">Level 3 — fail on cost threshold</span>
+          <div class="inst-tabs"><button class="inst-tab active" onclick="switchInstall('sl3',this)">pip</button><button class="inst-tab" onclick="switchInstall('sl3',this)">Docker</button></div>
         </div>
-        <div class="code-bd"><pre>
+        <div class="code-bd inst-panel" id="sl3-0"><pre>
 <span class="k">- name:</span> <span class="v">CleanCloud cost gate</span>
   <span class="k">run:</span> <span class="v">|</span>
     <span class="v">cleancloud scan \</span>
@@ -1037,6 +1073,22 @@ footer {
       <span class="v">--fail-on-cost 100 \</span>    <span class="c"># fail if waste ≥ $100/month</span>
       <span class="v">--output markdown \</span>
       <span class="v">--output-file findings.md</span>
+
+<span class="k">- name:</span> <span class="v">Post findings to PR</span>
+  <span class="k">if:</span> <span class="v">always()</span>
+  <span class="k">uses:</span> <span class="pu">marocchino/sticky-pull-request-comment@v2</span>
+  <span class="k">with:</span>
+    <span class="k">path:</span> <span class="v">findings.md</span></pre>
+        </div>
+        <div class="code-bd inst-panel" id="sl3-1" style="display:none"><pre>
+<span class="k">- name:</span> <span class="v">CleanCloud cost gate</span>
+  <span class="k">run:</span> <span class="v">|</span>
+    <span class="v">docker run --rm \</span>
+      <span class="v">-e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_SESSION_TOKEN \</span>
+      <span class="v">getcleancloud/cleancloud scan \</span>
+      <span class="v">--provider aws --all-regions \</span>
+      <span class="v">--fail-on-cost 100 \</span>    <span class="c"># fail if waste ≥ $100/month</span>
+      <span class="v">--output markdown --output-file findings.md</span>
 
 <span class="k">- name:</span> <span class="v">Post findings to PR</span>
   <span class="k">if:</span> <span class="v">always()</span>
@@ -1129,7 +1181,7 @@ footer {
       <!-- CTA -->
       <div class="post-cta">
         <h3>Try CleanCloud in your pipeline today</h3>
-        <p>Read-only. Zero telemetry. No agents. 30 high-signal rules for AWS, Azure, and GCP. Free and open source.</p>
+        <p>Read-only. Zero telemetry. No agents. 33 high-signal rules for AWS, Azure, and GCP. Free and open source.</p>
         <div class="post-cta-acts">
           <a href="https://pypi.org/project/cleancloud/" class="btn btn-wh" target="_blank" rel="noopener">Install via PyPI →</a>
           <a href="https://github.com/cleancloud-io/cleancloud" class="btn btn-ow" target="_blank" rel="noopener">★ View on GitHub</a>
@@ -1188,7 +1240,7 @@ footer {
         <div style="background:#0d1117;border:1px solid #21262d;border-radius:7px;padding:10px 13px;font-family:var(--mono);font-size:12px;color:#56d364;margin-bottom:10px">
           pip install cleancloud
         </div>
-        <a href="https://github.com/cleancloud-io/cleancloud" target="_blank" rel="noopener" style="display:block;text-align:center;font-family:var(--mono);font-size:12px;font-weight:600;color:var(--accent-hi);padding:9px;border:1px solid var(--accent-md);border-radius:7px;background:var(--accent-lt);transition:background .15s;text-decoration:none">
+        <a href="https://github.com/cleancloud-io/cleancloud" target="_blank" rel="noopener" style="display:block;text-align:center;font-family:var(--sans);font-size:14px;font-weight:600;color:var(--accent-hi);padding:9px;border:1px solid var(--accent-md);border-radius:7px;background:var(--accent-lt);transition:background .15s;text-decoration:none">
           ★ Star on GitHub →
         </a>
       </div>
@@ -1246,6 +1298,13 @@ footer {
 </footer>
 
 <script>
+function switchInstall(id,btn){
+  const tabs=btn.closest('.inst-tabs').querySelectorAll('.inst-tab');
+  const idx=Array.from(tabs).indexOf(btn);
+  tabs.forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.inst-panel[id^="'+id+'"]').forEach((p,i)=>p.style.display=i===idx?'block':'none');
+}
 // Scroll reveal
 const obs = new IntersectionObserver(entries => {
   entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('in'); });

@@ -83,9 +83,9 @@ nav{position:sticky;top:0;z-index:100;background:rgba(246,247,249,.93);backdrop-
 .lm{width:26px;height:26px;border-radius:6px;background:var(--text);display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .lm svg{width:14px;height:14px}
 .nav-links{display:flex;align-items:center;gap:2px;list-style:none}
-.nav-links a{font-family:var(--mono);font-size:12px;color:var(--muted);padding:5px 11px;border-radius:5px;transition:color .15s,background .15s}
+.nav-links a{font-family:var(--sans);font-size:14px;font-weight:600;color:var(--muted);padding:5px 11px;border-radius:5px;transition:color .15s,background .15s}
 .nav-links a:hover{color:var(--text);background:var(--white);text-decoration:none}
-.nav-cta{font-family:var(--mono)!important;font-size:12px!important;font-weight:600!important;color:var(--white)!important;background:var(--text)!important;padding:7px 16px!important;border-radius:6px!important}
+.nav-cta{font-family:var(--sans)!important;font-size:14px!important;font-weight:600!important;color:var(--white)!important;background:var(--text)!important;padding:7px 16px!important;border-radius:6px!important}
 .nav-cta:hover{background:#1a2f44!important}
 .blog-wrap{max-width:1120px;margin:0 auto;padding:0 28px;position:relative;z-index:1}
 .post-hero{padding:64px 0 48px;max-width:var(--content-width);margin:0 auto}
@@ -152,9 +152,9 @@ nav{position:sticky;top:0;z-index:100;background:rgba(246,247,249,.93);backdrop-
 .post-cta{background:var(--text);border-radius:12px;padding:32px 36px;margin:48px 0 0;position:relative;overflow:hidden}
 .post-cta::before{content:'';position:absolute;top:-60px;right:-60px;width:200px;height:200px;border-radius:50%;background:radial-gradient(circle,rgba(13,148,136,.3),transparent 70%);pointer-events:none}
 .post-cta h3{font-size:20px;font-weight:800;color:#fff;letter-spacing:-.02em;margin-bottom:8px}
-.post-cta p{font-family:var(--mono);font-size:12px;color:rgba(255,255,255,.55);margin-bottom:20px;line-height:1.65}
+.post-cta p{font-family:var(--sans);font-size:15px;color:rgba(255,255,255,.55);margin-bottom:20px;line-height:1.65}
 .post-cta-acts{display:flex;gap:10px;flex-wrap:wrap}
-.btn{display:inline-flex;align-items:center;gap:7px;font-family:var(--mono);font-size:12px;font-weight:600;padding:10px 20px;border-radius:7px;transition:transform .15s,box-shadow .15s;text-decoration:none!important;letter-spacing:.01em}
+.btn{display:inline-flex;align-items:center;gap:7px;font-family:var(--sans);font-size:14px;font-weight:600;padding:10px 20px;border-radius:7px;transition:transform .15s,box-shadow .15s;text-decoration:none!important;letter-spacing:.01em}
 .btn:hover{transform:translateY(-1px)}
 .btn-wh{background:#fff;color:var(--text)}
 .btn-wh:hover{background:#f0f0f0}
@@ -186,9 +186,9 @@ footer{border-top:1px solid var(--border);background:var(--white);position:relat
 .fi{max-width:1120px;margin:0 auto;padding:40px 28px;display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap}
 .f-logo{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:8px}
 .f-links{display:flex;gap:20px;list-style:none}
-.f-links a{font-family:var(--mono);font-size:11px;color:var(--muted2);transition:color .15s}
+.f-links a{font-family:var(--sans);font-size:13px;color:var(--muted2);transition:color .15s}
 .f-links a:hover{color:var(--text);text-decoration:none}
-.f-copy{font-family:var(--mono);font-size:11px;color:var(--muted2)}
+.f-copy{font-family:var(--sans);font-size:13px;color:var(--muted2)}
 .rv{opacity:0;transform:translateY(16px);transition:opacity .5s ease,transform .5s ease}
 .rv.in{opacity:1;transform:translateY(0)}
 @media(max-width:960px){.post-layout{grid-template-columns:1fr;gap:0}.post-sidebar{position:static;margin-top:48px}.stat-row{grid-template-columns:1fr 1fr}.related-grid{grid-template-columns:1fr}.nav-links{display:none}}
@@ -448,8 +448,8 @@ State      : <span class="hi">Stopped (not deallocated)</span>
         </pre></div>
       </div>
 
-      <h2 id="other-hidden-costs">All 10 Azure Rules CleanCloud Checks</h2>
-      <p>Stopped VMs are the most visible example, but CleanCloud's full Azure scan covers 10 rules across the same theme — resources that bill when you think they shouldn't:</p>
+      <h2 id="other-hidden-costs">All 13 Azure Rules CleanCloud Checks</h2>
+      <p>Stopped VMs are the most visible example, but CleanCloud's full Azure scan covers 13 rules across the same theme — resources that bill when you think they shouldn't:</p>
 
       <div class="compare-table" style="overflow:hidden;border-radius:10px;">
         <table style="width:100%;border-collapse:collapse;">
@@ -457,21 +457,24 @@ State      : <span class="hi">Stopped (not deallocated)</span>
             <tr><th>Rule</th><th>What it detects</th><th>Confidence</th></tr>
           </thead>
           <tbody>
-            <tr><td><code>az_stopped_vm</code></td><td>VMs in Stopped (not deallocated) state — still billing compute</td><td class="td-bad">High</td></tr>
-            <tr><td><code>az_idle_sql_database</code></td><td>SQL databases with no connections or queries in 7+ days</td><td class="td-bad">High</td></tr>
-            <tr><td><code>az_idle_public_ip</code></td><td>Public IP addresses not associated with any resource</td><td class="td-bad">High</td></tr>
-            <tr><td><code>az_empty_load_balancer</code></td><td>Load balancers with no backend pool members</td><td class="td-bad">High</td></tr>
-            <tr><td><code>az_empty_app_gateway</code></td><td>Application Gateways with no backend targets</td><td class="td-bad">High</td></tr>
-            <tr><td><code>az_empty_app_service_plan</code></td><td>App Service Plans with zero apps or slots deployed</td><td class="td-bad">High</td></tr>
-            <tr><td><code>az_unattached_disk</code></td><td>Managed disks not attached to any VM</td><td class="td-warn">Medium</td></tr>
-            <tr><td><code>az_old_snapshot</code></td><td>Disk snapshots older than 90 days with no recent restore activity</td><td class="td-warn">Medium</td></tr>
-            <tr><td><code>az_idle_vnet_gateway</code></td><td>VNet Gateways with no active connections or traffic</td><td class="td-warn">Medium</td></tr>
-            <tr><td><code>az_untagged_resource</code></td><td>Resources missing required cost allocation tags</td><td class="td-warn">Medium</td></tr>
+            <tr><td><code>azure.vm.stopped_not_deallocated</code></td><td>VMs in Stopped (not deallocated) state — still billing compute</td><td class="td-bad">High</td></tr>
+            <tr><td><code>azure.sql.database.idle</code></td><td>SQL databases with no connections or queries in 7+ days</td><td class="td-bad">High</td></tr>
+            <tr><td><code>azure.network.public_ip.unused</code></td><td>Public IP addresses not associated with any resource</td><td class="td-bad">High</td></tr>
+            <tr><td><code>azure.load_balancer.no_backends</code></td><td>Load balancers with no backend pool members</td><td class="td-bad">High</td></tr>
+            <tr><td><code>azure.application_gateway.no_backends</code></td><td>Application Gateways with no backend targets</td><td class="td-bad">High</td></tr>
+            <tr><td><code>azure.app_service_plan.empty</code></td><td>App Service Plans with zero apps or slots deployed</td><td class="td-bad">High</td></tr>
+            <tr><td><code>azure.compute.disk.unattached</code></td><td>Managed disks not attached to any VM</td><td class="td-warn">Medium</td></tr>
+            <tr><td><code>azure.compute.snapshot.old</code></td><td>Disk snapshots older than 90 days with no recent restore activity</td><td class="td-warn">Medium</td></tr>
+            <tr><td><code>azure.virtual_network_gateway.idle</code></td><td>VNet Gateways with no active connections or traffic</td><td class="td-warn">Medium</td></tr>
+            <tr><td><code>azure.resource.untagged</code></td><td>Resources missing required cost allocation tags</td><td class="td-warn">Medium</td></tr>
+            <tr><td><code>azure.app_service.idle</code></td><td>App Services with no requests over the idle window</td><td class="td-warn">Medium</td></tr>
+            <tr><td><code>azure.container_registry.unused</code></td><td>Container Registries with no push/pull activity</td><td class="td-warn">Medium</td></tr>
+            <tr><td><code>azure.aml.compute.idle</code></td><td>Azure ML compute clusters with no job activity <span style="font-family:var(--sans);font-size:11px;background:#e8f5e9;color:#1b5e20;border:1px solid #a5d6a7;border-radius:3px;padding:1px 5px">AI</span></td><td class="td-bad">High</td></tr>
           </tbody>
         </table>
       </div>
 
-      <p>All 10 rules run in a single scan. CleanCloud never modifies any resource — it surfaces findings and exits. Full rule details at <a href="https://github.com/cleancloud-io/cleancloud/blob/main/docs/rules.md" target="_blank" rel="noopener">docs/rules.md</a>.</p>
+      <p>All 13 rules run in a single scan. CleanCloud never modifies any resource — it surfaces findings and exits. Full rule details at <a href="https://github.com/cleancloud-io/cleancloud/blob/main/docs/rules.md" target="_blank" rel="noopener">docs/rules.md</a>.</p>
 
       <div class="callout">
         <p>💡 CleanCloud's read-only scan covers all of these Azure waste patterns in a single run. Zero writes to your environment, zero telemetry, and deterministic output — safe enough for production-adjacent accounts.</p>
@@ -481,7 +484,7 @@ State      : <span class="hi">Stopped (not deallocated)</span>
       <ol>
         <li><strong>Never rely on OS-level shutdown</strong> to stop Azure billing. Use <code>az vm deallocate</code> or the Azure Portal Stop button.</li>
         <li><strong>Check the portal for "(deallocated)"</strong> — if the status just says "Stopped" without that suffix, you're still paying.</li>
-        <li><strong>Automate the check.</strong> Add CleanCloud to your CI pipeline — it runs all 10 Azure rules in a single scan and exits 1 on HIGH findings, so stopped VMs and other waste are caught before they compound into multi-month surprises.</li>
+        <li><strong>Automate the check.</strong> Add CleanCloud to your CI pipeline — it runs all 13 Azure rules in a single scan and exits 1 on HIGH findings, so stopped VMs and other waste are caught before they compound into multi-month surprises.</li>
       </ol>
 
       <div class="post-cta rv">
@@ -506,22 +509,25 @@ State      : <span class="hi">Stopped (not deallocated)</span>
           <li><a href="#how-to-deallocate">How to properly deallocate</a></li>
           <li><a href="#catch-in-ci">Catching it in CI</a></li>
           <li><a href="#github-actions">GitHub Actions setup</a></li>
-          <li><a href="#other-hidden-costs">All 10 Azure rules</a></li>
+          <li><a href="#other-hidden-costs">All 13 Azure rules</a></li>
           <li><a href="#summary">Summary</a></li>
         </ul>
       </div>
       <div class="sidebar-card">
         <div class="sidebar-card-title">CleanCloud Azure rules</div>
-        <div class="sidebar-stat"><span class="ss-label">az_stopped_vm</span><span class="ss-val c-hi">High</span></div>
-        <div class="sidebar-stat"><span class="ss-label">az_idle_sql_database</span><span class="ss-val c-hi">High</span></div>
-        <div class="sidebar-stat"><span class="ss-label">az_idle_public_ip</span><span class="ss-val c-hi">High</span></div>
-        <div class="sidebar-stat"><span class="ss-label">az_empty_load_balancer</span><span class="ss-val c-hi">High</span></div>
-        <div class="sidebar-stat"><span class="ss-label">az_empty_app_gateway</span><span class="ss-val c-hi">High</span></div>
-        <div class="sidebar-stat"><span class="ss-label">az_empty_app_service_plan</span><span class="ss-val c-hi">High</span></div>
-        <div class="sidebar-stat"><span class="ss-label">az_unattached_disk</span><span class="ss-val c-md">Medium</span></div>
-        <div class="sidebar-stat"><span class="ss-label">az_old_snapshot</span><span class="ss-val c-md">Medium</span></div>
-        <div class="sidebar-stat"><span class="ss-label">az_idle_vnet_gateway</span><span class="ss-val c-md">Medium</span></div>
-        <div class="sidebar-stat"><span class="ss-label">az_untagged_resource</span><span class="ss-val c-md">Medium</span></div>
+        <div class="sidebar-stat"><span class="ss-label">azure.vm.stopped_not_deallocated</span><span class="ss-val c-hi">High</span></div>
+        <div class="sidebar-stat"><span class="ss-label">azure.sql.database.idle</span><span class="ss-val c-hi">High</span></div>
+        <div class="sidebar-stat"><span class="ss-label">azure.network.public_ip.unused</span><span class="ss-val c-hi">High</span></div>
+        <div class="sidebar-stat"><span class="ss-label">azure.load_balancer.no_backends</span><span class="ss-val c-hi">High</span></div>
+        <div class="sidebar-stat"><span class="ss-label">azure.application_gateway.no_backends</span><span class="ss-val c-hi">High</span></div>
+        <div class="sidebar-stat"><span class="ss-label">azure.app_service_plan.empty</span><span class="ss-val c-hi">High</span></div>
+        <div class="sidebar-stat"><span class="ss-label">azure.compute.disk.unattached</span><span class="ss-val c-md">Medium</span></div>
+        <div class="sidebar-stat"><span class="ss-label">azure.compute.snapshot.old</span><span class="ss-val c-md">Medium</span></div>
+        <div class="sidebar-stat"><span class="ss-label">azure.virtual_network_gateway.idle</span><span class="ss-val c-md">Medium</span></div>
+        <div class="sidebar-stat"><span class="ss-label">azure.resource.untagged</span><span class="ss-val c-md">Medium</span></div>
+        <div class="sidebar-stat"><span class="ss-label">azure.app_service.idle</span><span class="ss-val c-md">Medium</span></div>
+        <div class="sidebar-stat"><span class="ss-label">azure.container_registry.unused</span><span class="ss-val c-md">Medium</span></div>
+        <div class="sidebar-stat"><span class="ss-label">azure.aml.compute.idle</span><span class="ss-val c-hi">High</span></div>
       </div>
       <div class="sidebar-card" style="background:#0d1117;border-color:#21262d">
         <div style="font-family:var(--mono);font-size:10px;color:#6e7681;margin-bottom:8px">Quick scan</div>
