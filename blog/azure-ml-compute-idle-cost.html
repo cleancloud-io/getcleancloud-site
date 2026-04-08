@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- ── SEO ── -->
+<title>$11,400/Month in Idle Azure ML Compute: How One Setting Keeps the Meter Running | CleanCloud</title>
+<meta name="description" content="An Azure Machine Learning compute cluster with min_nodes: 2 and no training jobs for 23 days. The team didn't know it was billing. CleanCloud found $11,400 in monthly waste. Here's the full story.">
+<meta name="keywords" content="azure machine learning idle compute, AML compute cluster cost, azure.ml.compute.idle, Azure ML waste, AML min_nodes billing, detect idle AML compute CI">
+<meta name="author" content="Suresh, CleanCloud">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://www.getcleancloud.com/blog/azure-ml-compute-idle-cost/">
+
+<!-- ── Open Graph ── -->
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://www.getcleancloud.com/blog/azure-ml-compute-idle-cost/">
+<meta property="og:title" content="$11,400/Month in Idle Azure ML Compute: How One Setting Keeps the Meter Running">
+<meta property="og:description" content="An AML compute cluster with min_nodes: 2 and no training jobs for 23 days. CleanCloud found $11,400 in monthly waste. Here's the full story.">
+<meta property="og:image" content="https://www.getcleancloud.com/og-image.png">
+<meta property="og:site_name" content="CleanCloud">
+<meta property="article:published_time" content="2026-03-26">
+<meta property="article:author" content="Suresh">
+<meta property="article:tag" content="Azure">
+<meta property="article:tag" content="AI/ML">
+<meta property="article:tag" content="FinOps">
+
+<!-- ── Twitter Card ── -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@getcleancloud">
+<meta name="twitter:title" content="$11,400/Month in Idle Azure ML Compute: How One Setting Keeps the Meter Running">
+<meta name="twitter:description" content="AML compute cluster. min_nodes: 2. No training jobs for 23 days. $11,400/month. CleanCloud found it in 4 minutes.">
+
+<!-- ── Schema.org Article ── -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "$11,400/Month in Idle Azure ML Compute: How One Setting Keeps the Meter Running",
+  "description": "An Azure Machine Learning compute cluster with min_nodes: 2 and no training jobs for 23 days was silently costing $11,400/month. CleanCloud's azure.ml.compute.idle rule found it automatically.",
+  "author": { "@type": "Person", "name": "Suresh", "url": "https://www.getcleancloud.com" },
+  "publisher": { "@type": "Organization", "name": "CleanCloud", "url": "https://www.getcleancloud.com" },
+  "datePublished": "2026-03-26",
+  "dateModified": "2026-03-26",
+  "keywords": ["Azure ML idle compute", "AML compute cost", "min_nodes billing", "FinOps Azure ML"],
+  "articleSection": "Engineering"
+}
+</script>
+
+<!-- ── FAQ Schema ── -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Does Azure Machine Learning charge for idle compute clusters?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. Azure ML compute clusters with min_nodes greater than zero continue to bill for the minimum node count even when no training jobs are running. The cluster keeps at least that many nodes provisioned and billing continuously. Setting min_nodes to 0 allows the cluster to scale to zero between jobs."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How do I stop an Azure ML compute cluster from billing when idle?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Set min_nodes to 0 in the cluster configuration. This allows Azure to deallocate all nodes when no jobs are running. The cluster will spin up nodes when a new training job is submitted and scale back to zero when it completes."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How do I detect idle Azure ML compute clusters automatically?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "CleanCloud's azure.ml.compute.idle rule checks for AML compute clusters with min_nodes > 0 and no recent job activity. You can run this on a schedule in GitHub Actions using the cleancloud-io/scan-action with provider: azure and category: ai."
+      }
+    }
+  ]
+}
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500;600&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+
+<style>
+:root{--bg:#f6f7f9;--white:#ffffff;--border:#e2e6ea;--border2:#d0d5dc;--text:#0d1b2a;--text2:#374151;--muted:#6b7a8d;--muted2:#9aa3af;--accent:#0b7a6e;--accent-lt:#e6f4f2;--accent-md:#c2e8e3;--accent-hi:#0d9488;--sans:'Inter',system-ui,-apple-system,sans-serif;--mono:'JetBrains Mono',monospace;--serif:'Lora',Georgia,serif;--sh-sm:0 1px 3px rgba(13,27,42,.06),0 1px 2px rgba(13,27,42,.04);--sh-md:0 4px 16px rgba(13,27,42,.08),0 2px 4px rgba(13,27,42,.04);--content-width:720px}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;background-image:linear-gradient(rgba(13,27,42,.022) 1px,transparent 1px),linear-gradient(90deg,rgba(13,27,42,.022) 1px,transparent 1px);background-size:40px 40px}
+a{color:var(--accent-hi);text-decoration:none}
+a:hover{text-decoration:underline}
+nav{position:sticky;top:0;z-index:100;background:rgba(246,247,249,.93);backdrop-filter:blur(16px);border-bottom:1px solid var(--border)}
+.nav-in{max-width:1120px;margin:0 auto;padding:0 28px;height:58px;display:flex;align-items:center;justify-content:space-between}
+.nav-logo{font-family:var(--mono);font-size:14px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:9px;text-decoration:none}
+.lm{width:26px;height:26px;border-radius:6px;background:var(--text);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.lm svg{width:14px;height:14px}
+.nav-links{display:flex;align-items:center;gap:2px;list-style:none}
+.nav-links a{font-family:var(--sans);font-size:14px;font-weight:600;color:var(--muted);padding:5px 11px;border-radius:5px;transition:color .15s,background .15s}
+.nav-links a:hover{color:var(--text);background:var(--white);text-decoration:none}
+.nav-cta{font-family:var(--sans)!important;font-size:14px!important;font-weight:600!important;color:var(--white)!important;background:var(--text)!important;padding:7px 16px!important;border-radius:6px!important}
+.nav-cta:hover{background:#1a2f44!important}
+.blog-wrap{max-width:1120px;margin:0 auto;padding:0 28px;position:relative;z-index:1}
+.post-hero{padding:64px 0 48px;max-width:var(--content-width);margin:0 auto}
+.post-breadcrumb{font-family:var(--mono);font-size:11px;color:var(--muted);margin-bottom:20px;display:flex;align-items:center;gap:8px}
+.post-breadcrumb a{color:var(--muted)}
+.post-breadcrumb a:hover{color:var(--accent-hi);text-decoration:none}
+.post-breadcrumb span{color:var(--border2)}
+.post-tags{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px}
+.post-tag{font-family:var(--mono);font-size:10px;font-weight:600;padding:3px 10px;border-radius:4px;text-transform:uppercase;letter-spacing:.06em}
+.tag-azure{background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe}
+.tag-ai{background:#fdf4ff;color:#7e22ce;border:1px solid #e9d5ff}
+.tag-finops{background:#fffbeb;color:#d97706;border:1px solid #fde68a}
+.post-h1{font-size:clamp(28px,4vw,44px);font-weight:800;line-height:1.12;letter-spacing:-.025em;color:var(--text);margin-bottom:20px}
+.post-h1 em{font-style:normal;background:linear-gradient(135deg,var(--accent) 0%,var(--accent-hi) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.post-lede{font-size:18px;color:var(--text2);line-height:1.7;margin-bottom:28px;font-family:var(--serif);font-style:italic}
+.post-meta{display:flex;align-items:center;gap:20px;padding:16px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border);font-family:var(--mono);font-size:11px;color:var(--muted)}
+.meta-author{display:flex;align-items:center;gap:8px}
+.meta-avatar{width:28px;height:28px;border-radius:50%;background:var(--text);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#00ffd0;flex-shrink:0}
+.meta-dot{color:var(--border2)}
+.post-layout{display:grid;grid-template-columns:var(--content-width) 1fr;gap:60px;padding:48px 0 96px;align-items:start}
+.post-body{min-width:0}
+.post-body h2{font-size:22px;font-weight:800;color:var(--text);letter-spacing:-.02em;line-height:1.2;margin:48px 0 16px;padding-top:8px}
+.post-body h2:first-child{margin-top:0}
+.post-body h3{font-size:16px;font-weight:700;color:var(--text);letter-spacing:-.01em;margin:28px 0 10px}
+.post-body p{font-size:16px;line-height:1.8;color:var(--text2);margin-bottom:20px}
+.post-body p strong{color:var(--text);font-weight:600}
+.post-body ul,.post-body ol{margin:0 0 20px 0;padding-left:24px}
+.post-body li{font-size:16px;line-height:1.75;color:var(--text2);margin-bottom:8px}
+.post-body li strong{color:var(--text)}
+.callout{border-left:3px solid var(--accent-hi);background:var(--accent-lt);border-radius:0 8px 8px 0;padding:18px 20px;margin:28px 0}
+.callout p{margin:0;font-size:15px;color:var(--accent);font-weight:500;line-height:1.65}
+.callout-warn{border-left-color:#d97706;background:#fffbeb}
+.callout-warn p{color:#92400e}
+.code-block{background:#0d1117;border:1px solid #21262d;border-radius:10px;overflow:hidden;margin:24px 0;box-shadow:var(--sh-md);font-family:var(--mono);font-size:12.5px;line-height:1.7}
+.code-hd{background:#161b22;border-bottom:1px solid #21262d;padding:9px 16px;display:flex;align-items:center;justify-content:space-between}
+.code-fn{font-size:11px;color:#6e7681;font-family:var(--mono)}
+.code-lg{font-size:10px;padding:2px 8px;border-radius:4px;background:#21262d;color:#6e7681;border:1px solid #30363d;font-family:var(--mono)}
+.code-bd{padding:16px 18px;overflow-x:auto;color:#e6edf3}
+.code-bd .c{color:#6e7681}.code-bd .k{color:#79c0ff}.code-bd .v{color:#a5f3a5}.code-bd .s{color:#ffa657}.code-bd .hi{color:#ff7b72}.code-bd .co{color:#3fb950;font-weight:500}.code-bd .me{color:#e3b341}.code-bd .pu{color:#d2a8ff}
+.post-body code{font-family:var(--mono);font-size:13px;background:var(--bg);border:1px solid var(--border);padding:1px 6px;border-radius:4px;color:var(--accent-hi)}
+.compare-table{width:100%;border-collapse:collapse;font-size:13px;border:1px solid var(--border);border-radius:10px;overflow:hidden;box-shadow:var(--sh-sm);margin:24px 0}
+.compare-table th{text-align:left;padding:10px 14px;background:var(--bg);color:var(--muted);border-bottom:1px solid var(--border2);font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.07em;font-weight:600}
+.compare-table td{padding:10px 14px;border-bottom:1px solid var(--border);background:var(--white);color:var(--text2);font-family:var(--mono);font-size:12px;vertical-align:top}
+.compare-table tr:last-child td{border-bottom:none}
+.compare-table tr:hover td{background:var(--bg)}
+.td-good{color:#059669;font-weight:600}.td-bad{color:#dc2626;font-weight:600}.td-warn{color:#d97706;font-weight:600}
+.pull-quote{border-top:3px solid var(--text);border-bottom:1px solid var(--border);padding:24px 0 20px;margin:36px 0}
+.pull-quote p{font-family:var(--serif);font-size:20px;font-style:italic;color:var(--text);line-height:1.5;margin:0}
+.stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:28px 0}
+.stat-card{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:20px;text-align:center;box-shadow:var(--sh-sm)}
+.stat-n{font-size:28px;font-weight:800;color:var(--accent-hi);letter-spacing:-.03em;line-height:1;margin-bottom:6px}
+.stat-l{font-family:var(--mono);font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;line-height:1.4}
+.post-cta{background:var(--text);border-radius:12px;padding:32px 36px;margin:48px 0 0;position:relative;overflow:hidden}
+.post-cta::before{content:'';position:absolute;top:-60px;right:-60px;width:200px;height:200px;border-radius:50%;background:radial-gradient(circle,rgba(13,148,136,.3),transparent 70%);pointer-events:none}
+.post-cta h3{font-size:20px;font-weight:800;color:#fff;letter-spacing:-.02em;margin-bottom:8px}
+.post-cta p{font-family:var(--sans);font-size:15px;color:rgba(255,255,255,.55);margin-bottom:20px;line-height:1.65}
+.post-cta-acts{display:flex;gap:10px;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;gap:7px;font-family:var(--sans);font-size:14px;font-weight:600;padding:10px 20px;border-radius:7px;transition:transform .15s;text-decoration:none!important;letter-spacing:.01em}
+.btn:hover{transform:translateY(-1px)}
+.btn-wh{background:#fff;color:var(--text)}.btn-wh:hover{background:#f0f0f0}
+.btn-ow{background:transparent;color:rgba(255,255,255,.75);border:1px solid rgba(255,255,255,.25)}.btn-ow:hover{background:rgba(255,255,255,.08);color:#fff}
+.post-sidebar{position:sticky;top:78px}
+.toc{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:20px;box-shadow:var(--sh-sm);margin-bottom:20px}
+.toc-title{font-family:var(--mono);font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:14px}
+.toc-list{list-style:none}
+.toc-list li{margin-bottom:4px}
+.toc-list a{font-family:var(--mono);font-size:12px;color:var(--muted);display:block;padding:4px 8px;border-radius:5px;transition:color .15s,background .15s;line-height:1.4}
+.toc-list a:hover,.toc-list a.active{color:var(--accent-hi);background:var(--accent-lt);text-decoration:none}
+.toc-list a.active{font-weight:500}
+.sidebar-card{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:20px;box-shadow:var(--sh-sm);margin-bottom:16px}
+.sidebar-card-title{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--text);margin-bottom:10px;text-transform:uppercase;letter-spacing:.06em}
+.sidebar-stat{display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);font-family:var(--mono);font-size:11px}
+.sidebar-stat:last-child{border-bottom:none}
+.ss-label{color:var(--muted)}.ss-val{font-weight:600;color:var(--accent-hi)}
+.related{border-top:1px solid var(--border);padding:48px 0 80px}
+.related-title{font-family:var(--mono);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:24px}
+.related-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.related-card{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:20px;transition:box-shadow .2s,transform .2s;box-shadow:var(--sh-sm)}
+.related-card:hover{box-shadow:0 4px 16px rgba(13,27,42,.08);transform:translateY(-2px)}
+.rc-tag{font-family:var(--mono);font-size:10px;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px}
+.rc-title{font-size:14px;font-weight:700;color:var(--text);line-height:1.35;letter-spacing:-.01em;margin-bottom:8px}
+.rc-desc{font-family:var(--mono);font-size:11px;color:var(--muted);line-height:1.6}
+footer{border-top:1px solid var(--border);background:var(--white);position:relative;z-index:1}
+.fi{max-width:1120px;margin:0 auto;padding:40px 28px;display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap}
+.f-logo{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:8px}
+.f-links{display:flex;gap:20px;list-style:none}
+.f-links a{font-family:var(--sans);font-size:13px;color:var(--muted2);transition:color .15s}
+.f-links a:hover{color:var(--text);text-decoration:none}
+.f-copy{font-family:var(--sans);font-size:13px;color:var(--muted2)}
+.rv{opacity:0;transform:translateY(16px);transition:opacity .5s ease,transform .5s ease}
+.rv.in{opacity:1;transform:translateY(0)}
+@media(max-width:960px){.post-layout{grid-template-columns:1fr;gap:0}.post-sidebar{position:static;margin-top:48px}.stat-row{grid-template-columns:1fr 1fr}.related-grid{grid-template-columns:1fr}.nav-links{display:none}}
+@media(max-width:600px){.post-h1{font-size:26px}.stat-row{grid-template-columns:1fr}.post-meta{flex-wrap:wrap;gap:10px}}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-in">
+    <a class="nav-logo" href="/">
+      <div class="lm"><svg viewBox="0 0 14 14" fill="none" stroke="#00ffd0" stroke-width="2"><path d="M2 7L5 10L12 3" stroke-linecap="round" stroke-linejoin="round"/><circle cx="7" cy="7" r="6" stroke="#00ffd0" stroke-width="1.4" opacity=".4"/></svg></div>
+      cleancloud
+    </a>
+    <ul class="nav-links">
+      <li><a href="/#rules">Rules</a></li>
+      <li><a href="/#ci">CI/CD</a></li>
+      <li><a href="/blog">Blog</a></li>
+      <li><a href="https://github.com/cleancloud-io/cleancloud" target="_blank" rel="noopener">GitHub &#9733; 106</a></li>
+      <li><a href="/#contact" class="nav-cta">Contact us &#8594;</a></li>
+    </ul>
+  </div>
+</nav>
+
+<main>
+<div class="blog-wrap">
+
+  <div class="post-hero rv">
+    <div class="post-breadcrumb">
+      <a href="/">Home</a><span>&#8250;</span>
+      <a href="/blog">Blog</a><span>&#8250;</span>
+      Azure ML Idle Compute Cost
+    </div>
+    <div class="post-tags">
+      <span class="post-tag tag-azure">Azure</span>
+      <span class="post-tag tag-ai">AI/ML</span>
+      <span class="post-tag tag-finops">FinOps</span>
+    </div>
+    <h1 class="post-h1">
+      $11,400/Month in Idle Azure ML Compute:<br>
+      <em>How One Setting Keeps the Meter Running</em>
+    </h1>
+    <p class="post-lede">
+      An Azure Machine Learning compute cluster with <code style="font-style:normal;font-size:15px">min_nodes: 2</code> and no training jobs for 23 days. The team believed the cluster was &#8220;off.&#8221; It wasn't. CleanCloud found $11,400 in monthly waste on the first scan.
+    </p>
+    <div class="post-meta">
+      <div class="meta-author"><div class="meta-avatar">S</div><span>Suresh &middot; CleanCloud</span></div>
+      <span class="meta-dot">&middot;</span>
+      <span>March 26, 2026</span>
+      <span class="meta-dot">&middot;</span>
+      <span>7 min read</span>
+    </div>
+  </div>
+
+  <div class="post-layout">
+    <article class="post-body rv">
+
+      <h2 id="the-story">The Cluster Nobody Thought Was Running</h2>
+
+      <p>
+        A healthcare AI team finished a model training run in early March. The training completed successfully, the model was promoted to production, and the team moved on to the next sprint. Three weeks later, a platform engineer was reviewing Azure spending ahead of the quarter-end budget review. Something looked wrong in the ML workspace line items.
+      </p>
+
+      <p>
+        She ran CleanCloud against their Azure subscriptions. The first finding hit immediately:
+      </p>
+
+      <div class="code-block">
+        <div class="code-hd">
+          <span class="code-fn">CleanCloud scan output</span>
+          <span class="code-lg">azure.ml.compute.idle</span>
+        </div>
+        <div class="code-bd"><pre>
+<span class="me">Rule       :</span> <span class="v">azure.ml.compute.idle</span>
+<span class="me">Resource   :</span> <span class="s">gpu-training-cluster</span>
+<span class="me">Workspace  :</span> <span class="c">ml-prod (rg: ml-platform-prod)</span>
+<span class="me">VM size    :</span> <span class="hi">Standard_NC24rs_v3</span>   <span class="c">(4x V100 GPUs per node)</span>
+<span class="me">Min nodes  :</span> <span class="hi">2</span>                    <span class="c">(cluster cannot scale to zero)</span>
+<span class="me">Last job   :</span> <span class="hi">23 days ago</span>          <span class="c">(completed successfully)</span>
+<span class="me">Conf       :</span> <span class="hi">HIGH</span>
+<span class="me">Cost       :</span> <span class="hi">~$11,400/month</span>       <span class="c">(2 nodes × Standard_NC24rs_v3)</span></pre>
+        </div>
+      </div>
+
+      <p>
+        The cluster was named <code>gpu-training-cluster</code>. It had been provisioned eighteen months earlier for a large-scale computer vision model. At the time, the team set <code>min_nodes: 2</code> to reduce job startup latency &#8212; keeping two nodes warm between training runs. That made sense when training was happening weekly. After the model shipped to production, training frequency dropped to monthly. But the cluster stayed at <code>min_nodes: 2</code>.
+      </p>
+
+      <p>
+        For twenty-three days, the cluster sat idle. Eight V100 GPUs &#8212; two nodes, four GPUs each &#8212; running 24 hours a day, billing continuously. The team thought the cluster was &#8220;paused.&#8221; Azure ML compute doesn't have a pause. It has <code>min_nodes: 0</code>.
+      </p>
+
+      <div class="pull-quote">
+        <p>&#8220;We thought the cluster was paused. Azure ML compute doesn&#8217;t have a pause. It has <code>min_nodes: 0</code>.&#8221;</p>
+      </div>
+
+      <div class="stat-row">
+        <div class="stat-card">
+          <div class="stat-n">$11.4K</div>
+          <div class="stat-l">Monthly waste from one idle cluster</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-n">23 days</div>
+          <div class="stat-l">Since the last training job ran</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-n">8</div>
+          <div class="stat-l">V100 GPUs sitting idle around the clock</div>
+        </div>
+      </div>
+
+      <h2 id="why-aml-hides-this">Why Azure ML Compute Billing Is Counterintuitive</h2>
+
+      <p>
+        Azure Machine Learning compute clusters are designed for elasticity. They can scale from zero nodes to hundreds and back to zero automatically as jobs come and go. The key parameter is <code>min_nodes</code>.
+      </p>
+
+      <p>
+        When <code>min_nodes</code> is set to <strong>0</strong>, the cluster scales to zero when no jobs are running &#8212; no compute, no billing. When <code>min_nodes</code> is set to any number greater than zero, <strong>that many nodes stay provisioned permanently</strong>, regardless of job activity. Azure bills for those nodes continuously at the full VM rate.
+      </p>
+
+      <table class="compare-table">
+        <thead>
+          <tr><th>min_nodes setting</th><th>Behaviour when idle</th><th>Billing when idle</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>min_nodes: 0</code></td>
+            <td class="td-good">Scales to zero — all nodes deallocated</td>
+            <td class="td-good">&#10003; Zero billing when idle</td>
+          </tr>
+          <tr>
+            <td><code>min_nodes: 1</code></td>
+            <td class="td-bad">1 node always running</td>
+            <td class="td-bad">&#10005; Full VM cost for 1 node, 24/7</td>
+          </tr>
+          <tr>
+            <td><code>min_nodes: 2</code></td>
+            <td class="td-bad">2 nodes always running</td>
+            <td class="td-bad">&#10005; Full VM cost for 2 nodes, 24/7</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p>
+        This is not a bug. It's the intended behaviour &#8212; warm nodes reduce job startup latency from 3&#8211;5 minutes to seconds. But it's a billing behaviour that most data scientists and ML engineers don't fully internalise when they provision the cluster. The Azure Portal shows the cluster as &#8220;Running&#8221; whether it's active or idle. There's no visual distinction.
+      </p>
+
+      <div class="callout">
+        <p>
+          <strong>The key insight:</strong> An AML cluster with <code>min_nodes &gt; 0</code> is always billing, even when idle. The only signal that it's wasted spend is the absence of recent job activity &#8212; which is what CleanCloud checks.
+        </p>
+      </div>
+
+      <h2 id="how-the-rule-works">How the Detection Rule Works</h2>
+
+      <p>
+        The <code>azure.ml.compute.idle</code> rule checks three conditions for each compute cluster in each Azure ML workspace:
+      </p>
+
+      <ol>
+        <li><code>min_nodes</code> is greater than zero (billing continuously regardless of activity)</li>
+        <li>No active, queued, or recently completed training jobs in the past N days (default: 7)</li>
+        <li>The cluster is in <code>Succeeded</code> or <code>Running</code> state (not already stopped)</li>
+      </ol>
+
+      <p>
+        All three conditions must be met. A cluster with <code>min_nodes: 0</code> that's idle isn't flagged &#8212; it's already billing zero. A cluster with <code>min_nodes: 2</code> running an active job isn't flagged &#8212; the billing is justified. Only the combination of &#8220;can't scale to zero&#8221; + &#8220;no recent activity&#8221; = flagged.
+      </p>
+
+      <p>
+        Confidence is rated HIGH for GPU-backed clusters (the cost impact is unambiguous) and MEDIUM for CPU-only clusters where the cost may be modest.
+      </p>
+
+      <h2 id="catching-it-in-ci">Catching It in CI</h2>
+
+      <div class="code-block">
+        <div class="code-hd">
+          <span class="code-fn">.github/workflows/ai-waste.yml</span>
+          <span class="code-lg">Azure ML idle compute — weekly scan</span>
+        </div>
+        <div class="code-bd"><pre>
+<span class="k">name:</span> <span class="v">Azure AI/ML waste scan</span>
+<span class="k">on:</span>
+  <span class="k">schedule:</span>
+    <span class="k">- cron:</span> <span class="s">'0 8 * * 1'</span>   <span class="c"># Every Monday at 08:00 UTC</span>
+
+<span class="k">jobs:</span>
+  <span class="k">scan:</span>
+    <span class="k">runs-on:</span> <span class="v">ubuntu-latest</span>
+    <span class="k">steps:</span>
+      <span class="k">- uses:</span> <span class="v">azure/login@v2</span>
+        <span class="k">with:</span>
+          <span class="k">client-id:</span> <span class="v">${{ secrets.AZURE_CLIENT_ID }}</span>
+          <span class="k">tenant-id:</span> <span class="v">${{ secrets.AZURE_TENANT_ID }}</span>
+          <span class="k">subscription-id:</span> <span class="v">${{ secrets.AZURE_SUBSCRIPTION_ID }}</span>
+
+      <span class="k">- uses:</span> <span class="v">cleancloud-io/scan-action@v1</span>
+        <span class="k">with:</span>
+          <span class="k">provider:</span> <span class="v">azure</span>
+          <span class="k">category:</span> <span class="v">ai</span>
+          <span class="k">fail-on-confidence:</span> <span class="v">HIGH</span>
+          <span class="k">fail-on-cost:</span> <span class="s">'500'</span>
+          <span class="k">output:</span> <span class="v">json</span>
+          <span class="k">output-file:</span> <span class="v">azure-ai-findings.json</span>
+          <span class="k">artifact-name:</span> <span class="v">azure-ai-report</span></pre>
+        </div>
+      </div>
+
+      <h2 id="the-fix">The Fix: One Line of Config</h2>
+
+      <p>
+        Once the finding was confirmed, the fix took thirty seconds. The platform engineer updated the cluster configuration to set <code>min_nodes: 0</code>. The two warm nodes were deallocated by Azure within minutes. Billing dropped to zero for the cluster.
+      </p>
+
+      <div class="code-block">
+        <div class="code-hd">
+          <span class="code-fn">Azure CLI — fix idle cluster billing</span>
+          <span class="code-lg">scale to zero when not in use</span>
+        </div>
+        <div class="code-bd"><pre>
+<span class="c"># Scale minimum nodes to zero — cluster deallocates when idle</span>
+<span class="co">az ml compute update \</span>
+  <span class="co">--name gpu-training-cluster \</span>
+  <span class="co">--workspace-name ml-prod \</span>
+  <span class="co">--resource-group ml-platform-prod \</span>
+  <span class="co">--min-instances 0</span></pre>
+        </div>
+      </div>
+
+      <p>
+        The cluster kept its <code>max_nodes: 10</code> configuration unchanged. The next training job still provisions nodes as needed &#8212; it just takes 3&#8211;4 minutes longer to start than when nodes were pre-warmed. The team decided that tradeoff was worth $11,400/month.
+      </p>
+
+      <div class="callout-warn callout">
+        <p>
+          <strong>If you need low-latency startup</strong> but don't want to pay for permanent warm nodes, consider Azure ML's <strong>serverless compute</strong> for training, or set <code>min_nodes: 1</code> only during active development sprints and <code>min_nodes: 0</code> in production when training is infrequent.
+        </p>
+      </div>
+
+      <h2 id="required-permissions">Required Azure Permissions</h2>
+
+      <p>
+        The rule needs read-only access to Azure ML workspaces and their compute resources. The CleanCloud service principal needs the <code>AzureML Data Scientist</code> role (read-only variant) or an explicit assignment of:
+      </p>
+
+      <ul>
+        <li><code>Microsoft.MachineLearningServices/workspaces/read</code></li>
+        <li><code>Microsoft.MachineLearningServices/workspaces/computes/read</code></li>
+        <li><code>Microsoft.MachineLearningServices/workspaces/jobs/read</code></li>
+      </ul>
+
+      <h2 id="faq">Frequently Asked Questions</h2>
+
+      <h3>Does Azure Machine Learning charge for idle compute clusters?</h3>
+      <p>
+        Yes. Clusters with <code>min_nodes &gt; 0</code> keep that many nodes provisioned continuously, billing at the full VM rate regardless of job activity. Setting <code>min_nodes: 0</code> allows the cluster to scale to zero and stop billing when idle.
+      </p>
+
+      <h3>How do I stop an AML cluster from billing when idle?</h3>
+      <p>
+        Set <code>min_nodes: 0</code> via the Azure Portal, Azure CLI (<code>az ml compute update --min-instances 0</code>), or the Python SDK. The cluster will deallocate all nodes when no jobs are running and provision them again when a new job is submitted.
+      </p>
+
+      <h3>Will setting min_nodes to 0 affect my training jobs?</h3>
+      <p>
+        Yes &#8212; job startup time increases from seconds (with warm nodes) to 3&#8211;5 minutes (cold cluster). For most teams running infrequent training jobs, this tradeoff is easily worth the cost saving. For latency-sensitive workflows, consider scheduling jobs to run in batches and setting a short idle timeout rather than permanent warm nodes.
+      </p>
+
+      <!-- CTA -->
+      <div class="post-cta">
+        <h3>Find idle Azure ML compute in your subscriptions</h3>
+        <p>CleanCloud scans all Azure ML workspaces for clusters with min_nodes &gt; 0 and no recent jobs. Read-only, zero telemetry, MIT license.</p>
+        <div class="post-cta-acts">
+          <a href="https://pypi.org/project/cleancloud/" class="btn btn-wh" target="_blank" rel="noopener">Install via PyPI &#8594;</a>
+          <a href="https://github.com/cleancloud-io/cleancloud" class="btn btn-ow" target="_blank" rel="noopener">&#9733; View on GitHub</a>
+        </div>
+      </div>
+
+      <div class="code-block" style="margin-top:24px">
+        <div class="code-hd">
+          <span class="code-fn">Azure Cloud Shell — 60-second scan</span>
+          <span class="code-lg">no local setup required</span>
+        </div>
+        <div class="code-bd"><pre>
+<span class="co">pip install cleancloud && cleancloud scan --provider azure --category ai</span></pre>
+        </div>
+      </div>
+
+    </article>
+
+    <aside class="post-sidebar rv">
+      <div class="toc">
+        <div class="toc-title">In this article</div>
+        <ul class="toc-list">
+          <li><a href="#the-story">The Cluster Nobody Thought Was Running</a></li>
+          <li><a href="#why-aml-hides-this">Why AML Billing Is Counterintuitive</a></li>
+          <li><a href="#how-the-rule-works">How the Detection Rule Works</a></li>
+          <li><a href="#catching-it-in-ci">Catching It in CI</a></li>
+          <li><a href="#the-fix">The Fix: One Line of Config</a></li>
+          <li><a href="#required-permissions">Required Permissions</a></li>
+          <li><a href="#faq">FAQ</a></li>
+        </ul>
+      </div>
+      <div class="sidebar-card">
+        <div class="sidebar-card-title">AML idle costs</div>
+        <div class="sidebar-stat"><span class="ss-label">Standard_NC6 (1x K80)</span><span class="ss-val">~$600/mo</span></div>
+        <div class="sidebar-stat"><span class="ss-label">Standard_NC12s_v3 (2x V100)</span><span class="ss-val">~$2,900/mo</span></div>
+        <div class="sidebar-stat"><span class="ss-label">Standard_NC24rs_v3 (4x V100)</span><span class="ss-val">~$5,700/mo</span></div>
+        <div class="sidebar-stat"><span class="ss-label">2× NC24rs_v3 nodes</span><span class="ss-val">~$11,400/mo</span></div>
+      </div>
+      <div class="sidebar-card">
+        <div class="sidebar-card-title">Quick scan</div>
+        <div style="background:#0d1117;border:1px solid #21262d;border-radius:7px;padding:10px 13px;font-family:var(--mono);font-size:11px;color:#56d364;margin-bottom:10px;line-height:1.7">
+          pip install cleancloud<br>cleancloud scan \<br>&nbsp;&nbsp;--provider azure \<br>&nbsp;&nbsp;--category ai
+        </div>
+        <a href="https://github.com/cleancloud-io/cleancloud/blob/main/docs/azure.md" target="_blank" rel="noopener" style="display:block;text-align:center;font-family:var(--sans);font-size:14px;font-weight:600;color:var(--accent-hi);padding:9px;border:1px solid var(--accent-md);border-radius:7px;background:var(--accent-lt);text-decoration:none">
+          Azure setup guide &#8594;
+        </a>
+      </div>
+    </aside>
+
+  </div>
+
+  <div class="related rv">
+    <div class="related-title">More from the CleanCloud blog</div>
+    <div class="related-grid">
+      <div class="related-card">
+        <div class="rc-tag">AWS</div>
+        <div class="rc-title"><a href="/blog/sagemaker-idle-endpoint-cost.html" style="color:inherit">How We Found $25K in Idle SageMaker Endpoints</a></div>
+        <div class="rc-desc">Eight GPU endpoints. Six weeks of billing. Nobody knew they were still running.</div>
+      </div>
+      <div class="related-card">
+        <div class="rc-tag">GCP</div>
+        <div class="rc-title"><a href="/blog/vertex-ai-idle-endpoint-cost.html" style="color:inherit">Vertex AI Endpoint Running 3 Months After a PoC Ended</a></div>
+        <div class="rc-desc">A Vertex AI A100 endpoint idle since a proof-of-concept wrapped up. $7,200 in avoidable spend.</div>
+      </div>
+      <div class="related-card">
+        <div class="rc-tag">Azure</div>
+        <div class="rc-title"><a href="/blog/azure-vm-stopped-vs-deallocated.html" style="color:inherit">Azure VM Stopped vs Deallocated</a></div>
+        <div class="rc-desc">Stopped VMs in Azure still bill for compute. Deallocated ones don&#8217;t. The billing difference that costs teams thousands.</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</main>
+
+<footer>
+  <div class="fi">
+    <div class="f-logo">
+      <div class="lm"><svg viewBox="0 0 14 14" fill="none" stroke="#00ffd0" stroke-width="2"><path d="M2 7L5 10L12 3" stroke-linecap="round" stroke-linejoin="round"/><circle cx="7" cy="7" r="6" stroke="#00ffd0" stroke-width="1.4" opacity=".4"/></svg></div>
+      cleancloud
+    </div>
+    <ul class="f-links">
+      <li><a href="/">Home</a></li><li><a href="/blog">Blog</a></li>
+      <li><a href="https://github.com/cleancloud-io/cleancloud" target="_blank" rel="noopener">GitHub</a></li>
+      <li><a href="https://pypi.org/project/cleancloud/" target="_blank" rel="noopener">PyPI</a></li>
+      <li><a href="mailto:suresh@getcleancloud.com">Contact</a></li>
+    </ul>
+    <span class="f-copy">&copy; 2026 CleanCloud. MIT License.</span>
+  </div>
+</footer>
+
+<script>
+const obs=new IntersectionObserver(e=>{e.forEach(x=>{if(x.isIntersecting)x.target.classList.add('in');});},{threshold:0.06});
+document.querySelectorAll('.rv').forEach(el=>obs.observe(el));
+const headings=document.querySelectorAll('.post-body h2,.post-body h3');
+const tocLinks=document.querySelectorAll('.toc-list a');
+const tocObs=new IntersectionObserver(entries=>{entries.forEach(entry=>{if(entry.isIntersecting){tocLinks.forEach(l=>l.classList.remove('active'));const id=entry.target.getAttribute('id');const a=document.querySelector(`.toc-list a[href="#${id}"]`);if(a)a.classList.add('active');}});},{rootMargin:'-20% 0px -70% 0px'});
+headings.forEach(h=>{if(h.id)tocObs.observe(h);});
+</script>
+</body>
+</html>

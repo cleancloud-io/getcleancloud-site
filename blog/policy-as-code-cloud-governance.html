@@ -1,0 +1,1371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- ── SEO ── -->
+<title>Policy-as-Code Cloud Governance: Stop Managing Exceptions in Spreadsheets | CleanCloud</title>
+<meta name="description" content="Cloud hygiene exceptions managed in spreadsheets rot fast. Policy-as-code puts exceptions, thresholds, and rules in git — reviewable, auditable, and expiring automatically. Here's how.">
+<meta name="keywords" content="policy as code cloud governance, cleancloud.yaml, cloud hygiene exceptions, cloud policy enforcement, infrastructure as code compliance, cloud cost policy, CI cloud enforcement">
+<meta name="author" content="Suresh, CleanCloud">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://www.getcleancloud.com/blog/policy-as-code-cloud-governance/">
+
+<!-- ── Open Graph ── -->
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://www.getcleancloud.com/blog/policy-as-code-cloud-governance/">
+<meta property="og:title" content="Policy-as-Code Cloud Governance: Stop Managing Cloud Exceptions in Spreadsheets">
+<meta property="og:description" content="Cloud hygiene exceptions managed in spreadsheets rot fast. Policy-as-code puts exceptions, thresholds, and rules in git — reviewable, auditable, and expiring automatically.">
+<meta property="og:image" content="https://www.getcleancloud.com/og-image.png">
+<meta property="og:site_name" content="CleanCloud">
+<meta property="article:published_time" content="2026-04-07">
+<meta property="article:author" content="Suresh">
+<meta property="article:tag" content="FinOps">
+<meta property="article:tag" content="DevOps">
+<meta property="article:tag" content="Policy-as-Code">
+<meta property="article:tag" content="CI/CD">
+
+<!-- ── Twitter Card ── -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@getcleancloud">
+<meta name="twitter:title" content="Policy-as-Code Cloud Governance: Stop Managing Cloud Exceptions in Spreadsheets">
+<meta name="twitter:description" content="Cloud hygiene exceptions managed in spreadsheets rot fast. Policy-as-code puts them in git — reviewable, auditable, and expiring automatically.">
+
+<!-- ── Schema.org Article ── -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "Policy-as-Code Cloud Governance: Stop Managing Cloud Exceptions in Spreadsheets",
+  "description": "Cloud hygiene exceptions managed in spreadsheets rot fast. Policy-as-code puts exceptions, thresholds, and rules in git — reviewable, auditable, and expiring automatically.",
+  "author": {
+    "@type": "Person",
+    "name": "Suresh",
+    "url": "https://www.getcleancloud.com"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "CleanCloud",
+    "url": "https://www.getcleancloud.com",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://www.getcleancloud.com/og-image.png"
+    }
+  },
+  "datePublished": "2026-04-07",
+  "dateModified": "2026-04-07",
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://www.getcleancloud.com/blog/policy-as-code-cloud-governance/"
+  },
+  "keywords": ["policy as code", "cloud governance", "cloud hygiene", "CI/CD", "FinOps", "exceptions management"],
+  "articleSection": "Engineering"
+}
+</script>
+
+<!-- ── FAQ Schema ── -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "What is policy-as-code for cloud governance?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Policy-as-code means defining your cloud hygiene rules, exceptions, and thresholds in a version-controlled configuration file — like cleancloud.yaml — rather than in spreadsheets, tickets, or tribal knowledge. Every exception has a reason, an expiry date, and a git commit behind it."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How do cloud hygiene exceptions work in CI?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "A cleancloud.yaml file in your repo root defines which resource IDs are suppressed, why, and until when. When CleanCloud runs in CI, it reads this config, applies suppressions, and only fails the build on unsuppressed findings that meet the configured confidence or cost threshold."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What happens when a policy exception expires?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "When an exception's expires_at date passes, CleanCloud stops suppressing the finding. The resource will appear in scan output again and can fail the CI build if it meets the fail-on-confidence or fail-on-cost threshold. This forces teams to consciously renew or close the exception rather than forgetting about it."
+      }
+    }
+  ]
+}
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500;600&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+
+<style>
+:root {
+  --bg: #f6f7f9;
+  --white: #ffffff;
+  --border: #e2e6ea;
+  --border2: #d0d5dc;
+  --text: #0d1b2a;
+  --text2: #374151;
+  --muted: #6b7a8d;
+  --muted2: #9aa3af;
+  --accent: #0b7a6e;
+  --accent-lt: #e6f4f2;
+  --accent-md: #c2e8e3;
+  --accent-hi: #0d9488;
+  --sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --mono: 'JetBrains Mono', monospace;
+  --serif: 'Lora', Georgia, serif;
+  --sh-sm: 0 1px 3px rgba(13,27,42,.06), 0 1px 2px rgba(13,27,42,.04);
+  --sh-md: 0 4px 16px rgba(13,27,42,.08), 0 2px 4px rgba(13,27,42,.04);
+  --sh-lg: 0 12px 40px rgba(13,27,42,.12), 0 4px 8px rgba(13,27,42,.06);
+  --content-width: 720px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 15px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image:
+    linear-gradient(rgba(13,27,42,.022) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(13,27,42,.022) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+a { color: var(--accent-hi); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* ── NAV ── */
+nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(246,247,249,.93);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border);
+}
+.nav-in {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 0 28px;
+  height: 58px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.nav-logo {
+  font-family: var(--mono);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  text-decoration: none;
+}
+.lm {
+  width: 26px; height: 26px;
+  border-radius: 6px;
+  background: var(--text);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.lm svg { width: 14px; height: 14px; }
+.nav-links { display: flex; align-items: center; gap: 2px; list-style: none; }
+.nav-links a {
+  font-family: var(--sans);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--muted);
+  padding: 5px 11px;
+  border-radius: 5px;
+  transition: color .15s, background .15s;
+}
+.nav-links a:hover { color: var(--text); background: var(--white); text-decoration: none; }
+.nav-cta {
+  font-family: var(--sans) !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  color: var(--white) !important;
+  background: var(--text) !important;
+  padding: 7px 16px !important;
+  border-radius: 6px !important;
+}
+.nav-cta:hover { background: #1a2f44 !important; }
+
+/* ── BLOG LAYOUT ── */
+.blog-wrap {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 0 28px;
+  position: relative;
+  z-index: 1;
+}
+
+/* ── HERO ── */
+.post-hero {
+  padding: 64px 0 48px;
+  max-width: var(--content-width);
+  margin: 0 auto;
+}
+.post-breadcrumb {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--muted);
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.post-breadcrumb a { color: var(--muted); }
+.post-breadcrumb a:hover { color: var(--accent-hi); text-decoration: none; }
+.post-breadcrumb span { color: var(--border2); }
+.post-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+.post-tag {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+.tag-finops { background: #fffbeb; color: #d97706; border: 1px solid #fde68a; }
+.tag-cicd   { background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; }
+.tag-devops { background: var(--accent-lt); color: var(--accent); border: 1px solid var(--accent-md); }
+.tag-aws    { background: #fff8ec; color: #b45309; border: 1px solid #fde68a; }
+.tag-azure  { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+.tag-gcp    { background: #fff7ed; color: #c2410c; border: 1px solid #fed7aa; }
+.tag-ai     { background: #fdf4ff; color: #7e22ce; border: 1px solid #e9d5ff; }
+.tag-policy { background: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; }
+
+.post-h1 {
+  font-size: clamp(28px, 4vw, 44px);
+  font-weight: 800;
+  line-height: 1.12;
+  letter-spacing: -.025em;
+  color: var(--text);
+  margin-bottom: 20px;
+}
+.post-h1 em {
+  font-style: normal;
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hi) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.post-lede {
+  font-size: 18px;
+  color: var(--text2);
+  line-height: 1.7;
+  margin-bottom: 28px;
+  font-family: var(--serif);
+  font-style: italic;
+}
+.post-meta {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 16px 0;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--muted);
+}
+.meta-author { display: flex; align-items: center; gap: 8px; }
+.meta-avatar {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  background: var(--text);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: #00ffd0;
+  flex-shrink: 0;
+}
+.meta-dot { color: var(--border2); }
+
+/* ── ARTICLE BODY ── */
+.post-layout {
+  display: grid;
+  grid-template-columns: var(--content-width) 1fr;
+  gap: 60px;
+  padding: 48px 0 96px;
+  align-items: start;
+}
+.post-body { min-width: 0; }
+.post-body h2 {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: -.02em;
+  line-height: 1.2;
+  margin: 48px 0 16px;
+  padding-top: 8px;
+}
+.post-body h2:first-child { margin-top: 0; }
+.post-body h3 {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -.01em;
+  margin: 28px 0 10px;
+}
+.post-body p {
+  font-size: 16px;
+  line-height: 1.8;
+  color: var(--text2);
+  margin-bottom: 20px;
+}
+.post-body p strong { color: var(--text); font-weight: 600; }
+.post-body ul, .post-body ol {
+  margin: 0 0 20px 0;
+  padding-left: 24px;
+}
+.post-body li {
+  font-size: 16px;
+  line-height: 1.75;
+  color: var(--text2);
+  margin-bottom: 8px;
+}
+.post-body li strong { color: var(--text); }
+
+/* Callout boxes */
+.callout {
+  border-left: 3px solid var(--accent-hi);
+  background: var(--accent-lt);
+  border-radius: 0 8px 8px 0;
+  padding: 18px 20px;
+  margin: 28px 0;
+}
+.callout p {
+  margin: 0;
+  font-size: 15px;
+  color: var(--accent);
+  font-weight: 500;
+  line-height: 1.65;
+}
+.callout-warn {
+  border-left-color: #d97706;
+  background: #fffbeb;
+}
+.callout-warn p { color: #92400e; }
+
+/* Code blocks */
+.code-block {
+  background: #0d1117;
+  border: 1px solid #21262d;
+  border-radius: 10px;
+  overflow: hidden;
+  margin: 24px 0;
+  box-shadow: var(--sh-md);
+  font-family: var(--mono);
+  font-size: 12.5px;
+  line-height: 1.7;
+}
+.code-hd {
+  background: #161b22;
+  border-bottom: 1px solid #21262d;
+  padding: 9px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.code-fn { font-size: 11px; color: #6e7681; font-family: var(--mono); }
+.code-lg {
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: #21262d;
+  color: #6e7681;
+  border: 1px solid #30363d;
+  font-family: var(--mono);
+}
+.code-bd { padding: 16px 18px; overflow-x: auto; color: #e6edf3; }
+.code-bd .c  { color: #6e7681; }
+.code-bd .k  { color: #79c0ff; }
+.code-bd .v  { color: #a5f3a5; }
+.code-bd .s  { color: #ffa657; }
+.code-bd .hi { color: #ff7b72; }
+.code-bd .co { color: #3fb950; font-weight: 500; }
+.code-bd .me { color: #e3b341; }
+.code-bd .pu { color: #d2a8ff; }
+
+/* Inline code */
+.post-body code {
+  font-family: var(--mono);
+  font-size: 13px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  padding: 1px 6px;
+  border-radius: 4px;
+  color: var(--accent-hi);
+}
+
+/* Comparison table */
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: var(--sh-sm);
+  margin: 24px 0;
+}
+.compare-table th {
+  text-align: left;
+  padding: 10px 14px;
+  background: var(--bg);
+  color: var(--muted);
+  border-bottom: 1px solid var(--border2);
+  font-family: var(--mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  font-weight: 600;
+}
+.compare-table td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--white);
+  color: var(--text2);
+  font-family: var(--mono);
+  font-size: 12px;
+  vertical-align: top;
+}
+.compare-table tr:last-child td { border-bottom: none; }
+.compare-table tr:hover td { background: var(--bg); }
+.td-good { color: #059669; font-weight: 600; }
+.td-bad  { color: #dc2626; font-weight: 600; }
+.td-warn { color: #d97706; font-weight: 600; }
+
+/* Pull quote */
+.pull-quote {
+  border-top: 3px solid var(--text);
+  border-bottom: 1px solid var(--border);
+  padding: 24px 0 20px;
+  margin: 36px 0;
+}
+.pull-quote p {
+  font-family: var(--serif);
+  font-size: 20px;
+  font-style: italic;
+  color: var(--text);
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* Stat callout */
+.stat-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin: 28px 0;
+}
+.stat-card {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 20px;
+  text-align: center;
+  box-shadow: var(--sh-sm);
+}
+.stat-n {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--accent-hi);
+  letter-spacing: -.03em;
+  line-height: 1;
+  margin-bottom: 6px;
+}
+.stat-l {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  line-height: 1.4;
+}
+
+/* CTA box */
+.post-cta {
+  background: var(--text);
+  border-radius: 12px;
+  padding: 32px 36px;
+  margin: 48px 0 0;
+  position: relative;
+  overflow: hidden;
+}
+.post-cta::before {
+  content: '';
+  position: absolute;
+  top: -60px; right: -60px;
+  width: 200px; height: 200px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(13,148,136,.3), transparent 70%);
+  pointer-events: none;
+}
+.post-cta h3 {
+  font-size: 20px;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: -.02em;
+  margin-bottom: 8px;
+}
+.post-cta p {
+  font-family: var(--sans);
+  font-size: 15px;
+  color: rgba(255,255,255,.55);
+  margin-bottom: 20px;
+  line-height: 1.65;
+}
+.post-cta-acts { display: flex; gap: 10px; flex-wrap: wrap; }
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--sans);
+  font-size: 14px;
+  font-weight: 600;
+  padding: 10px 20px;
+  border-radius: 7px;
+  transition: transform .15s, box-shadow .15s;
+  text-decoration: none !important;
+  letter-spacing: .01em;
+}
+.btn:hover { transform: translateY(-1px); }
+.btn-wh { background: #fff; color: var(--text); }
+.btn-wh:hover { background: #f0f0f0; }
+.btn-ow { background: transparent; color: rgba(255,255,255,.75); border: 1px solid rgba(255,255,255,.25); }
+.btn-ow:hover { background: rgba(255,255,255,.08); color: #fff; }
+
+/* ── SIDEBAR ── */
+.post-sidebar { position: sticky; top: 78px; }
+.toc {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 20px;
+  box-shadow: var(--sh-sm);
+  margin-bottom: 20px;
+}
+.toc-title {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  color: var(--muted);
+  margin-bottom: 14px;
+}
+.toc-list { list-style: none; }
+.toc-list li { margin-bottom: 4px; }
+.toc-list a {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--muted);
+  display: block;
+  padding: 4px 8px;
+  border-radius: 5px;
+  transition: color .15s, background .15s;
+  line-height: 1.4;
+}
+.toc-list a:hover {
+  color: var(--accent-hi);
+  background: var(--accent-lt);
+  text-decoration: none;
+}
+.toc-list a.active {
+  color: var(--accent-hi);
+  background: var(--accent-lt);
+  font-weight: 500;
+}
+.sidebar-card {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 20px;
+  box-shadow: var(--sh-sm);
+  margin-bottom: 16px;
+}
+.sidebar-card-title {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 10px;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+.sidebar-stat {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--border);
+  font-family: var(--mono);
+  font-size: 11px;
+}
+.sidebar-stat:last-child { border-bottom: none; }
+.ss-label { color: var(--muted); }
+.ss-val { font-weight: 600; color: var(--accent-hi); }
+
+/* ── RELATED POSTS ── */
+.related {
+  border-top: 1px solid var(--border);
+  padding: 48px 0 80px;
+}
+.related-title {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  color: var(--muted);
+  margin-bottom: 24px;
+}
+.related-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+.related-card {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 20px;
+  transition: box-shadow .2s, transform .2s;
+  box-shadow: var(--sh-sm);
+}
+.related-card:hover {
+  box-shadow: var(--sh-md);
+  transform: translateY(-2px);
+}
+.rc-tag {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  margin-bottom: 8px;
+}
+.rc-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.35;
+  letter-spacing: -.01em;
+  margin-bottom: 8px;
+}
+.rc-desc {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+/* ── FOOTER ── */
+footer {
+  border-top: 1px solid var(--border);
+  background: var(--white);
+  position: relative;
+  z-index: 1;
+}
+.fi {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 40px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+.f-logo {
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.f-links { display: flex; gap: 20px; list-style: none; }
+.f-links a {
+  font-family: var(--sans);
+  font-size: 13px;
+  color: var(--muted2);
+  transition: color .15s;
+}
+.f-links a:hover { color: var(--text); text-decoration: none; }
+.f-copy { font-family: var(--sans); font-size: 13px; color: var(--muted2); }
+
+/* ── ANIMATIONS ── */
+.rv { opacity: 0; transform: translateY(16px); transition: opacity .5s ease, transform .5s ease; }
+.rv.in { opacity: 1; transform: translateY(0); }
+
+@media (max-width: 960px) {
+  .post-layout { grid-template-columns: 1fr; gap: 0; }
+  .post-sidebar { position: static; margin-top: 48px; }
+  .stat-row { grid-template-columns: 1fr 1fr; }
+  .related-grid { grid-template-columns: 1fr; }
+  .nav-links { display: none; }
+}
+@media (max-width: 600px) {
+  .post-h1 { font-size: 26px; }
+  .stat-row { grid-template-columns: 1fr; }
+  .post-meta { flex-wrap: wrap; gap: 10px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ── NAV ── -->
+<nav>
+  <div class="nav-in">
+    <a class="nav-logo" href="/">
+      <div class="lm">
+        <svg viewBox="0 0 14 14" fill="none" stroke="#00ffd0" stroke-width="2">
+          <path d="M2 7L5 10L12 3" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="7" cy="7" r="6" stroke="#00ffd0" stroke-width="1.4" opacity=".4"/>
+        </svg>
+      </div>
+      cleancloud
+    </a>
+    <ul class="nav-links">
+      <li><a href="/#rules">Rules</a></li>
+      <li><a href="/#ci">CI/CD</a></li>
+      <li><a href="/blog">Blog</a></li>
+      <li><a href="https://github.com/cleancloud-io/cleancloud" target="_blank" rel="noopener">GitHub &#9733; 106</a></li>
+      <li><a href="/#contact" class="nav-cta">Contact us &#8594;</a></li>
+    </ul>
+  </div>
+</nav>
+
+<!-- ── MAIN ── -->
+<main>
+<div class="blog-wrap">
+
+  <!-- HERO -->
+  <div class="post-hero rv">
+    <div class="post-breadcrumb">
+      <a href="/">Home</a>
+      <span>&#8250;</span>
+      <a href="/blog">Blog</a>
+      <span>&#8250;</span>
+      Policy-as-Code Cloud Governance
+    </div>
+
+    <div class="post-tags">
+      <span class="post-tag tag-policy">Policy-as-Code</span>
+      <span class="post-tag tag-cicd">CI/CD</span>
+      <span class="post-tag tag-finops">FinOps</span>
+      <span class="post-tag tag-devops">DevOps</span>
+    </div>
+
+    <h1 class="post-h1">
+      Policy-as-Code Cloud Governance:<br>
+      <em>Stop Managing Exceptions in Spreadsheets</em>
+    </h1>
+
+    <p class="post-lede">
+      Cloud hygiene exceptions managed in spreadsheets or Jira comments rot fast.
+      Policy-as-code puts your rules, exceptions, and thresholds in git alongside your infrastructure &#8212;
+      reviewable, auditable, and expiring automatically.
+    </p>
+
+    <div class="post-meta">
+      <div class="meta-author">
+        <div class="meta-avatar">S</div>
+        <span>Suresh &middot; CleanCloud</span>
+      </div>
+      <span class="meta-dot">&middot;</span>
+      <span>April 7, 2026</span>
+      <span class="meta-dot">&middot;</span>
+      <span>9 min read</span>
+    </div>
+  </div>
+
+  <!-- LAYOUT: BODY + SIDEBAR -->
+  <div class="post-layout">
+
+    <!-- ── ARTICLE BODY ── -->
+    <article class="post-body rv">
+
+      <h2 id="the-problem">The Exceptions Spreadsheet Nobody Trusts</h2>
+
+      <p>
+        Every team that runs cloud hygiene scans eventually creates an exceptions list. A bastion host that's intentionally stopped. A dev database that's been idle for 45 days but is still in active use. A NAT gateway with no traffic because the workload is seasonal. Legitimate exceptions, all of them.
+      </p>
+
+      <p>
+        The problem isn't having exceptions. The problem is how most teams manage them. <strong>A shared spreadsheet. A Jira epic. A Slack pinned message. An undocumented flag in a scan config that nobody remembers adding.</strong> Three months later, nobody knows which exceptions are still valid, who approved them, or when they were supposed to expire.
+      </p>
+
+      <div class="stat-row">
+        <div class="stat-card">
+          <div class="stat-n">~40%</div>
+          <div class="stat-l">Of FinOps exceptions have no documented expiry</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-n">6+ mo</div>
+          <div class="stat-l">Typical exception age before it's questioned</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-n">$0</div>
+          <div class="stat-l">Cost of a git-reviewed exception with an expiry date</div>
+        </div>
+      </div>
+
+      <p>
+        The exceptions spreadsheet is the FinOps equivalent of suppressing a security alert by commenting it out in the config. The signal is still there. The waste is still running. You've just stopped seeing it.
+      </p>
+
+      <div class="pull-quote">
+        <p>&#8220;An exception with no expiry date isn't an exception. It's a permanent blind spot with extra steps.&#8221;</p>
+      </div>
+
+      <p>
+        Policy-as-code solves this by making exceptions first-class, version-controlled, and self-expiring. Every exception has a reason, an expiry date, and a git commit behind it. The moment the expiry passes, the finding resurfaces &#8212; automatically, without anyone having to remember to check.
+      </p>
+
+      <h2 id="what-is-pac">What Policy-as-Code Means for Cloud Hygiene</h2>
+
+      <p>
+        Policy-as-code is a well-established pattern in security (OPA, Sentinel, Checkov) and infrastructure (Terraform guardrails, AWS Service Control Policies). The core idea is simple: instead of configuring your compliance rules through a UI, a spreadsheet, or tribal knowledge, you express them in a versioned file that lives alongside your infrastructure code.
+      </p>
+
+      <p>
+        For cloud hygiene, policy-as-code means a single <code>cleancloud.yaml</code> file committed to your repository root that controls:
+      </p>
+
+      <ul>
+        <li><strong>Defaults</strong> &#8212; minimum confidence and cost thresholds that apply to every scan</li>
+        <li><strong>Exceptions</strong> &#8212; specific resources suppressed, with a reason and an expiry date</li>
+        <li><strong>Thresholds</strong> &#8212; CI enforcement rules: fail on HIGH confidence, fail if waste exceeds $500/month</li>
+        <li><strong>Tag filtering</strong> &#8212; ignore entire environments (e.g., <code>env:dev</code>) without suppressing individual resources</li>
+        <li><strong>Rule config</strong> &#8212; tune idle thresholds, minimum cost per rule, or disable rules that don't apply to your architecture</li>
+      </ul>
+
+      <p>
+        CleanCloud picks this file up automatically if it's in the repo root. No flag needed. No pipeline configuration to update. Just commit the file.
+      </p>
+
+      <h2 id="anatomy">Anatomy of a cleancloud.yaml</h2>
+
+      <p>
+        Here's a complete, annotated policy config covering the most common patterns:
+      </p>
+
+      <div class="code-block">
+        <div class="code-hd">
+          <span class="code-fn">cleancloud.yaml</span>
+          <span class="code-lg">committed to repo root</span>
+        </div>
+        <div class="code-bd"><pre>
+<span class="c"># Defaults apply to every scan run from this repo</span>
+<span class="k">defaults:</span>
+  <span class="k">confidence:</span> <span class="v">MEDIUM</span>          <span class="c"># Only show MEDIUM and above</span>
+  <span class="k">min_cost:</span> <span class="v">10</span>               <span class="c"># Ignore findings under $10/month</span>
+
+<span class="c"># CI enforcement thresholds — override with --fail-on-confidence flag if needed</span>
+<span class="k">thresholds:</span>
+  <span class="k">fail_on_confidence:</span> <span class="v">HIGH</span>
+  <span class="k">fail_on_cost:</span> <span class="v">500</span>           <span class="c"># Fail CI if any single finding costs > $500/month</span>
+
+<span class="c"># Exceptions: specific resources with reason + expiry</span>
+<span class="k">exceptions:</span>
+  <span class="c"># Bastion host — started on demand, not idle</span>
+  <span class="k">- rule_id:</span> <span class="v">aws.ec2.instance.stopped</span>
+    <span class="k">resource_id:</span> <span class="v">i-0abc1234567890def</span>
+    <span class="k">reason:</span> <span class="s">"Bastion host — started on demand via SSM"</span>
+    <span class="k">expires_at:</span> <span class="s">"2026-12-31"</span>
+
+  <span class="c"># Seasonal NAT gateway — traffic spikes quarterly</span>
+  <span class="k">- rule_id:</span> <span class="v">aws.ec2.nat_gateway.idle</span>
+    <span class="k">resource_id:</span> <span class="v">nat-0def1234567890abc</span>
+    <span class="k">reason:</span> <span class="s">"Quarterly batch pipeline — idle between runs"</span>
+    <span class="k">expires_at:</span> <span class="s">"2026-07-01"</span>
+    <span class="k">account_id:</span> <span class="v">111111111111</span>   <span class="c"># Scoped to one account in multi-account orgs</span>
+
+  <span class="c"># Glob pattern — suppress all dev volumes across all accounts</span>
+  <span class="k">- rule_id:</span> <span class="v">aws.ec2.volume.unattached</span>
+    <span class="k">resource_id:</span> <span class="v">vol-dev-*</span>
+    <span class="k">reason:</span> <span class="s">"Dev environment volumes — ephemeral by design"</span>
+    <span class="k">expires_at:</span> <span class="s">"2027-01-01"</span>
+
+<span class="c"># Tag-based filtering — ignore entire environments without suppressing individually</span>
+<span class="k">scan:</span>
+  <span class="k">ignore_tags:</span>
+    <span class="k">- env:dev</span>          <span class="c"># Ignore anything tagged env=dev</span>
+    <span class="k">- temporary</span>        <span class="c"># Ignore anything with a 'temporary' tag (any value)</span>
+
+<span class="c"># Per-rule tuning</span>
+<span class="k">rules:</span>
+  <span class="k">aws.ec2.instance.stopped:</span>
+    <span class="k">idle_days:</span> <span class="v">60</span>       <span class="c"># Raise threshold from default 30 days to 60</span>
+  <span class="k">aws.cloudwatch.log_group.no_retention:</span>
+    <span class="k">enabled:</span> <span class="v">false</span>      <span class="c"># Not relevant for our architecture</span></pre>
+        </div>
+      </div>
+
+      <h2 id="exceptions-in-depth">Exceptions: What Works, What Doesn't</h2>
+
+      <h3>Always include a reason</h3>
+      <p>
+        A reason string is optional in the schema but should be mandatory in your team's practice. Six months from now, nobody will remember why <code>vol-0abc1234</code> was suppressed. The reason field is your future self's documentation.
+      </p>
+
+      <h3>Always set an expiry date</h3>
+      <p>
+        Exceptions without <code>expires_at</code> never resurface. Use <code>expires_at</code> even if you're confident the exception is permanent &#8212; set it a year out and let the renewal decision be a conscious act. When the date passes, CleanCloud stops suppressing the finding. The resource appears in scan output again and can fail CI.
+      </p>
+
+      <div class="callout">
+        <p>
+          <strong>Tip:</strong> Use <code>--explain</code> in CI to print suppression reasons alongside filtered findings. This makes it easy to audit which resources are currently suppressed and why &#8212; right in the CI log.
+        </p>
+      </div>
+
+      <h3>Use glob patterns for environments</h3>
+      <p>
+        For exceptions that cover a class of resources rather than a single ID, use glob patterns. This is much cleaner than listing every dev volume individually:
+      </p>
+
+      <div class="code-block">
+        <div class="code-hd">
+          <span class="code-fn">cleancloud.yaml — glob exception</span>
+          <span class="code-lg">matches vol-dev-* across all accounts</span>
+        </div>
+        <div class="code-bd"><pre>
+<span class="k">exceptions:</span>
+  <span class="k">- rule_id:</span> <span class="v">aws.ec2.volume.unattached</span>
+    <span class="k">resource_id:</span> <span class="v">vol-dev-*</span>
+    <span class="k">reason:</span> <span class="s">"Dev environment volumes — ephemeral by design"</span>
+    <span class="k">expires_at:</span> <span class="s">"2027-01-01"</span></pre>
+        </div>
+      </div>
+
+      <h3>Scope to a specific account in multi-account orgs</h3>
+      <p>
+        When you're scanning an AWS Organization, an exception for a resource in account A shouldn't suppress a resource with the same ID in account B. Use <code>account_id</code> to scope it:
+      </p>
+
+      <div class="code-block">
+        <div class="code-hd">
+          <span class="code-fn">cleancloud.yaml — account-scoped exception</span>
+          <span class="code-lg">only applies in account 111111111111</span>
+        </div>
+        <div class="code-bd"><pre>
+<span class="k">exceptions:</span>
+  <span class="k">- rule_id:</span> <span class="v">aws.ec2.nat_gateway.idle</span>
+    <span class="k">resource_id:</span> <span class="v">nat-0def1234567890abc</span>
+    <span class="k">reason:</span> <span class="s">"Quarterly batch pipeline — idle between runs"</span>
+    <span class="k">expires_at:</span> <span class="s">"2026-07-01"</span>
+    <span class="k">account_id:</span> <span class="v">111111111111</span></pre>
+        </div>
+      </div>
+
+      <h2 id="thresholds">Enforcement Thresholds: Fail CI Intelligently</h2>
+
+      <p>
+        The most powerful part of policy-as-code for cloud hygiene is defining exactly when your CI pipeline should fail. Two thresholds give you precise control:
+      </p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>Threshold</th>
+            <th>What it does</th>
+            <th>When to use</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>fail_on_confidence: HIGH</code></td>
+            <td>Fails CI if any finding has HIGH confidence</td>
+            <td class="td-good">Start here — only fails on very clear waste</td>
+          </tr>
+          <tr>
+            <td><code>fail_on_confidence: MEDIUM</code></td>
+            <td>Fails CI if any finding is MEDIUM or above</td>
+            <td class="td-warn">Use after you've cleared HIGH findings and tuned exceptions</td>
+          </tr>
+          <tr>
+            <td><code>fail_on_cost: 500</code></td>
+            <td>Fails CI if any single finding costs &gt;$500/month</td>
+            <td class="td-good">Catches expensive waste regardless of confidence level</td>
+          </tr>
+          <tr>
+            <td><code>fail_on_findings: true</code></td>
+            <td>Fails CI on any finding at all</td>
+            <td class="td-bad">Too aggressive for most teams &#8212; combine with tight exceptions instead</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p>
+        The recommended rollout sequence is: start with <code>fail_on_confidence: HIGH</code>, suppress legitimate exceptions, then tighten to MEDIUM once the signal is clean. Cost-based thresholds are complementary &#8212; they catch expensive anomalies even when confidence is ambiguous.
+      </p>
+
+      <h2 id="tag-filtering">Tag Filtering: Ignore Environments Without Suppression Lists</h2>
+
+      <p>
+        Individual resource exceptions are the right tool for specific, known resources. But for ignoring entire environments &#8212; dev clusters, sandbox accounts, temporary experiment infrastructure &#8212; tag filtering is much cleaner. Instead of maintaining a list of hundreds of resource IDs, you tag resources with <code>env:dev</code> and let CleanCloud skip them entirely:
+      </p>
+
+      <div class="code-block">
+        <div class="code-hd">
+          <span class="code-fn">cleancloud.yaml — tag-based environment filtering</span>
+          <span class="code-lg">no resource IDs needed</span>
+        </div>
+        <div class="code-bd"><pre>
+<span class="k">scan:</span>
+  <span class="k">ignore_tags:</span>
+    <span class="k">- env:dev</span>          <span class="c"># key:value — only ignores exact match</span>
+    <span class="k">- env:staging</span>      <span class="c"># ignore staging too</span>
+    <span class="k">- temporary</span>        <span class="c"># key only — ignores any value of 'temporary' tag</span></pre>
+        </div>
+      </div>
+
+      <div class="callout-warn callout">
+        <p>
+          <strong>What tag filtering does not do:</strong> it doesn't suppress untagged resources. A resource with no tags at all will still appear in scan output. This is intentional &#8212; untagged resources are often the highest-priority finding because they have no owner by definition. Use the <code>aws.resource.untagged</code> rule to enforce tagging compliance separately.
+        </p>
+      </div>
+
+      <h2 id="ci-integration">The Full CI Pattern: Policy Config + Scan Action</h2>
+
+      <p>
+        Once your <code>cleancloud.yaml</code> is committed, integrating it into GitHub Actions requires no additional configuration. The scan action auto-detects the file from the repo root after checkout:
+      </p>
+
+      <div class="code-block">
+        <div class="code-hd">
+          <span class="code-fn">.github/workflows/cloud-hygiene.yml</span>
+          <span class="code-lg">Policy config auto-detected from repo root</span>
+        </div>
+        <div class="code-bd"><pre>
+<span class="k">name:</span> <span class="v">Cloud hygiene</span>
+<span class="k">on:</span>
+  <span class="k">schedule:</span>
+    <span class="k">- cron:</span> <span class="s">'0 8 * * 1-5'</span>   <span class="c"># Weekdays at 08:00 UTC</span>
+  <span class="k">push:</span>
+    <span class="k">branches:</span> <span class="k">[main]</span>
+
+<span class="k">jobs:</span>
+  <span class="k">scan:</span>
+    <span class="k">runs-on:</span> <span class="v">ubuntu-latest</span>
+    <span class="k">permissions:</span>
+      <span class="k">id-token:</span> <span class="v">write</span>
+      <span class="k">contents:</span> <span class="v">read</span>
+    <span class="k">steps:</span>
+      <span class="k">- uses:</span> <span class="v">actions/checkout@v4</span>   <span class="c"># Required — makes cleancloud.yaml available</span>
+
+      <span class="k">- uses:</span> <span class="v">aws-actions/configure-aws-credentials@v4</span>
+        <span class="k">with:</span>
+          <span class="k">role-to-assume:</span> <span class="v">arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/CleanCloudCIReadOnly</span>
+          <span class="k">aws-region:</span> <span class="v">us-east-1</span>
+
+      <span class="k">- uses:</span> <span class="v">cleancloud-io/scan-action@v1</span>
+        <span class="k">with:</span>
+          <span class="k">provider:</span> <span class="v">aws</span>
+          <span class="k">all-regions:</span> <span class="s">'true'</span>
+          <span class="c"># cleancloud.yaml is picked up automatically from repo root</span>
+          <span class="c"># fail_on_confidence and fail_on_cost thresholds come from cleancloud.yaml</span>
+          <span class="k">output:</span> <span class="v">json</span>
+          <span class="k">output-file:</span> <span class="v">scan-results.json</span>
+          <span class="k">explain:</span> <span class="s">'true'</span>   <span class="c"># Print suppression reasons in CI log</span>
+          <span class="k">artifact-name:</span> <span class="v">cleancloud-report</span></pre>
+        </div>
+      </div>
+
+      <p>
+        When the scan runs, you'll see exactly which resources were suppressed and why, which findings remain, and whether any thresholds were breached. The <code>--explain</code> flag makes the suppression list auditable in every CI run.
+      </p>
+
+      <h2 id="multi-env">Per-Environment Configs</h2>
+
+      <p>
+        For organisations running separate CI pipelines per environment &#8212; prod, staging, sandbox &#8212; you can maintain separate policy configs and reference them explicitly:
+      </p>
+
+      <div class="code-block">
+        <div class="code-hd">
+          <span class="code-fn">CI step — explicit config path</span>
+          <span class="code-lg">override auto-detection</span>
+        </div>
+        <div class="code-bd"><pre>
+<span class="k">- uses:</span> <span class="v">cleancloud-io/scan-action@v1</span>
+  <span class="k">with:</span>
+    <span class="k">provider:</span> <span class="v">aws</span>
+    <span class="k">all-regions:</span> <span class="s">'true'</span>
+    <span class="k">config:</span> <span class="v">configs/cleancloud.prod.yaml</span>   <span class="c"># Strict: fail on HIGH confidence</span>
+
+<span class="c"># In a separate staging job:</span>
+<span class="k">- uses:</span> <span class="v">cleancloud-io/scan-action@v1</span>
+  <span class="k">with:</span>
+    <span class="k">provider:</span> <span class="v">aws</span>
+    <span class="k">all-regions:</span> <span class="s">'true'</span>
+    <span class="k">config:</span> <span class="v">configs/cleancloud.staging.yaml</span> <span class="c"># Relaxed: report only</span></pre>
+        </div>
+      </div>
+
+      <p>
+        The typical pattern is a strict policy for production (fail on HIGH, fail above $500/month) and a relaxed policy for staging (report-only, or fail only on very expensive findings). Sandbox environments often get tag-filtered out entirely with <code>ignore_tags: [env:sandbox]</code>.
+      </p>
+
+      <h2 id="governance">Why This Is Governance, Not Just Config</h2>
+
+      <p>
+        The word &#8220;governance&#8221; gets overloaded in the cloud space, but for policy-as-code it has a specific meaning. When your cloud hygiene rules, exceptions, and thresholds live in git:
+      </p>
+
+      <ul>
+        <li><strong>Every exception has a git author.</strong> You know who approved it and when.</li>
+        <li><strong>Every exception has a history.</strong> <code>git log cleancloud.yaml</code> shows you every change to your suppression list.</li>
+        <li><strong>Exceptions require a PR.</strong> Adding a new exception goes through code review, the same as any infrastructure change.</li>
+        <li><strong>Exceptions expire automatically.</strong> No manual audit required. The scan surfaces the finding again on the expiry date.</li>
+        <li><strong>Thresholds are change-controlled.</strong> Relaxing a threshold from HIGH to MEDIUM requires a PR, not a click in a dashboard.</li>
+      </ul>
+
+      <div class="callout">
+        <p>
+          This is the property that makes policy-as-code genuinely different from a Jira ticket or a spreadsheet row: <strong>you cannot silently change it</strong>. Every modification to your policy is a commit &#8212; and in regulated environments, that commit is your audit trail.
+        </p>
+      </div>
+
+      <h2 id="faq">Frequently Asked Questions</h2>
+
+      <h3>What is policy-as-code for cloud governance?</h3>
+      <p>
+        Policy-as-code means defining your cloud hygiene rules, exceptions, and thresholds in a version-controlled file &#8212; like <code>cleancloud.yaml</code> &#8212; rather than in spreadsheets or tickets. Every exception has a reason, an expiry date, and a git commit. Changing the policy goes through code review.
+      </p>
+
+      <h3>How do cloud hygiene exceptions work in CI?</h3>
+      <p>
+        CleanCloud reads your <code>cleancloud.yaml</code> from the repo root (auto-detected after <code>actions/checkout</code>). Exceptions suppress specific findings for their configured duration. When an exception expires, the finding resurfaces and can fail the CI build again &#8212; forcing a conscious renewal decision.
+      </p>
+
+      <h3>What happens when a policy exception expires?</h3>
+      <p>
+        CleanCloud stops suppressing the finding. The resource appears in scan output again. If it meets the <code>fail_on_confidence</code> or <code>fail_on_cost</code> threshold, the CI build fails. The team must either renew the exception (with a new reason and expiry) or remediate the underlying resource.
+      </p>
+
+      <h3>Can I use policy-as-code with multi-account AWS Organizations?</h3>
+      <p>
+        Yes. Use the <code>account_id</code> field on any exception to scope it to a specific account. Global exceptions (without <code>account_id</code>) apply across all scanned accounts. This lets you suppress a resource in one account without accidentally suppressing a resource with the same ID in a different account.
+      </p>
+
+      <h2 id="getting-started">Getting Started in Two Steps</h2>
+
+      <p>
+        The fastest path to policy-as-code governance is to run a scan first, identify which findings are legitimate exceptions, then write the config. You don't have to define your entire policy upfront.
+      </p>
+
+      <div class="code-block">
+        <div class="code-hd">
+          <span class="code-fn">Step 1 — discover what's there</span>
+          <span class="code-lg">AWS CloudShell or local terminal</span>
+        </div>
+        <div class="code-bd"><pre>
+<span class="co">pip install cleancloud</span>
+<span class="co">cleancloud scan --provider aws --all-regions --output json --output-file findings.json</span></pre>
+        </div>
+      </div>
+
+      <div class="code-block">
+        <div class="code-hd">
+          <span class="code-fn">Step 2 — commit your policy config</span>
+          <span class="code-lg">repo root</span>
+        </div>
+        <div class="code-bd"><pre>
+<span class="c"># cleancloud.yaml</span>
+<span class="k">defaults:</span>
+  <span class="k">confidence:</span> <span class="v">MEDIUM</span>
+  <span class="k">min_cost:</span> <span class="v">10</span>
+
+<span class="k">thresholds:</span>
+  <span class="k">fail_on_confidence:</span> <span class="v">HIGH</span>
+
+<span class="k">exceptions:</span>
+  <span class="k">- rule_id:</span> <span class="v">aws.ec2.instance.stopped</span>
+    <span class="k">resource_id:</span> <span class="v">i-0abc1234567890def</span>
+    <span class="k">reason:</span> <span class="s">"Bastion host — on-demand via SSM"</span>
+    <span class="k">expires_at:</span> <span class="s">"2026-12-31"</span></pre>
+        </div>
+      </div>
+
+      <p>
+        From the first scan, you have a baseline. From the committed config, you have governance. The CI pipeline runs daily and fails on anything new that clears your threshold. Exceptions require a PR. Thresholds are change-controlled. That's policy-as-code cloud governance &#8212; and it took two steps to set up.
+      </p>
+
+      <!-- CTA -->
+      <div class="post-cta">
+        <h3>Add policy-as-code governance to your pipeline</h3>
+        <p>CleanCloud 1.13 ships native <code>cleancloud.yaml</code> support &#8212; exceptions, thresholds, tag filtering, and rule config. Read-only, zero telemetry, MIT license.</p>
+        <div class="post-cta-acts">
+          <a href="https://github.com/cleancloud-io/cleancloud/blob/main/docs/configuration.md" class="btn btn-wh" target="_blank" rel="noopener">Policy config reference &#8594;</a>
+          <a href="https://github.com/cleancloud-io/cleancloud" class="btn btn-ow" target="_blank" rel="noopener">&#9733; View on GitHub</a>
+        </div>
+      </div>
+
+    </article>
+
+    <!-- ── SIDEBAR ── -->
+    <aside class="post-sidebar rv">
+
+      <div class="toc">
+        <div class="toc-title">In this article</div>
+        <ul class="toc-list">
+          <li><a href="#the-problem">The Exceptions Spreadsheet</a></li>
+          <li><a href="#what-is-pac">What Policy-as-Code Means</a></li>
+          <li><a href="#anatomy">Anatomy of cleancloud.yaml</a></li>
+          <li><a href="#exceptions-in-depth">Exceptions in Depth</a></li>
+          <li><a href="#thresholds">Enforcement Thresholds</a></li>
+          <li><a href="#tag-filtering">Tag Filtering</a></li>
+          <li><a href="#ci-integration">The Full CI Pattern</a></li>
+          <li><a href="#multi-env">Per-Environment Configs</a></li>
+          <li><a href="#governance">Why This Is Governance</a></li>
+          <li><a href="#faq">FAQ</a></li>
+          <li><a href="#getting-started">Getting Started</a></li>
+        </ul>
+      </div>
+
+      <div class="sidebar-card">
+        <div class="sidebar-card-title">CleanCloud at a glance</div>
+        <div class="sidebar-stat">
+          <span class="ss-label">Detection rules</span>
+          <span class="ss-val">33+</span>
+        </div>
+        <div class="sidebar-stat">
+          <span class="ss-label">Cloud providers</span>
+          <span class="ss-val">AWS + Azure + GCP</span>
+        </div>
+        <div class="sidebar-stat">
+          <span class="ss-label">Policy config</span>
+          <span class="ss-val">cleancloud.yaml</span>
+        </div>
+        <div class="sidebar-stat">
+          <span class="ss-label">Writes / mutations</span>
+          <span class="ss-val">Zero</span>
+        </div>
+        <div class="sidebar-stat">
+          <span class="ss-label">Telemetry</span>
+          <span class="ss-val">None</span>
+        </div>
+        <div class="sidebar-stat">
+          <span class="ss-label">Version</span>
+          <span class="ss-val">v1.13.0</span>
+        </div>
+      </div>
+
+      <div class="sidebar-card">
+        <div class="sidebar-card-title">Quick install</div>
+        <div style="background:#0d1117;border:1px solid #21262d;border-radius:7px;padding:10px 13px;font-family:var(--mono);font-size:12px;color:#56d364;margin-bottom:10px">
+          pip install cleancloud
+        </div>
+        <a href="https://github.com/cleancloud-io/cleancloud/blob/main/docs/configuration.md" target="_blank" rel="noopener" style="display:block;text-align:center;font-family:var(--sans);font-size:14px;font-weight:600;color:var(--accent-hi);padding:9px;border:1px solid var(--accent-md);border-radius:7px;background:var(--accent-lt);transition:background .15s;text-decoration:none">
+          Policy config docs &#8594;
+        </a>
+      </div>
+
+    </aside>
+
+  </div><!-- end post-layout -->
+
+  <!-- RELATED POSTS -->
+  <div class="related rv">
+    <div class="related-title">More from the CleanCloud blog</div>
+    <div class="related-grid">
+      <div class="related-card">
+        <div class="rc-tag">FinOps</div>
+        <div class="rc-title"><a href="/blog/shift-left-cloud-cost-optimization.html" style="color:inherit">Shift-Left Cloud Cost Optimization</a></div>
+        <div class="rc-desc">Catch waste in CI before it hits your bill. How shift-left hygiene compares to traditional FinOps dashboards.</div>
+      </div>
+      <div class="related-card">
+        <div class="rc-tag">AI/ML</div>
+        <div class="rc-title"><a href="/blog/idle-ai-ml-infrastructure-cost.html" style="color:inherit">The Hidden Cost of Idle AI/ML Infrastructure</a></div>
+        <div class="rc-desc">SageMaker, AML, and Vertex AI endpoints burning $500–$23K/month unnoticed. How to catch them in CI.</div>
+      </div>
+      <div class="related-card">
+        <div class="rc-tag">Azure</div>
+        <div class="rc-title"><a href="/blog/azure-vm-stopped-vs-deallocated.html" style="color:inherit">Azure VM Stopped vs Deallocated</a></div>
+        <div class="rc-desc">Why your &#8220;off&#8221; VM is still billing. The difference between stopped and deallocated &#8212; and how to catch it automatically.</div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- end blog-wrap -->
+</main>
+
+<!-- ── FOOTER ── -->
+<footer>
+  <div class="fi">
+    <div class="f-logo">
+      <div class="lm">
+        <svg viewBox="0 0 14 14" fill="none" stroke="#00ffd0" stroke-width="2">
+          <path d="M2 7L5 10L12 3" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="7" cy="7" r="6" stroke="#00ffd0" stroke-width="1.4" opacity=".4"/>
+        </svg>
+      </div>
+      cleancloud
+    </div>
+    <ul class="f-links">
+      <li><a href="/">Home</a></li>
+      <li><a href="/blog">Blog</a></li>
+      <li><a href="https://github.com/cleancloud-io/cleancloud" target="_blank" rel="noopener">GitHub</a></li>
+      <li><a href="https://pypi.org/project/cleancloud/" target="_blank" rel="noopener">PyPI</a></li>
+      <li><a href="mailto:suresh@getcleancloud.com">Contact</a></li>
+    </ul>
+    <span class="f-copy">&copy; 2026 CleanCloud. MIT License.</span>
+  </div>
+</footer>
+
+<script>
+// Scroll reveal
+const obs = new IntersectionObserver(entries => {
+  entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('in'); });
+}, { threshold: 0.06 });
+document.querySelectorAll('.rv').forEach(el => obs.observe(el));
+
+// TOC active state
+const headings = document.querySelectorAll('.post-body h2, .post-body h3');
+const tocLinks = document.querySelectorAll('.toc-list a');
+const tocObs = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      tocLinks.forEach(l => l.classList.remove('active'));
+      const id = entry.target.getAttribute('id');
+      const active = document.querySelector(`.toc-list a[href="#${id}"]`);
+      if (active) active.classList.add('active');
+    }
+  });
+}, { rootMargin: '-20% 0px -70% 0px' });
+headings.forEach(h => { if (h.id) tocObs.observe(h); });
+</script>
+
+</body>
+</html>

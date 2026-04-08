@@ -102,7 +102,7 @@ nav{position:sticky;top:0;z-index:100;background:rgba(246,247,249,.93);backdrop-
 .sb-item-meta{font-family:var(--mono);font-size:10px;color:var(--muted2)}
 .sb-tags{display:flex;flex-wrap:wrap;gap:6px}
 .sb-tag{font-family:var(--mono);font-size:10px;padding:4px 10px;border-radius:4px;border:1px solid var(--border2);color:var(--muted);background:var(--bg);transition:all .15s;cursor:pointer}
-.sb-tag:hover{color:var(--text);border-color:var(--text);text-decoration:none}
+.sb-tag:hover,.sb-tag.active{color:var(--text);border-color:var(--text);text-decoration:none}
 .sb-install{background:#0d1117;border:1px solid #21262d;border-radius:8px;padding:14px;font-family:var(--mono);font-size:11px;color:#3fb950;line-height:1.7;margin-top:10px}
 footer{border-top:1px solid var(--border);background:var(--white);position:relative;z-index:1}
 .fi{max-width:1120px;margin:0 auto;padding:48px 28px;display:grid;grid-template-columns:2.2fr 1fr 1fr 1fr;gap:48px}
@@ -151,7 +151,7 @@ footer{border-top:1px solid var(--border);background:var(--white);position:relat
       <li>
         <a href="https://github.com/cleancloud-io/cleancloud" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;padding:5px 8px">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.477 2 12c0 4.418 2.865 8.166 6.839 9.489.5.092.682-.217.682-.482 0-.237-.009-.868-.013-1.703-2.782.604-3.369-1.342-3.369-1.342-.454-1.155-1.11-1.463-1.11-1.463-.908-.62.069-.608.069-.608 1.003.07 1.531 1.031 1.531 1.031.892 1.529 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0112 6.836a9.59 9.57 0 012.504.337c1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.202 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.741 0 .267.18.579.688.481C19.138 20.163 22 16.418 22 12c0-5.523-4.477-10-10-10z"/></svg>
-          GitHub<span class="gh-star-badge">&#9733; <span class="gh-stars-nav">80</span></span>
+          GitHub<span class="gh-star-badge">&#9733; <span class="gh-stars-nav">106</span></span>
         </a>
       </li>
       <li><a href="/#contact" class="nav-cta">Contact us &#8594;</a></li>
@@ -169,51 +169,79 @@ footer{border-top:1px solid var(--border);background:var(--white);position:relat
 
 <div class="filter-strip">
   <div class="filter-in">
-    <a href="#" class="filter-tag active">All posts</a>
-    <a href="#" class="filter-tag">Cloud hygiene</a>
-    <a href="#" class="filter-tag">AWS</a>
-    <a href="#" class="filter-tag">Azure</a>
-    <a href="#" class="filter-tag">GCP</a>
-    <a href="#" class="filter-tag">CI/CD</a>
-    <a href="#" class="filter-tag">FinOps</a>
+    <a href="#" class="filter-tag active" data-filter="all">All posts</a>
+    <a href="#" class="filter-tag" data-filter="hygiene">Cloud hygiene</a>
+    <a href="#" class="filter-tag" data-filter="aws">AWS</a>
+    <a href="#" class="filter-tag" data-filter="azure">Azure</a>
+    <a href="#" class="filter-tag" data-filter="gcp">GCP</a>
+    <a href="#" class="filter-tag" data-filter="ai">AI/ML</a>
+    <a href="#" class="filter-tag" data-filter="ci">CI/CD</a>
+    <a href="#" class="filter-tag" data-filter="finops">FinOps</a>
   </div>
 </div>
 
 <div class="blog-wrap">
   <div>
 
-    <!-- FEATURED: Week 1 post -->
-    <article class="featured-card rv">
+    <!-- FEATURED: Latest post -->
+    <article class="featured-card rv" data-tags="all ci finops hygiene">
       <div class="fc-img">
         <div class="fc-img-term">
-          <span style="display:block;color:#6e7681;margin-bottom:8px">$ cleancloud scan --provider azure</span>
-          <span style="display:block;color:#79c0ff">Rule: az_stopped_vm</span>
-          <span style="display:block;color:#6e7681">   Confidence : <span style="color:#ff7b72">High</span>   Cost : <span style="color:#3fb950;font-weight:500">~$42/mo</span></span>
-          <span style="display:block;color:#6e7681">   Resource   : <span style="color:#ffa657">vm-dev-test-01</span></span>
-          <span style="display:block;color:#6e7681">   State      : <span style="color:#ff7b72">Stopped (not deallocated)</span></span>
+          <span style="display:block;color:#6e7681;margin-bottom:8px">$ cleancloud scan --provider aws --category ai</span>
+          <span style="display:block;color:#79c0ff">Rule: aws.sagemaker.endpoint.idle</span>
+          <span style="display:block;color:#6e7681">   Confidence : <span style="color:#ff7b72">HIGH</span>   Cost : <span style="color:#3fb950;font-weight:500">~$504/mo</span></span>
+          <span style="display:block;color:#6e7681">   Resource   : <span style="color:#ffa657">fraud-detection-v2</span></span>
+          <span style="display:block;color:#6e7681">   Instance   : <span style="color:#ff7b72">ml.g4dn.xlarge (GPU)</span></span>
+          <span style="display:block;color:#6e7681">   Idle       : <span style="color:#ff7b72">14 days (0 invocations)</span></span>
           <span style="display:block;color:#21262d;margin-top:8px">&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;</span>
-          <span style="display:block;color:#3fb950;font-weight:500">&#10003; Est. waste ~$42/month &#183; Exit 1</span>
+          <span style="display:block;color:#3fb950;font-weight:500">&#10003; Est. waste ~$504/month &#183; Exit 2</span>
         </div>
         <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#6e7681;margin-top:16px">read-only &#183; zero telemetry &#183; no agents</div>
       </div>
       <div class="fc-body">
         <span class="fc-eyebrow">Latest post</span>
         <h2 class="fc-title">
-          <a href="/blog/azure-vm-stopped-vs-deallocated.html">Azure VM Stopped vs Deallocated: Why Your &#8220;Off&#8221; VM Is Still Costing You Money</a>
+          <a href="/blog/policy-as-code-cloud-governance.html">Policy-as-Code Cloud Governance: Stop Managing Exceptions in Spreadsheets</a>
           <span class="new-badge">New</span>
         </h2>
-        <p class="fc-excerpt">Shutting down an Azure VM from inside the OS leaves it in &#8220;Stopped&#8221; state &#8212; still billing full compute. Only &#8220;Stopped (deallocated)&#8221; actually saves money. Here&#8217;s the billing difference, how to fix it, and how to catch it automatically in CI.</p>
+        <p class="fc-excerpt">Cloud hygiene exceptions managed in spreadsheets rot fast. Policy-as-code puts your rules, exceptions, and thresholds in git alongside your infrastructure &#8212; reviewable, auditable, and expiring automatically.</p>
         <div class="fc-meta">
-          <span class="fc-date">March 2026 &#183; 6 min read</span>
-          <a href="/blog/azure-vm-stopped-vs-deallocated.html" class="fc-read">Read article &#8594;</a>
+          <span class="fc-date">April 2026 &#183; 9 min read</span>
+          <a href="/blog/policy-as-code-cloud-governance.html" class="fc-read">Read article &#8594;</a>
         </div>
       </div>
     </article>
 
     <div class="blog-grid">
 
+      <!-- PUBLISHED: idle-ai-ml-infrastructure-cost -->
+      <article class="bc rv" data-tags="all ai aws azure gcp">
+        <span class="bc-tag tag-new">AI/ML</span>
+        <div class="bc-title">
+          <a href="/blog/idle-ai-ml-infrastructure-cost.html">The Hidden Cost of Idle AI/ML Infrastructure: SageMaker, AML, and Vertex AI</a>
+        </div>
+        <p class="bc-excerpt">SageMaker endpoints don't stop billing when traffic stops. GPU-backed instances burn $500&#8211;$23K/month with zero invocations. Here&#8217;s how to catch them.</p>
+        <div class="bc-meta">
+          <span>March 2026 &#183; 10 min read</span>
+          <a href="/blog/idle-ai-ml-infrastructure-cost.html" class="bc-read">Read &#8594;</a>
+        </div>
+      </article>
+
+      <!-- PUBLISHED: azure-vm-stopped-vs-deallocated -->
+      <article class="bc rv" data-tags="all azure hygiene">
+        <span class="bc-tag tag-azure">Azure</span>
+        <div class="bc-title">
+          <a href="/blog/azure-vm-stopped-vs-deallocated.html">Azure VM Stopped vs Deallocated: Why Your &#8220;Off&#8221; VM Is Still Costing You Money</a>
+        </div>
+        <p class="bc-excerpt">Shutting down an Azure VM from inside the OS leaves it in &#8220;Stopped&#8221; state &#8212; still billing full compute. Only &#8220;Stopped (deallocated)&#8221; actually saves money.</p>
+        <div class="bc-meta">
+          <span>March 2026 &#183; 6 min read</span>
+          <a href="/blog/azure-vm-stopped-vs-deallocated.html" class="bc-read">Read &#8594;</a>
+        </div>
+      </article>
+
       <!-- PUBLISHED: shift-left-cloud-cost-optimization -->
-      <article class="bc rv">
+      <article class="bc rv" data-tags="all finops ci">
         <span class="bc-tag tag-finops">FinOps</span>
         <div class="bc-title">
           <a href="/blog/shift-left-cloud-cost-optimization.html">Shift-Left Cloud Cost Optimization: Catch Waste in CI Before It Hits Your Bill</a>
@@ -226,7 +254,7 @@ footer{border-top:1px solid var(--border);background:var(--white);position:relat
       </article>
 
       <!-- PUBLISHED: cloud-cleanup-without-auto-delete -->
-      <article class="bc rv">
+      <article class="bc rv" data-tags="all hygiene ci aws azure gcp">
         <span class="bc-tag tag-ci">Cloud hygiene</span>
         <div class="bc-title">
           <a href="/blog/cloud-cleanup-without-auto-delete.html">Cloud Cleanup Without Auto-Delete: Why It Matters for Production</a>
@@ -238,46 +266,57 @@ footer{border-top:1px solid var(--border);background:var(--white);position:relat
         </div>
       </article>
 
+      <!-- PUBLISHED: sagemaker-idle-endpoint-cost -->
+      <article class="bc rv" data-tags="all aws ai">
+        <span class="bc-tag tag-aws">AWS</span>
+        <div class="bc-title">
+          <a href="/blog/sagemaker-idle-endpoint-cost.html">How We Found $25,000 in Idle SageMaker Endpoints Nobody Knew Were Running</a>
+        </div>
+        <p class="bc-excerpt">Eight GPU endpoints, six weeks of billing, $25K in waste. The scan took four minutes. Here&#8217;s the full story.</p>
+        <div class="bc-meta">
+          <span>March 2026 &#183; 8 min read</span>
+          <a href="/blog/sagemaker-idle-endpoint-cost.html" class="bc-read">Read &#8594;</a>
+        </div>
+      </article>
+
+      <!-- PUBLISHED: azure-ml-compute-idle-cost -->
+      <article class="bc rv" data-tags="all azure ai">
+        <span class="bc-tag tag-azure">Azure</span>
+        <div class="bc-title">
+          <a href="/blog/azure-ml-compute-idle-cost.html">$11,400/Month in Idle Azure ML Compute: How One Setting Keeps the Meter Running</a>
+        </div>
+        <p class="bc-excerpt">An AML compute cluster with min_nodes: 2 and no training jobs for 23 days. One line of config saves $11K/month.</p>
+        <div class="bc-meta">
+          <span>March 2026 &#183; 7 min read</span>
+          <a href="/blog/azure-ml-compute-idle-cost.html" class="bc-read">Read &#8594;</a>
+        </div>
+      </article>
+
+      <!-- PUBLISHED: vertex-ai-idle-endpoint-cost -->
+      <article class="bc rv" data-tags="all gcp ai">
+        <span class="bc-tag tag-new">GCP</span>
+        <div class="bc-title">
+          <a href="/blog/vertex-ai-idle-endpoint-cost.html">Vertex AI Endpoint Running After a PoC Ended: $6,300 in Avoidable Spend</a>
+        </div>
+        <p class="bc-excerpt">A GCP proof-of-concept ended. The Vertex AI A100 endpoint didn&#8217;t. 78 days and $6,300 later, CleanCloud caught it.</p>
+        <div class="bc-meta">
+          <span>March 2026 &#183; 7 min read</span>
+          <a href="/blog/vertex-ai-idle-endpoint-cost.html" class="bc-read">Read &#8594;</a>
+        </div>
+      </article>
+
       <!-- COMING SOON -->
-      <article class="bc dim">
+      <article class="bc dim" data-tags="all aws hygiene">
         <span class="bc-tag tag-aws">AWS</span>
         <div class="bc-title">Safe Alternatives to AWS Nuke: A Comprehensive Guide</div>
         <p class="bc-excerpt">AWS Nuke is powerful but risky. Explore safer alternatives for production environments, including read-only tools and manual review workflows.</p>
         <div class="bc-meta"><span class="bc-tag tag-soon" style="margin-bottom:0">Coming soon</span></div>
       </article>
 
-      <article class="bc dim">
-        <span class="bc-tag tag-ci">CI/CD</span>
-        <div class="bc-title">Integrating CleanCloud into Your CI/CD Pipeline</div>
-        <p class="bc-excerpt">Step-by-step guide to adding cloud hygiene gates to GitHub Actions, GitLab CI, and Jenkins. Fail builds on HIGH confidence findings.</p>
-        <div class="bc-meta"><span class="bc-tag tag-soon" style="margin-bottom:0">Coming soon</span></div>
-      </article>
-
-      <article class="bc dim">
-        <span class="bc-tag tag-finops">FinOps</span>
-        <div class="bc-title">The True Cost of Cloud Waste vs. The Cost of Downtime</div>
-        <p class="bc-excerpt">Analysing the trade-offs between aggressive cost optimisation and production safety. When is cloud &#8220;waste&#8221; actually insurance?</p>
-        <div class="bc-meta"><span class="bc-tag tag-soon" style="margin-bottom:0">Coming soon</span></div>
-      </article>
-
-      <article class="bc dim">
-        <span class="bc-tag tag-azure">Azure</span>
-        <div class="bc-title">Azure Cost Hygiene: Resources Teams Forget to Clean Up</div>
-        <p class="bc-excerpt">Idle managed disks, stopped VMs, and empty App Service Plans that silently drain Azure budgets month after month.</p>
-        <div class="bc-meta"><span class="bc-tag tag-soon" style="margin-bottom:0">Coming soon</span></div>
-      </article>
-
-      <article class="bc dim">
+      <article class="bc dim" data-tags="all finops">
         <span class="bc-tag tag-finops">FinOps</span>
         <div class="bc-title">Cloud Hygiene in Regulated Industries: HIPAA, SOC 2, PCI-DSS</div>
         <p class="bc-excerpt">How to implement safe cloud cleanup in healthcare, finance, and other regulated environments. Compliance requirements and audit trails.</p>
-        <div class="bc-meta"><span class="bc-tag tag-soon" style="margin-bottom:0">Coming soon</span></div>
-      </article>
-
-      <article class="bc dim">
-        <span class="bc-tag tag-aws">AWS</span>
-        <div class="bc-title">How We Built CleanCloud: Read-Only by Design</div>
-        <p class="bc-excerpt">Behind the scenes of building a cloud hygiene tool that can&#8217;t delete anything. Architecture decisions and safety guarantees explained.</p>
         <div class="bc-meta"><span class="bc-tag tag-soon" style="margin-bottom:0">Coming soon</span></div>
       </article>
 
@@ -303,31 +342,34 @@ footer{border-top:1px solid var(--border);background:var(--white);position:relat
         <div class="sb-n">1</div>
         <div>
           <div class="sb-item-title">
-            <a href="/blog/azure-vm-stopped-vs-deallocated.html">Azure VM Stopped vs Deallocated</a>
+            <a href="/blog/policy-as-code-cloud-governance.html">Policy-as-Code Cloud Governance</a>
             <span class="new-badge" style="font-size:9px;padding:1px 6px">New</span>
           </div>
-          <div class="sb-item-meta">March 2026 &#183; 6 min</div>
+          <div class="sb-item-meta">April 2026 &#183; 9 min</div>
         </div>
       </div>
       <div class="sb-item">
         <div class="sb-n">2</div>
         <div>
-          <div class="sb-item-title"><a href="/blog/shift-left-cloud-cost-optimization.html">Shift-Left Cloud Cost Optimization</a></div>
-          <div class="sb-item-meta">March 2026 &#183; 8 min</div>
+          <div class="sb-item-title">
+            <a href="/blog/idle-ai-ml-infrastructure-cost.html">Idle AI/ML Infrastructure Cost</a>
+            <span class="new-badge" style="font-size:9px;padding:1px 6px">New</span>
+          </div>
+          <div class="sb-item-meta">March 2026 &#183; 10 min</div>
         </div>
       </div>
       <div class="sb-item">
         <div class="sb-n">3</div>
         <div>
-          <div class="sb-item-title"><a href="/blog/cloud-cleanup-without-auto-delete.html">Cloud Cleanup Without Auto-Delete</a></div>
-          <div class="sb-item-meta">January 2026 &#183; 7 min</div>
+          <div class="sb-item-title"><a href="/blog/sagemaker-idle-endpoint-cost.html">$25K in Idle SageMaker Endpoints</a></div>
+          <div class="sb-item-meta">March 2026 &#183; 8 min</div>
         </div>
       </div>
-      <div class="sb-item" style="opacity:.5;pointer-events:none">
-        <div class="sb-n" style="opacity:.5">4</div>
+      <div class="sb-item">
+        <div class="sb-n">4</div>
         <div>
-          <div class="sb-item-title">Safe Alternatives to AWS Nuke</div>
-          <div class="sb-item-meta">Coming soon</div>
+          <div class="sb-item-title"><a href="/blog/azure-vm-stopped-vs-deallocated.html">Azure VM Stopped vs Deallocated</a></div>
+          <div class="sb-item-meta">March 2026 &#183; 6 min</div>
         </div>
       </div>
     </div>
@@ -335,15 +377,15 @@ footer{border-top:1px solid var(--border);background:var(--white);position:relat
     <div class="sb-card rv">
       <div class="sb-title">Topics</div>
       <div class="sb-tags">
-        <a href="#" class="sb-tag">Cloud hygiene</a>
-        <a href="#" class="sb-tag">AWS</a>
-        <a href="#" class="sb-tag">Azure</a>
-        <a href="#" class="sb-tag">GCP</a>
-        <a href="#" class="sb-tag">FinOps</a>
-        <a href="#" class="sb-tag">CI/CD</a>
-        <a href="#" class="sb-tag">Shift-left</a>
-        <a href="#" class="sb-tag">Cost optimisation</a>
-        <a href="#" class="sb-tag">DevOps</a>
+        <a href="#" class="sb-tag" data-filter="hygiene">Cloud hygiene</a>
+        <a href="#" class="sb-tag" data-filter="aws">AWS</a>
+        <a href="#" class="sb-tag" data-filter="azure">Azure</a>
+        <a href="#" class="sb-tag" data-filter="gcp">GCP</a>
+        <a href="#" class="sb-tag" data-filter="ai">AI/ML</a>
+        <a href="#" class="sb-tag" data-filter="finops">FinOps</a>
+        <a href="#" class="sb-tag" data-filter="ci">CI/CD</a>
+        <a href="#" class="sb-tag" data-filter="finops">Cost optimisation</a>
+        <a href="#" class="sb-tag" data-filter="ci">DevOps</a>
       </div>
     </div>
 
@@ -421,6 +463,31 @@ fetch('https://api.github.com/repos/cleancloud-io/cleancloud')
   .catch(()=>{});
 const obs=new IntersectionObserver(entries=>{entries.forEach(e=>{if(e.isIntersecting)e.target.classList.add('in');});},{threshold:0.07});
 document.querySelectorAll('.rv').forEach(el=>obs.observe(el));
+
+// Tag filtering
+function applyFilter(tag) {
+  // Update active state on all filter buttons (strip + sidebar)
+  document.querySelectorAll('[data-filter]').forEach(el => {
+    el.classList.toggle('active', el.dataset.filter === tag);
+  });
+  // Show/hide articles
+  document.querySelectorAll('article[data-tags]').forEach(article => {
+    const tags = article.dataset.tags.split(' ');
+    const match = tag === 'all' || tags.includes(tag);
+    article.style.display = match ? '' : 'none';
+  });
+  // Scroll to grid smoothly if not already in view
+  if (tag !== 'all') {
+    document.querySelector('.blog-wrap').scrollIntoView({behavior:'smooth', block:'nearest'});
+  }
+}
+
+document.querySelectorAll('[data-filter]').forEach(el => {
+  el.addEventListener('click', e => {
+    e.preventDefault();
+    applyFilter(el.dataset.filter);
+  });
+});
 </script>
 </body>
 </html>

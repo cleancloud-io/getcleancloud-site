@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- ── SEO ── -->
+<title>Vertex AI Endpoint Running 3 Months After a PoC Ended: $6,300 in Avoidable Spend | CleanCloud</title>
+<meta name="description" content="A GCP team ran a Vertex AI proof-of-concept with an A100-backed endpoint. The PoC ended. The endpoint didn't. 78 days and $6,300 later, CleanCloud caught it on the first scan.">
+<meta name="keywords" content="vertex ai idle endpoint cost, gcp.vertex_ai.endpoint.idle, Vertex AI cleanup, idle Vertex AI prediction endpoint, GCP AI ML waste, detect idle Vertex AI CI">
+<meta name="author" content="Suresh, CleanCloud">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://www.getcleancloud.com/blog/vertex-ai-idle-endpoint-cost/">
+
+<!-- ── Open Graph ── -->
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://www.getcleancloud.com/blog/vertex-ai-idle-endpoint-cost/">
+<meta property="og:title" content="Vertex AI Endpoint Running 3 Months After a PoC Ended: $6,300 in Avoidable Spend">
+<meta property="og:description" content="A GCP proof-of-concept ended. The Vertex AI V100 endpoint didn't. 78 days and $6,300 later, CleanCloud caught it on the first scan.">
+<meta property="og:image" content="https://www.getcleancloud.com/og-image.png">
+<meta property="og:site_name" content="CleanCloud">
+<meta property="article:published_time" content="2026-03-27">
+<meta property="article:author" content="Suresh">
+<meta property="article:tag" content="GCP">
+<meta property="article:tag" content="AI/ML">
+<meta property="article:tag" content="FinOps">
+
+<!-- ── Twitter Card ── -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@getcleancloud">
+<meta name="twitter:title" content="Vertex AI Endpoint Running 3 Months After a PoC Ended: $6,300 in Avoidable Spend">
+<meta name="twitter:description" content="A GCP PoC wrapped up. The Vertex AI V100 endpoint kept running for 78 days. $6,300 in waste caught by CleanCloud.">
+
+<!-- ── Schema.org Article ── -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "Vertex AI Endpoint Running 3 Months After a PoC Ended: $6,300 in Avoidable Spend",
+  "description": "A GCP team ran a Vertex AI proof-of-concept with an A100-backed endpoint. The PoC ended. The endpoint didn't. 78 days and $6,300 later, CleanCloud caught it.",
+  "author": { "@type": "Person", "name": "Suresh", "url": "https://www.getcleancloud.com" },
+  "publisher": { "@type": "Organization", "name": "CleanCloud", "url": "https://www.getcleancloud.com" },
+  "datePublished": "2026-03-27",
+  "dateModified": "2026-03-27",
+  "keywords": ["Vertex AI idle endpoint", "GCP AI ML waste", "FinOps GCP", "Vertex AI cost"],
+  "articleSection": "Engineering"
+}
+</script>
+
+<!-- ── FAQ Schema ── -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Does Vertex AI charge when an endpoint has zero prediction requests?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. Vertex AI prediction endpoints bill for the underlying compute resources continuously, even with zero prediction requests. An endpoint with a deployed model keeps the configured machine type and accelerators running 24/7 regardless of traffic."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How do I detect idle Vertex AI endpoints automatically?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "CleanCloud's gcp.vertex_ai.endpoint.idle rule uses Cloud Monitoring to check prediction request counts over a configurable idle window (default 7 days). Endpoints with zero requests and deployed model resources are flagged. GPU-backed instances are rated HIGH confidence."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How much does an idle Vertex AI GPU endpoint cost per month?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Costs depend on the machine type and accelerator. An n1-standard-8 with a T4 GPU costs approximately $449/month idle. An n1-highmem-16 with a V100 costs ~$2,200/month. An a2-highgpu-8g (8x A100) can exceed $23,000/month — all with zero prediction traffic."
+      }
+    }
+  ]
+}
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500;600&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+
+<style>
+:root{--bg:#f6f7f9;--white:#ffffff;--border:#e2e6ea;--border2:#d0d5dc;--text:#0d1b2a;--text2:#374151;--muted:#6b7a8d;--muted2:#9aa3af;--accent:#0b7a6e;--accent-lt:#e6f4f2;--accent-md:#c2e8e3;--accent-hi:#0d9488;--sans:'Inter',system-ui,-apple-system,sans-serif;--mono:'JetBrains Mono',monospace;--serif:'Lora',Georgia,serif;--sh-sm:0 1px 3px rgba(13,27,42,.06),0 1px 2px rgba(13,27,42,.04);--sh-md:0 4px 16px rgba(13,27,42,.08),0 2px 4px rgba(13,27,42,.04);--content-width:720px}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;background-image:linear-gradient(rgba(13,27,42,.022) 1px,transparent 1px),linear-gradient(90deg,rgba(13,27,42,.022) 1px,transparent 1px);background-size:40px 40px}
+a{color:var(--accent-hi);text-decoration:none}a:hover{text-decoration:underline}
+nav{position:sticky;top:0;z-index:100;background:rgba(246,247,249,.93);backdrop-filter:blur(16px);border-bottom:1px solid var(--border)}
+.nav-in{max-width:1120px;margin:0 auto;padding:0 28px;height:58px;display:flex;align-items:center;justify-content:space-between}
+.nav-logo{font-family:var(--mono);font-size:14px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:9px;text-decoration:none}
+.lm{width:26px;height:26px;border-radius:6px;background:var(--text);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.lm svg{width:14px;height:14px}
+.nav-links{display:flex;align-items:center;gap:2px;list-style:none}
+.nav-links a{font-family:var(--sans);font-size:14px;font-weight:600;color:var(--muted);padding:5px 11px;border-radius:5px;transition:color .15s,background .15s}
+.nav-links a:hover{color:var(--text);background:var(--white);text-decoration:none}
+.nav-cta{font-family:var(--sans)!important;font-size:14px!important;font-weight:600!important;color:var(--white)!important;background:var(--text)!important;padding:7px 16px!important;border-radius:6px!important}
+.nav-cta:hover{background:#1a2f44!important}
+.blog-wrap{max-width:1120px;margin:0 auto;padding:0 28px;position:relative;z-index:1}
+.post-hero{padding:64px 0 48px;max-width:var(--content-width);margin:0 auto}
+.post-breadcrumb{font-family:var(--mono);font-size:11px;color:var(--muted);margin-bottom:20px;display:flex;align-items:center;gap:8px}
+.post-breadcrumb a{color:var(--muted)}.post-breadcrumb a:hover{color:var(--accent-hi);text-decoration:none}.post-breadcrumb span{color:var(--border2)}
+.post-tags{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px}
+.post-tag{font-family:var(--mono);font-size:10px;font-weight:600;padding:3px 10px;border-radius:4px;text-transform:uppercase;letter-spacing:.06em}
+.tag-gcp{background:#fff7ed;color:#c2410c;border:1px solid #fed7aa}
+.tag-ai{background:#fdf4ff;color:#7e22ce;border:1px solid #e9d5ff}
+.tag-finops{background:#fffbeb;color:#d97706;border:1px solid #fde68a}
+.post-h1{font-size:clamp(28px,4vw,44px);font-weight:800;line-height:1.12;letter-spacing:-.025em;color:var(--text);margin-bottom:20px}
+.post-h1 em{font-style:normal;background:linear-gradient(135deg,var(--accent) 0%,var(--accent-hi) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.post-lede{font-size:18px;color:var(--text2);line-height:1.7;margin-bottom:28px;font-family:var(--serif);font-style:italic}
+.post-meta{display:flex;align-items:center;gap:20px;padding:16px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border);font-family:var(--mono);font-size:11px;color:var(--muted)}
+.meta-author{display:flex;align-items:center;gap:8px}
+.meta-avatar{width:28px;height:28px;border-radius:50%;background:var(--text);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#00ffd0;flex-shrink:0}
+.meta-dot{color:var(--border2)}
+.post-layout{display:grid;grid-template-columns:var(--content-width) 1fr;gap:60px;padding:48px 0 96px;align-items:start}
+.post-body{min-width:0}
+.post-body h2{font-size:22px;font-weight:800;color:var(--text);letter-spacing:-.02em;line-height:1.2;margin:48px 0 16px;padding-top:8px}
+.post-body h2:first-child{margin-top:0}
+.post-body h3{font-size:16px;font-weight:700;color:var(--text);letter-spacing:-.01em;margin:28px 0 10px}
+.post-body p{font-size:16px;line-height:1.8;color:var(--text2);margin-bottom:20px}
+.post-body p strong{color:var(--text);font-weight:600}
+.post-body ul,.post-body ol{margin:0 0 20px 0;padding-left:24px}
+.post-body li{font-size:16px;line-height:1.75;color:var(--text2);margin-bottom:8px}
+.post-body li strong{color:var(--text)}
+.callout{border-left:3px solid var(--accent-hi);background:var(--accent-lt);border-radius:0 8px 8px 0;padding:18px 20px;margin:28px 0}
+.callout p{margin:0;font-size:15px;color:var(--accent);font-weight:500;line-height:1.65}
+.callout-warn{border-left-color:#d97706;background:#fffbeb}
+.callout-warn p{color:#92400e}
+.code-block{background:#0d1117;border:1px solid #21262d;border-radius:10px;overflow:hidden;margin:24px 0;box-shadow:var(--sh-md);font-family:var(--mono);font-size:12.5px;line-height:1.7}
+.code-hd{background:#161b22;border-bottom:1px solid #21262d;padding:9px 16px;display:flex;align-items:center;justify-content:space-between}
+.code-fn{font-size:11px;color:#6e7681;font-family:var(--mono)}
+.code-lg{font-size:10px;padding:2px 8px;border-radius:4px;background:#21262d;color:#6e7681;border:1px solid #30363d;font-family:var(--mono)}
+.code-bd{padding:16px 18px;overflow-x:auto;color:#e6edf3}
+.code-bd .c{color:#6e7681}.code-bd .k{color:#79c0ff}.code-bd .v{color:#a5f3a5}.code-bd .s{color:#ffa657}.code-bd .hi{color:#ff7b72}.code-bd .co{color:#3fb950;font-weight:500}.code-bd .me{color:#e3b341}.code-bd .pu{color:#d2a8ff}
+.post-body code{font-family:var(--mono);font-size:13px;background:var(--bg);border:1px solid var(--border);padding:1px 6px;border-radius:4px;color:var(--accent-hi)}
+.compare-table{width:100%;border-collapse:collapse;font-size:13px;border:1px solid var(--border);border-radius:10px;overflow:hidden;box-shadow:var(--sh-sm);margin:24px 0}
+.compare-table th{text-align:left;padding:10px 14px;background:var(--bg);color:var(--muted);border-bottom:1px solid var(--border2);font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.07em;font-weight:600}
+.compare-table td{padding:10px 14px;border-bottom:1px solid var(--border);background:var(--white);color:var(--text2);font-family:var(--mono);font-size:12px;vertical-align:top}
+.compare-table tr:last-child td{border-bottom:none}
+.compare-table tr:hover td{background:var(--bg)}
+.td-good{color:#059669;font-weight:600}.td-bad{color:#dc2626;font-weight:600}.td-warn{color:#d97706;font-weight:600}
+.pull-quote{border-top:3px solid var(--text);border-bottom:1px solid var(--border);padding:24px 0 20px;margin:36px 0}
+.pull-quote p{font-family:var(--serif);font-size:20px;font-style:italic;color:var(--text);line-height:1.5;margin:0}
+.stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:28px 0}
+.stat-card{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:20px;text-align:center;box-shadow:var(--sh-sm)}
+.stat-n{font-size:28px;font-weight:800;color:var(--accent-hi);letter-spacing:-.03em;line-height:1;margin-bottom:6px}
+.stat-l{font-family:var(--mono);font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;line-height:1.4}
+.post-cta{background:var(--text);border-radius:12px;padding:32px 36px;margin:48px 0 0;position:relative;overflow:hidden}
+.post-cta::before{content:'';position:absolute;top:-60px;right:-60px;width:200px;height:200px;border-radius:50%;background:radial-gradient(circle,rgba(13,148,136,.3),transparent 70%);pointer-events:none}
+.post-cta h3{font-size:20px;font-weight:800;color:#fff;letter-spacing:-.02em;margin-bottom:8px}
+.post-cta p{font-family:var(--sans);font-size:15px;color:rgba(255,255,255,.55);margin-bottom:20px;line-height:1.65}
+.post-cta-acts{display:flex;gap:10px;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;gap:7px;font-family:var(--sans);font-size:14px;font-weight:600;padding:10px 20px;border-radius:7px;transition:transform .15s;text-decoration:none!important;letter-spacing:.01em}
+.btn:hover{transform:translateY(-1px)}
+.btn-wh{background:#fff;color:var(--text)}.btn-wh:hover{background:#f0f0f0}
+.btn-ow{background:transparent;color:rgba(255,255,255,.75);border:1px solid rgba(255,255,255,.25)}.btn-ow:hover{background:rgba(255,255,255,.08);color:#fff}
+.post-sidebar{position:sticky;top:78px}
+.toc{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:20px;box-shadow:var(--sh-sm);margin-bottom:20px}
+.toc-title{font-family:var(--mono);font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:14px}
+.toc-list{list-style:none}
+.toc-list li{margin-bottom:4px}
+.toc-list a{font-family:var(--mono);font-size:12px;color:var(--muted);display:block;padding:4px 8px;border-radius:5px;transition:color .15s,background .15s;line-height:1.4}
+.toc-list a:hover,.toc-list a.active{color:var(--accent-hi);background:var(--accent-lt);text-decoration:none}
+.toc-list a.active{font-weight:500}
+.sidebar-card{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:20px;box-shadow:var(--sh-sm);margin-bottom:16px}
+.sidebar-card-title{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--text);margin-bottom:10px;text-transform:uppercase;letter-spacing:.06em}
+.sidebar-stat{display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);font-family:var(--mono);font-size:11px}
+.sidebar-stat:last-child{border-bottom:none}
+.ss-label{color:var(--muted)}.ss-val{font-weight:600;color:var(--accent-hi)}
+.related{border-top:1px solid var(--border);padding:48px 0 80px}
+.related-title{font-family:var(--mono);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:24px}
+.related-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.related-card{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:20px;transition:box-shadow .2s,transform .2s;box-shadow:var(--sh-sm)}
+.related-card:hover{box-shadow:var(--sh-md);transform:translateY(-2px)}
+.rc-tag{font-family:var(--mono);font-size:10px;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px}
+.rc-title{font-size:14px;font-weight:700;color:var(--text);line-height:1.35;letter-spacing:-.01em;margin-bottom:8px}
+.rc-desc{font-family:var(--mono);font-size:11px;color:var(--muted);line-height:1.6}
+footer{border-top:1px solid var(--border);background:var(--white);position:relative;z-index:1}
+.fi{max-width:1120px;margin:0 auto;padding:40px 28px;display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap}
+.f-logo{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:8px}
+.f-links{display:flex;gap:20px;list-style:none}
+.f-links a{font-family:var(--sans);font-size:13px;color:var(--muted2);transition:color .15s}
+.f-links a:hover{color:var(--text);text-decoration:none}
+.f-copy{font-family:var(--sans);font-size:13px;color:var(--muted2)}
+.rv{opacity:0;transform:translateY(16px);transition:opacity .5s ease,transform .5s ease}
+.rv.in{opacity:1;transform:translateY(0)}
+@media(max-width:960px){.post-layout{grid-template-columns:1fr;gap:0}.post-sidebar{position:static;margin-top:48px}.stat-row{grid-template-columns:1fr 1fr}.related-grid{grid-template-columns:1fr}.nav-links{display:none}}
+@media(max-width:600px){.post-h1{font-size:26px}.stat-row{grid-template-columns:1fr}.post-meta{flex-wrap:wrap;gap:10px}}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-in">
+    <a class="nav-logo" href="/">
+      <div class="lm"><svg viewBox="0 0 14 14" fill="none" stroke="#00ffd0" stroke-width="2"><path d="M2 7L5 10L12 3" stroke-linecap="round" stroke-linejoin="round"/><circle cx="7" cy="7" r="6" stroke="#00ffd0" stroke-width="1.4" opacity=".4"/></svg></div>
+      cleancloud
+    </a>
+    <ul class="nav-links">
+      <li><a href="/#rules">Rules</a></li>
+      <li><a href="/#ci">CI/CD</a></li>
+      <li><a href="/blog">Blog</a></li>
+      <li><a href="https://github.com/cleancloud-io/cleancloud" target="_blank" rel="noopener">GitHub &#9733; 106</a></li>
+      <li><a href="/#contact" class="nav-cta">Contact us &#8594;</a></li>
+    </ul>
+  </div>
+</nav>
+
+<main>
+<div class="blog-wrap">
+
+  <div class="post-hero rv">
+    <div class="post-breadcrumb">
+      <a href="/">Home</a><span>&#8250;</span>
+      <a href="/blog">Blog</a><span>&#8250;</span>
+      Vertex AI Idle Endpoint Cost
+    </div>
+    <div class="post-tags">
+      <span class="post-tag tag-gcp">GCP</span>
+      <span class="post-tag tag-ai">AI/ML</span>
+      <span class="post-tag tag-finops">FinOps</span>
+    </div>
+    <h1 class="post-h1">
+      Vertex AI Endpoint Running 3 Months After a PoC Ended:<br>
+      <em>$6,300 in Avoidable Spend</em>
+    </h1>
+    <p class="post-lede">
+      A GCP team ran a Vertex AI proof-of-concept with a V100-backed prediction endpoint. The proof-of-concept ended in January 2026. The endpoint was still running in late March. Seventy-eight days later, CleanCloud caught $6,300 in waste that nobody had noticed.
+    </p>
+    <div class="post-meta">
+      <div class="meta-author"><div class="meta-avatar">S</div><span>Suresh &middot; CleanCloud</span></div>
+      <span class="meta-dot">&middot;</span>
+      <span>March 27, 2026</span>
+      <span class="meta-dot">&middot;</span>
+      <span>7 min read</span>
+    </div>
+  </div>
+
+  <div class="post-layout">
+    <article class="post-body rv">
+
+      <h2 id="the-story">78 Days. Zero Requests. $6,300.</h2>
+
+      <p>
+        In January 2026, a platform team at a logistics company wrapped up a Vertex AI proof-of-concept. They&#8217;d been evaluating whether to migrate their route optimisation model from a self-managed TensorFlow serving setup to Vertex AI Online Prediction. The evaluation ran for six weeks. The conclusion was &#8220;not yet&#8221; &#8212; the latency profile didn&#8217;t meet their SLA requirements.
+      </p>
+
+      <p>
+        The decision was documented. The project was closed. The Vertex AI endpoint was not deleted.
+      </p>
+
+      <p>
+        The endpoint was named <code>route-opt-poc-v2</code>. It was running an <code>n1-highmem-16</code> machine with a single NVIDIA V100 GPU. <strong>Every day it ran with zero prediction requests</strong>. Nobody checked. The GCP billing dashboard showed a steady ML infrastructure line item &#8212; but it looked exactly the same as it had during the PoC when traffic was real.
+      </p>
+
+      <div class="code-block">
+        <div class="code-hd">
+          <span class="code-fn">CleanCloud scan output — late March 2026</span>
+          <span class="code-lg">gcp.vertex_ai.endpoint.idle</span>
+        </div>
+        <div class="code-bd"><pre>
+<span class="me">Rule         :</span> <span class="v">gcp.vertex_ai.endpoint.idle</span>
+<span class="me">Resource     :</span> <span class="s">route-opt-poc-v2</span>
+<span class="me">Project      :</span> <span class="c">logistics-ml-prod (us-central1)</span>
+<span class="me">Machine type :</span> <span class="hi">n1-highmem-16</span>   <span class="c">+ 1x NVIDIA V100</span>
+<span class="me">Last request :</span> <span class="hi">78 days ago</span>     <span class="c">(zero requests since Jan 2026)</span>
+<span class="me">Conf         :</span> <span class="hi">HIGH</span>
+<span class="me">Cost         :</span> <span class="hi">~$2,420/month</span>   <span class="c">(running 78 days ≈ $6,300 total)</span></pre>
+        </div>
+      </div>
+
+      <p>
+        Seventy-eight days. Zero requests. $6,300 billed.
+      </p>
+
+      <div class="pull-quote">
+        <p>&#8220;The PoC evaluation report said 'not recommended — latency too high.' The endpoint was still running seventy-eight days later.&#8221;</p>
+      </div>
+
+      <div class="stat-row">
+        <div class="stat-card">
+          <div class="stat-n">78 days</div>
+          <div class="stat-l">Since the last prediction request</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-n">$6.3K</div>
+          <div class="stat-l">Total waste accumulated</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-n">$2.4K</div>
+          <div class="stat-l">Monthly cost still running today</div>
+        </div>
+      </div>
+
+      <h2 id="why-vertex-hides-this">Why Vertex AI Billing Is Invisible in a Dashboard</h2>
+
+      <p>
+        Vertex AI Online Prediction endpoints bill for the deployed model's compute resources continuously &#8212; not per request. Once a model is deployed to an endpoint, the underlying machine type and accelerator configuration runs until the deployment is explicitly removed.
+      </p>
+
+      <p>
+        This is the fundamental billing contract: <strong>you pay for availability, not usage</strong>. When traffic is healthy, this is the right tradeoff &#8212; the endpoint must be ready to respond at any time. When traffic stops, it becomes silent waste.
+      </p>
+
+      <p>
+        The reason this pattern is hard to spot in billing dashboards is that the cost line looks identical whether the endpoint is serving real traffic or serving zero requests. There&#8217;s no &#8220;idle&#8221; signal in Cloud Billing. The only place that signal exists is Cloud Monitoring &#8212; specifically the <code>prediction/online_prediction_request_count</code> metric.
+      </p>
+
+      <div class="callout">
+        <p>
+          <strong>The detection gap:</strong> GCP Cloud Billing shows you spend. Cloud Monitoring shows you traffic. Neither product tells you when spend and traffic have diverged. CleanCloud joins these two signals to find endpoints where billing is happening and traffic is zero.
+        </p>
+      </div>
+
+      <h2 id="how-the-rule-works">How the Detection Rule Works</h2>
+
+      <p>
+        The <code>gcp.vertex_ai.endpoint.idle</code> rule:
+      </p>
+
+      <ol>
+        <li>Lists all Vertex AI endpoints in each scanned project using the AI Platform API</li>
+        <li>For each endpoint with deployed models, checks <code>prediction/online_prediction_request_count</code> via Cloud Monitoring over the idle window (default: 7 days)</li>
+        <li>Flags endpoints with zero requests and classifies by risk based on machine type and accelerator</li>
+      </ol>
+
+      <table class="compare-table">
+        <thead>
+          <tr><th>Machine type</th><th>Accelerator</th><th>Idle cost/month</th><th>Confidence</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>n1-standard-4</td><td>&#8212;</td><td>~$130</td><td class="td-warn">MEDIUM</td></tr>
+          <tr><td>n1-standard-8</td><td>1x T4</td><td class="td-bad">~$449</td><td class="td-bad">HIGH</td></tr>
+          <tr><td>n1-highmem-16</td><td>1x V100</td><td class="td-bad">~$2,420</td><td class="td-bad">HIGH</td></tr>
+          <tr><td>a2-highgpu-1g</td><td>1x A100</td><td class="td-bad">~$3,800</td><td class="td-bad">HIGH</td></tr>
+          <tr><td>a2-highgpu-8g</td><td>8x A100</td><td class="td-bad">~$23,000+</td><td class="td-bad">HIGH</td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="catching-it-in-ci">Catching It in CI: The Weekly Scan</h2>
+
+      <p>
+        The setup that would have caught this weeks earlier &#8212; before $6,300 accumulated &#8212; is a weekly GitHub Actions scan against all GCP projects:
+      </p>
+
+      <div class="code-block">
+        <div class="code-hd">
+          <span class="code-fn">.github/workflows/gcp-ai-waste.yml</span>
+          <span class="code-lg">GCP Vertex AI — weekly idle scan</span>
+        </div>
+        <div class="code-bd"><pre>
+<span class="k">name:</span> <span class="v">GCP AI/ML waste scan</span>
+<span class="k">on:</span>
+  <span class="k">schedule:</span>
+    <span class="k">- cron:</span> <span class="s">'0 8 * * 1'</span>   <span class="c"># Every Monday at 08:00 UTC</span>
+
+<span class="k">jobs:</span>
+  <span class="k">scan:</span>
+    <span class="k">runs-on:</span> <span class="v">ubuntu-latest</span>
+    <span class="k">steps:</span>
+      <span class="k">- uses:</span> <span class="v">google-github-actions/auth@v2</span>
+        <span class="k">with:</span>
+          <span class="k">workload_identity_provider:</span> <span class="v">${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}</span>
+          <span class="k">service_account:</span> <span class="v">${{ secrets.GCP_SERVICE_ACCOUNT }}</span>
+
+      <span class="k">- uses:</span> <span class="v">cleancloud-io/scan-action@v1</span>
+        <span class="k">with:</span>
+          <span class="k">provider:</span> <span class="v">gcp</span>
+          <span class="k">all-projects:</span> <span class="s">'true'</span>
+          <span class="k">category:</span> <span class="v">ai</span>
+          <span class="k">fail-on-confidence:</span> <span class="v">HIGH</span>
+          <span class="k">fail-on-cost:</span> <span class="s">'500'</span>
+          <span class="k">output:</span> <span class="v">json</span>
+          <span class="k">output-file:</span> <span class="v">gcp-ai-findings.json</span>
+          <span class="k">artifact-name:</span> <span class="v">gcp-ai-report</span></pre>
+        </div>
+      </div>
+
+      <p>
+        With this setup, the <code>route-opt-poc-v2</code> endpoint would have been flagged on its first Monday scan after going idle &#8212; seven days after the last request. The build would have failed with a HIGH confidence finding costing $2,420/month. Total waste that would have been avoided: $6,300 minus the cost of one week&#8217;s run &#8212; around $565.
+      </p>
+
+      <h2 id="required-permissions">Required GCP Permissions</h2>
+
+      <p>
+        The rule needs read-only access to Vertex AI and Cloud Monitoring. Assign these roles to the service account:
+      </p>
+
+      <ul>
+        <li><code>roles/aiplatform.viewer</code> &#8212; or individual <code>aiplatform.endpoints.list</code> + <code>aiplatform.endpoints.get</code></li>
+        <li><code>roles/monitoring.viewer</code> &#8212; or individual <code>monitoring.timeSeries.list</code></li>
+      </ul>
+
+      <p>
+        For scanning all projects via <code>all-projects: true</code>, the service account also needs <code>roles/browser</code> at the organisation level to enumerate projects.
+      </p>
+
+      <h2 id="what-happened-next">What Happened: The Same Day Resolution</h2>
+
+      <p>
+        The logistics team was running CleanCloud for the first time when this finding appeared. The platform engineer who ran the scan confirmed the endpoint name with the data science lead who&#8217;d run the PoC. <em>&#8220;Oh god, I forgot to delete that.&#8221;</em>
+      </p>
+
+      <p>
+        The endpoint was undeployed and deleted within the hour. The team added a policy to their <code>cleancloud.yaml</code> requiring all PoC endpoints to be suppressed with an explicit expiry date &#8212; or flagged and deleted. Any endpoint that appears in the scan without a suppression entry fails the CI build.
+      </p>
+
+      <div class="code-block">
+        <div class="code-hd">
+          <span class="code-fn">cleancloud.yaml — PoC endpoint exception pattern</span>
+          <span class="code-lg">30-day expiry on all experimental endpoints</span>
+        </div>
+        <div class="code-bd"><pre>
+<span class="c"># Policy: all PoC/experimental endpoints must have an exception with expiry &lt;= 30 days</span>
+<span class="k">exceptions:</span>
+  <span class="c"># Active PoC — being actively evaluated, expires in 3 weeks</span>
+  <span class="k">- rule_id:</span> <span class="v">gcp.vertex_ai.endpoint.idle</span>
+    <span class="k">resource_id:</span> <span class="v">llm-routing-poc-v1</span>
+    <span class="k">reason:</span> <span class="s">"Active PoC evaluation — traffic starts January 15"</span>
+    <span class="k">expires_at:</span> <span class="s">"2026-02-07"</span>    <span class="c"># 3 weeks — forces a conscious renewal</span></pre>
+        </div>
+      </div>
+
+      <p>
+        When the expiry passes, the endpoint either has real traffic (and the rule won't flag it anyway) or it's still idle (and the CI build fails, forcing deletion or renewal of the exception). The PoC endpoint pattern that cost $6,300 can&#8217;t silently accumulate for months again.
+      </p>
+
+      <h2 id="faq">Frequently Asked Questions</h2>
+
+      <h3>Does Vertex AI charge when an endpoint has zero prediction requests?</h3>
+      <p>
+        Yes. Vertex AI prediction endpoints bill for the deployed model&#8217;s compute resources continuously &#8212; machine type, accelerators, and minimum replica count &#8212; regardless of request volume. Zero requests does not mean zero billing.
+      </p>
+
+      <h3>How do I detect idle Vertex AI endpoints automatically?</h3>
+      <p>
+        Run <code>cleancloud scan --provider gcp --all-projects --category ai</code> or use the <code>cleancloud-io/scan-action</code> GitHub Action on a weekly schedule with <code>fail-on-confidence: HIGH</code>. Endpoints with zero <code>online_prediction_request_count</code> over 7 days are flagged.
+      </p>
+
+      <h3>How do I delete a Vertex AI endpoint that&#8217;s no longer needed?</h3>
+      <p>
+        First undeploy all models from the endpoint, then delete the endpoint resource. Via gcloud: <code>gcloud ai endpoints undeploy-model ENDPOINT_ID --deployed-model-id MODEL_ID --region REGION</code>, then <code>gcloud ai endpoints delete ENDPOINT_ID --region REGION</code>.
+      </p>
+
+      <!-- CTA -->
+      <div class="post-cta">
+        <h3>Find idle Vertex AI endpoints before they accumulate</h3>
+        <p>CleanCloud scans all GCP projects for idle Vertex AI prediction endpoints. Read-only, zero telemetry, MIT license. Catches PoC endpoints before they cost you thousands.</p>
+        <div class="post-cta-acts">
+          <a href="https://pypi.org/project/cleancloud/" class="btn btn-wh" target="_blank" rel="noopener">Install via PyPI &#8594;</a>
+          <a href="https://github.com/cleancloud-io/cleancloud" class="btn btn-ow" target="_blank" rel="noopener">&#9733; View on GitHub</a>
+        </div>
+      </div>
+
+      <div class="code-block" style="margin-top:24px">
+        <div class="code-hd">
+          <span class="code-fn">GCP Cloud Shell — 60-second scan</span>
+          <span class="code-lg">no local setup required</span>
+        </div>
+        <div class="code-bd"><pre>
+<span class="co">pip install cleancloud && cleancloud scan --provider gcp --all-projects --category ai</span></pre>
+        </div>
+      </div>
+
+    </article>
+
+    <aside class="post-sidebar rv">
+      <div class="toc">
+        <div class="toc-title">In this article</div>
+        <ul class="toc-list">
+          <li><a href="#the-story">78 Days. Zero Requests. $6,300.</a></li>
+          <li><a href="#why-vertex-hides-this">Why Vertex AI Billing Is Invisible</a></li>
+          <li><a href="#how-the-rule-works">How the Detection Rule Works</a></li>
+          <li><a href="#catching-it-in-ci">Catching It in CI</a></li>
+          <li><a href="#required-permissions">Required GCP Permissions</a></li>
+          <li><a href="#what-happened-next">What Happened Next</a></li>
+          <li><a href="#faq">FAQ</a></li>
+        </ul>
+      </div>
+      <div class="sidebar-card">
+        <div class="sidebar-card-title">Vertex AI idle costs</div>
+        <div class="sidebar-stat"><span class="ss-label">n1-standard-8 + T4</span><span class="ss-val">~$449/mo</span></div>
+        <div class="sidebar-stat"><span class="ss-label">n1-highmem-16 + V100</span><span class="ss-val">~$2,420/mo</span></div>
+        <div class="sidebar-stat"><span class="ss-label">a2-highgpu-1g (A100)</span><span class="ss-val">~$3,800/mo</span></div>
+        <div class="sidebar-stat"><span class="ss-label">a2-highgpu-8g (8x A100)</span><span class="ss-val">~$23K+/mo</span></div>
+      </div>
+      <div class="sidebar-card">
+        <div class="sidebar-card-title">Quick scan</div>
+        <div style="background:#0d1117;border:1px solid #21262d;border-radius:7px;padding:10px 13px;font-family:var(--mono);font-size:11px;color:#56d364;margin-bottom:10px;line-height:1.7">
+          pip install cleancloud<br>cleancloud scan \<br>&nbsp;&nbsp;--provider gcp \<br>&nbsp;&nbsp;--all-projects \<br>&nbsp;&nbsp;--category ai
+        </div>
+        <a href="https://github.com/cleancloud-io/cleancloud/blob/main/docs/gcp.md" target="_blank" rel="noopener" style="display:block;text-align:center;font-family:var(--sans);font-size:14px;font-weight:600;color:var(--accent-hi);padding:9px;border:1px solid var(--accent-md);border-radius:7px;background:var(--accent-lt);text-decoration:none">
+          GCP setup guide &#8594;
+        </a>
+      </div>
+    </aside>
+
+  </div>
+
+  <div class="related rv">
+    <div class="related-title">More from the CleanCloud blog</div>
+    <div class="related-grid">
+      <div class="related-card">
+        <div class="rc-tag">AWS</div>
+        <div class="rc-title"><a href="/blog/sagemaker-idle-endpoint-cost.html" style="color:inherit">How We Found $25K in Idle SageMaker Endpoints</a></div>
+        <div class="rc-desc">Eight GPU endpoints. Six weeks of billing. Nobody knew they were still running. The scan took four minutes.</div>
+      </div>
+      <div class="related-card">
+        <div class="rc-tag">Azure</div>
+        <div class="rc-title"><a href="/blog/azure-ml-compute-idle-cost.html" style="color:inherit">$11,400/Month in Idle Azure ML Compute</a></div>
+        <div class="rc-desc">An AML compute cluster with min_nodes: 2 and no training jobs for 23 days. One config change saved $11K/month.</div>
+      </div>
+      <div class="related-card">
+        <div class="rc-tag">Policy-as-Code</div>
+        <div class="rc-title"><a href="/blog/policy-as-code-cloud-governance.html" style="color:inherit">Policy-as-Code Cloud Governance</a></div>
+        <div class="rc-desc">Stop managing cloud exceptions in spreadsheets. Exceptions in git — reviewable, auditable, and expiring automatically.</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</main>
+
+<footer>
+  <div class="fi">
+    <div class="f-logo">
+      <div class="lm"><svg viewBox="0 0 14 14" fill="none" stroke="#00ffd0" stroke-width="2"><path d="M2 7L5 10L12 3" stroke-linecap="round" stroke-linejoin="round"/><circle cx="7" cy="7" r="6" stroke="#00ffd0" stroke-width="1.4" opacity=".4"/></svg></div>
+      cleancloud
+    </div>
+    <ul class="f-links">
+      <li><a href="/">Home</a></li><li><a href="/blog">Blog</a></li>
+      <li><a href="https://github.com/cleancloud-io/cleancloud" target="_blank" rel="noopener">GitHub</a></li>
+      <li><a href="https://pypi.org/project/cleancloud/" target="_blank" rel="noopener">PyPI</a></li>
+      <li><a href="mailto:suresh@getcleancloud.com">Contact</a></li>
+    </ul>
+    <span class="f-copy">&copy; 2026 CleanCloud. MIT License.</span>
+  </div>
+</footer>
+
+<script>
+const obs=new IntersectionObserver(e=>{e.forEach(x=>{if(x.isIntersecting)x.target.classList.add('in');});},{threshold:0.06});
+document.querySelectorAll('.rv').forEach(el=>obs.observe(el));
+const headings=document.querySelectorAll('.post-body h2,.post-body h3');
+const tocLinks=document.querySelectorAll('.toc-list a');
+const tocObs=new IntersectionObserver(entries=>{entries.forEach(entry=>{if(entry.isIntersecting){tocLinks.forEach(l=>l.classList.remove('active'));const id=entry.target.getAttribute('id');const a=document.querySelector(`.toc-list a[href="#${id}"]`);if(a)a.classList.add('active');}});},{rootMargin:'-20% 0px -70% 0px'});
+headings.forEach(h=>{if(h.id)tocObs.observe(h);});
+</script>
+</body>
+</html>

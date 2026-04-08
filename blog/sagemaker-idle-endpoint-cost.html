@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- ── SEO ── -->
+<title>How We Found $25,000 in Idle SageMaker Endpoints Nobody Knew Were Running | CleanCloud</title>
+<meta name="description" content="A data science team deployed a fraud detection model for a hackathon. The model was retired. The SageMaker endpoint wasn't. Six weeks later: $25,000 in GPU waste. Here's the full story.">
+<meta name="keywords" content="idle SageMaker endpoint cost, SageMaker GPU waste, aws.sagemaker.endpoint.idle, SageMaker cleanup, AWS AI cost optimization, SageMaker endpoint billing, detect idle SageMaker CI">
+<meta name="author" content="Suresh, CleanCloud">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://www.getcleancloud.com/blog/sagemaker-idle-endpoint-cost/">
+
+<!-- ── Open Graph ── -->
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://www.getcleancloud.com/blog/sagemaker-idle-endpoint-cost/">
+<meta property="og:title" content="How We Found $25,000 in Idle SageMaker Endpoints Nobody Knew Were Running">
+<meta property="og:description" content="A data science team deployed a fraud detection model. The model was retired. The SageMaker endpoint wasn't. Six weeks later: $25,000 in GPU waste.">
+<meta property="og:image" content="https://www.getcleancloud.com/og-image.png">
+<meta property="og:site_name" content="CleanCloud">
+<meta property="article:published_time" content="2026-03-25">
+<meta property="article:author" content="Suresh">
+<meta property="article:tag" content="AWS">
+<meta property="article:tag" content="SageMaker">
+<meta property="article:tag" content="AI/ML">
+<meta property="article:tag" content="FinOps">
+
+<!-- ── Twitter Card ── -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@getcleancloud">
+<meta name="twitter:title" content="How We Found $25,000 in Idle SageMaker Endpoints Nobody Knew Were Running">
+<meta name="twitter:description" content="A hackathon model. A forgotten GPU endpoint. Six weeks of billing. $25K in waste caught by CleanCloud.">
+
+<!-- ── Schema.org Article ── -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "How We Found $25,000 in Idle SageMaker Endpoints Nobody Knew Were Running",
+  "description": "A data science team deployed a fraud detection model for a hackathon. The model was retired. The SageMaker endpoint wasn't. Six weeks later: $25,000 in GPU waste.",
+  "author": { "@type": "Person", "name": "Suresh", "url": "https://www.getcleancloud.com" },
+  "publisher": { "@type": "Organization", "name": "CleanCloud", "url": "https://www.getcleancloud.com" },
+  "datePublished": "2026-03-25",
+  "dateModified": "2026-03-25",
+  "keywords": ["SageMaker idle endpoint", "AWS GPU waste", "AI ML cloud cost", "FinOps SageMaker"],
+  "articleSection": "Engineering"
+}
+</script>
+
+<!-- ── FAQ Schema ── -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Does SageMaker charge when an endpoint has zero traffic?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. SageMaker endpoints are always-on serving infrastructure. The underlying EC2 instance runs continuously regardless of traffic, and AWS bills at full on-demand rates — including GPU capacity — even with zero invocations."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How do I detect idle SageMaker endpoints automatically?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "CleanCloud's aws.sagemaker.endpoint.idle rule checks InvocationCount via CloudWatch over a configurable idle window (default 7 days). GPU-backed endpoints with zero invocations are flagged HIGH confidence. You can run this check on a daily or weekly schedule in CI using the cleancloud-io/scan-action GitHub Action."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How much does a GPU SageMaker endpoint cost when idle?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Costs vary by instance type. ml.g4dn.xlarge costs approximately $500/month idle. ml.g4dn.12xlarge costs ~$1,800/month. ml.p3.2xlarge costs ~$2,800/month. ml.p4d.24xlarge can reach $23,000/month or more, all with zero traffic."
+      }
+    }
+  ]
+}
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500;600&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+
+<style>
+:root{--bg:#f6f7f9;--white:#ffffff;--border:#e2e6ea;--border2:#d0d5dc;--text:#0d1b2a;--text2:#374151;--muted:#6b7a8d;--muted2:#9aa3af;--accent:#0b7a6e;--accent-lt:#e6f4f2;--accent-md:#c2e8e3;--accent-hi:#0d9488;--sans:'Inter',system-ui,-apple-system,sans-serif;--mono:'JetBrains Mono',monospace;--serif:'Lora',Georgia,serif;--sh-sm:0 1px 3px rgba(13,27,42,.06),0 1px 2px rgba(13,27,42,.04);--sh-md:0 4px 16px rgba(13,27,42,.08),0 2px 4px rgba(13,27,42,.04);--sh-lg:0 12px 40px rgba(13,27,42,.12),0 4px 8px rgba(13,27,42,.06);--content-width:720px}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;background-image:linear-gradient(rgba(13,27,42,.022) 1px,transparent 1px),linear-gradient(90deg,rgba(13,27,42,.022) 1px,transparent 1px);background-size:40px 40px}
+a{color:var(--accent-hi);text-decoration:none}
+a:hover{text-decoration:underline}
+nav{position:sticky;top:0;z-index:100;background:rgba(246,247,249,.93);backdrop-filter:blur(16px);border-bottom:1px solid var(--border)}
+.nav-in{max-width:1120px;margin:0 auto;padding:0 28px;height:58px;display:flex;align-items:center;justify-content:space-between}
+.nav-logo{font-family:var(--mono);font-size:14px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:9px;text-decoration:none}
+.lm{width:26px;height:26px;border-radius:6px;background:var(--text);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.lm svg{width:14px;height:14px}
+.nav-links{display:flex;align-items:center;gap:2px;list-style:none}
+.nav-links a{font-family:var(--sans);font-size:14px;font-weight:600;color:var(--muted);padding:5px 11px;border-radius:5px;transition:color .15s,background .15s}
+.nav-links a:hover{color:var(--text);background:var(--white);text-decoration:none}
+.nav-cta{font-family:var(--sans)!important;font-size:14px!important;font-weight:600!important;color:var(--white)!important;background:var(--text)!important;padding:7px 16px!important;border-radius:6px!important}
+.nav-cta:hover{background:#1a2f44!important}
+.blog-wrap{max-width:1120px;margin:0 auto;padding:0 28px;position:relative;z-index:1}
+.post-hero{padding:64px 0 48px;max-width:var(--content-width);margin:0 auto}
+.post-breadcrumb{font-family:var(--mono);font-size:11px;color:var(--muted);margin-bottom:20px;display:flex;align-items:center;gap:8px}
+.post-breadcrumb a{color:var(--muted)}
+.post-breadcrumb a:hover{color:var(--accent-hi);text-decoration:none}
+.post-breadcrumb span{color:var(--border2)}
+.post-tags{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px}
+.post-tag{font-family:var(--mono);font-size:10px;font-weight:600;padding:3px 10px;border-radius:4px;text-transform:uppercase;letter-spacing:.06em}
+.tag-aws{background:#fff8ec;color:#b45309;border:1px solid #fde68a}
+.tag-ai{background:#fdf4ff;color:#7e22ce;border:1px solid #e9d5ff}
+.tag-finops{background:#fffbeb;color:#d97706;border:1px solid #fde68a}
+.tag-cicd{background:#eff6ff;color:#2563eb;border:1px solid #bfdbfe}
+.post-h1{font-size:clamp(28px,4vw,44px);font-weight:800;line-height:1.12;letter-spacing:-.025em;color:var(--text);margin-bottom:20px}
+.post-h1 em{font-style:normal;background:linear-gradient(135deg,var(--accent) 0%,var(--accent-hi) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.post-lede{font-size:18px;color:var(--text2);line-height:1.7;margin-bottom:28px;font-family:var(--serif);font-style:italic}
+.post-meta{display:flex;align-items:center;gap:20px;padding:16px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border);font-family:var(--mono);font-size:11px;color:var(--muted)}
+.meta-author{display:flex;align-items:center;gap:8px}
+.meta-avatar{width:28px;height:28px;border-radius:50%;background:var(--text);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#00ffd0;flex-shrink:0}
+.meta-dot{color:var(--border2)}
+.post-layout{display:grid;grid-template-columns:var(--content-width) 1fr;gap:60px;padding:48px 0 96px;align-items:start}
+.post-body{min-width:0}
+.post-body h2{font-size:22px;font-weight:800;color:var(--text);letter-spacing:-.02em;line-height:1.2;margin:48px 0 16px;padding-top:8px}
+.post-body h2:first-child{margin-top:0}
+.post-body h3{font-size:16px;font-weight:700;color:var(--text);letter-spacing:-.01em;margin:28px 0 10px}
+.post-body p{font-size:16px;line-height:1.8;color:var(--text2);margin-bottom:20px}
+.post-body p strong{color:var(--text);font-weight:600}
+.post-body ul,.post-body ol{margin:0 0 20px 0;padding-left:24px}
+.post-body li{font-size:16px;line-height:1.75;color:var(--text2);margin-bottom:8px}
+.post-body li strong{color:var(--text)}
+.callout{border-left:3px solid var(--accent-hi);background:var(--accent-lt);border-radius:0 8px 8px 0;padding:18px 20px;margin:28px 0}
+.callout p{margin:0;font-size:15px;color:var(--accent);font-weight:500;line-height:1.65}
+.callout-warn{border-left-color:#d97706;background:#fffbeb}
+.callout-warn p{color:#92400e}
+.code-block{background:#0d1117;border:1px solid #21262d;border-radius:10px;overflow:hidden;margin:24px 0;box-shadow:var(--sh-md);font-family:var(--mono);font-size:12.5px;line-height:1.7}
+.code-hd{background:#161b22;border-bottom:1px solid #21262d;padding:9px 16px;display:flex;align-items:center;justify-content:space-between}
+.code-fn{font-size:11px;color:#6e7681;font-family:var(--mono)}
+.code-lg{font-size:10px;padding:2px 8px;border-radius:4px;background:#21262d;color:#6e7681;border:1px solid #30363d;font-family:var(--mono)}
+.code-bd{padding:16px 18px;overflow-x:auto;color:#e6edf3}
+.code-bd .c{color:#6e7681}.code-bd .k{color:#79c0ff}.code-bd .v{color:#a5f3a5}.code-bd .s{color:#ffa657}.code-bd .hi{color:#ff7b72}.code-bd .co{color:#3fb950;font-weight:500}.code-bd .me{color:#e3b341}.code-bd .pu{color:#d2a8ff}
+.post-body code{font-family:var(--mono);font-size:13px;background:var(--bg);border:1px solid var(--border);padding:1px 6px;border-radius:4px;color:var(--accent-hi)}
+.compare-table{width:100%;border-collapse:collapse;font-size:13px;border:1px solid var(--border);border-radius:10px;overflow:hidden;box-shadow:var(--sh-sm);margin:24px 0}
+.compare-table th{text-align:left;padding:10px 14px;background:var(--bg);color:var(--muted);border-bottom:1px solid var(--border2);font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.07em;font-weight:600}
+.compare-table td{padding:10px 14px;border-bottom:1px solid var(--border);background:var(--white);color:var(--text2);font-family:var(--mono);font-size:12px;vertical-align:top}
+.compare-table tr:last-child td{border-bottom:none}
+.compare-table tr:hover td{background:var(--bg)}
+.td-good{color:#059669;font-weight:600}.td-bad{color:#dc2626;font-weight:600}.td-warn{color:#d97706;font-weight:600}
+.pull-quote{border-top:3px solid var(--text);border-bottom:1px solid var(--border);padding:24px 0 20px;margin:36px 0}
+.pull-quote p{font-family:var(--serif);font-size:20px;font-style:italic;color:var(--text);line-height:1.5;margin:0}
+.stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:28px 0}
+.stat-card{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:20px;text-align:center;box-shadow:var(--sh-sm)}
+.stat-n{font-size:28px;font-weight:800;color:var(--accent-hi);letter-spacing:-.03em;line-height:1;margin-bottom:6px}
+.stat-l{font-family:var(--mono);font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;line-height:1.4}
+.post-cta{background:var(--text);border-radius:12px;padding:32px 36px;margin:48px 0 0;position:relative;overflow:hidden}
+.post-cta::before{content:'';position:absolute;top:-60px;right:-60px;width:200px;height:200px;border-radius:50%;background:radial-gradient(circle,rgba(13,148,136,.3),transparent 70%);pointer-events:none}
+.post-cta h3{font-size:20px;font-weight:800;color:#fff;letter-spacing:-.02em;margin-bottom:8px}
+.post-cta p{font-family:var(--sans);font-size:15px;color:rgba(255,255,255,.55);margin-bottom:20px;line-height:1.65}
+.post-cta-acts{display:flex;gap:10px;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;gap:7px;font-family:var(--sans);font-size:14px;font-weight:600;padding:10px 20px;border-radius:7px;transition:transform .15s,box-shadow .15s;text-decoration:none!important;letter-spacing:.01em}
+.btn:hover{transform:translateY(-1px)}
+.btn-wh{background:#fff;color:var(--text)}
+.btn-wh:hover{background:#f0f0f0}
+.btn-ow{background:transparent;color:rgba(255,255,255,.75);border:1px solid rgba(255,255,255,.25)}
+.btn-ow:hover{background:rgba(255,255,255,.08);color:#fff}
+.post-sidebar{position:sticky;top:78px}
+.toc{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:20px;box-shadow:var(--sh-sm);margin-bottom:20px}
+.toc-title{font-family:var(--mono);font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:14px}
+.toc-list{list-style:none}
+.toc-list li{margin-bottom:4px}
+.toc-list a{font-family:var(--mono);font-size:12px;color:var(--muted);display:block;padding:4px 8px;border-radius:5px;transition:color .15s,background .15s;line-height:1.4}
+.toc-list a:hover{color:var(--accent-hi);background:var(--accent-lt);text-decoration:none}
+.toc-list a.active{color:var(--accent-hi);background:var(--accent-lt);font-weight:500}
+.sidebar-card{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:20px;box-shadow:var(--sh-sm);margin-bottom:16px}
+.sidebar-card-title{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--text);margin-bottom:10px;text-transform:uppercase;letter-spacing:.06em}
+.sidebar-stat{display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);font-family:var(--mono);font-size:11px}
+.sidebar-stat:last-child{border-bottom:none}
+.ss-label{color:var(--muted)}
+.ss-val{font-weight:600;color:var(--accent-hi)}
+.related{border-top:1px solid var(--border);padding:48px 0 80px}
+.related-title{font-family:var(--mono);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:24px}
+.related-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.related-card{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:20px;transition:box-shadow .2s,transform .2s;box-shadow:var(--sh-sm)}
+.related-card:hover{box-shadow:var(--sh-md);transform:translateY(-2px)}
+.rc-tag{font-family:var(--mono);font-size:10px;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px}
+.rc-title{font-size:14px;font-weight:700;color:var(--text);line-height:1.35;letter-spacing:-.01em;margin-bottom:8px}
+.rc-desc{font-family:var(--mono);font-size:11px;color:var(--muted);line-height:1.6}
+footer{border-top:1px solid var(--border);background:var(--white);position:relative;z-index:1}
+.fi{max-width:1120px;margin:0 auto;padding:40px 28px;display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap}
+.f-logo{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:8px}
+.f-links{display:flex;gap:20px;list-style:none}
+.f-links a{font-family:var(--sans);font-size:13px;color:var(--muted2);transition:color .15s}
+.f-links a:hover{color:var(--text);text-decoration:none}
+.f-copy{font-family:var(--sans);font-size:13px;color:var(--muted2)}
+.rv{opacity:0;transform:translateY(16px);transition:opacity .5s ease,transform .5s ease}
+.rv.in{opacity:1;transform:translateY(0)}
+@media(max-width:960px){.post-layout{grid-template-columns:1fr;gap:0}.post-sidebar{position:static;margin-top:48px}.stat-row{grid-template-columns:1fr 1fr}.related-grid{grid-template-columns:1fr}.nav-links{display:none}}
+@media(max-width:600px){.post-h1{font-size:26px}.stat-row{grid-template-columns:1fr}.post-meta{flex-wrap:wrap;gap:10px}}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-in">
+    <a class="nav-logo" href="/">
+      <div class="lm"><svg viewBox="0 0 14 14" fill="none" stroke="#00ffd0" stroke-width="2"><path d="M2 7L5 10L12 3" stroke-linecap="round" stroke-linejoin="round"/><circle cx="7" cy="7" r="6" stroke="#00ffd0" stroke-width="1.4" opacity=".4"/></svg></div>
+      cleancloud
+    </a>
+    <ul class="nav-links">
+      <li><a href="/#rules">Rules</a></li>
+      <li><a href="/#ci">CI/CD</a></li>
+      <li><a href="/blog">Blog</a></li>
+      <li><a href="https://github.com/cleancloud-io/cleancloud" target="_blank" rel="noopener">GitHub &#9733; 106</a></li>
+      <li><a href="/#contact" class="nav-cta">Contact us &#8594;</a></li>
+    </ul>
+  </div>
+</nav>
+
+<main>
+<div class="blog-wrap">
+
+  <div class="post-hero rv">
+    <div class="post-breadcrumb">
+      <a href="/">Home</a><span>&#8250;</span>
+      <a href="/blog">Blog</a><span>&#8250;</span>
+      Idle SageMaker Endpoint Cost
+    </div>
+    <div class="post-tags">
+      <span class="post-tag tag-aws">AWS</span>
+      <span class="post-tag tag-ai">AI/ML</span>
+      <span class="post-tag tag-finops">FinOps</span>
+    </div>
+    <h1 class="post-h1">
+      How We Found $25,000 in Idle SageMaker Endpoints<br>
+      <em>Nobody Knew Were Running</em>
+    </h1>
+    <p class="post-lede">
+      A data science team deployed a fraud detection model for an internal hackathon. The hackathon ended. The model was deprecated. The SageMaker endpoint wasn't. Six weeks later, CleanCloud flagged $25,312 in idle GPU billing nobody had noticed.
+    </p>
+    <div class="post-meta">
+      <div class="meta-author"><div class="meta-avatar">S</div><span>Suresh &middot; CleanCloud</span></div>
+      <span class="meta-dot">&middot;</span>
+      <span>March 25, 2026</span>
+      <span class="meta-dot">&middot;</span>
+      <span>8 min read</span>
+    </div>
+  </div>
+
+  <div class="post-layout">
+    <article class="post-body rv">
+
+      <h2 id="the-story">The Hackathon That Kept Billing</h2>
+
+      <p>
+        It started with a routine weekly scan. A fintech platform team had just added CleanCloud to their CI pipeline &#8212; nothing fancy, a scheduled GitHub Action running every Monday morning against their AWS Organization. The scan took four minutes. The results were not routine.
+      </p>
+
+      <p>
+        Buried in the JSON output were eight SageMaker endpoints spread across three regions. All of them had zero invocations. Two of them were backed by <code>ml.p3.8xlarge</code> instances &#8212; four NVIDIA Tesla V100 GPUs each, running 24 hours a day, seven days a week, for the past six weeks.
+      </p>
+
+      <div class="code-block">
+        <div class="code-hd">
+          <span class="code-fn">CleanCloud scan output (excerpt)</span>
+          <span class="code-lg">Monday morning, week 6</span>
+        </div>
+        <div class="code-bd"><pre>
+<span class="me">Rule    :</span> <span class="v">aws.sagemaker.endpoint.idle</span>
+<span class="me">Resource:</span> <span class="s">fraud-detection-hackathon-v3</span>  <span class="c">(us-east-1)</span>
+<span class="me">Instance:</span> <span class="hi">ml.p3.8xlarge</span>               <span class="c">(4x V100 GPU)</span>
+<span class="me">Idle    :</span> <span class="hi">42 days</span>  <span class="c">(0 invocations in 42 days)</span>
+<span class="me">Conf    :</span> <span class="hi">HIGH</span>
+<span class="me">Cost    :</span> <span class="hi">~$5,600/month</span>  <span class="c">(running since Feb 2026)</span>
+
+<span class="me">Rule    :</span> <span class="v">aws.sagemaker.endpoint.idle</span>
+<span class="me">Resource:</span> <span class="s">txn-scoring-prod-shadow</span>       <span class="c">(us-west-2)</span>
+<span class="me">Instance:</span> <span class="hi">ml.p3.8xlarge</span>               <span class="c">(4x V100 GPU)</span>
+<span class="me">Idle    :</span> <span class="hi">38 days</span>  <span class="c">(0 invocations in 38 days)</span>
+<span class="me">Conf    :</span> <span class="hi">HIGH</span>
+<span class="me">Cost    :</span> <span class="hi">~$5,600/month</span>
+
+<span class="c">... 6 more endpoints (ml.g4dn.xlarge, ml.g4dn.2xlarge) ...</span>
+<span class="c">Total estimated waste: ~$25,312/month</span></pre>
+        </div>
+      </div>
+
+      <p>
+        The platform team lead looked up the endpoint names. <code>fraud-detection-hackathon-v3</code>. <code>txn-scoring-prod-shadow</code>. Names that sounded important &#8212; production-adjacent, clearly not temporary. She searched Slack. She found a message from six weeks earlier: <em>&#8220;great hackathon everyone! the model is in v3 now, deprecated v1 and v2, will clean up infra this week.&#8221;</em>
+      </p>
+
+      <p>
+        The infra cleanup never happened. The data scientist who wrote it had moved to a different team. The endpoints kept running. The bill kept accumulating.
+      </p>
+
+      <div class="pull-quote">
+        <p>&#8220;The message said &#8216;will clean up infra this week.&#8217; That was six weeks ago. The endpoints were still running.&#8221;</p>
+      </div>
+
+      <p>
+        Total waste over the six-week period: <strong>$25,312</strong>. Caught on day 43. Would have continued indefinitely if the scan hadn't flagged it.
+      </p>
+
+      <h2 id="why-sagemaker-hides-this">Why SageMaker Hides This From You</h2>
+
+      <p>
+        This story is not unusual. The reason idle SageMaker endpoints are such a persistent source of waste comes down to how SageMaker's billing model works &#8212; and how it differs from what most engineers expect.
+      </p>
+
+      <p>
+        When you deploy a SageMaker endpoint, AWS provisions EC2 compute capacity behind a load balancer and a managed API. <strong>That compute runs continuously, regardless of whether it receives any requests.</strong> Unlike Lambda (where you pay per invocation), unlike Fargate (where containers start on demand), a SageMaker real-time endpoint is always-on infrastructure.
+      </p>
+
+      <p>
+        The billing consequences:
+      </p>
+
+      <ul>
+        <li>An <code>ml.g4dn.xlarge</code> endpoint (entry-level GPU) costs ~$504/month idle &#8212; every month, every day, whether it gets one request or zero</li>
+        <li>An <code>ml.p3.2xlarge</code> endpoint costs ~$2,800/month idle</li>
+        <li>An <code>ml.p3.8xlarge</code> endpoint (four V100 GPUs) costs ~$5,600/month idle</li>
+        <li>An <code>ml.p4d.24xlarge</code> endpoint (8x A100 GPUs) can exceed $23,000/month idle</li>
+      </ul>
+
+      <p>
+        None of this shows up as an anomaly in a cost dashboard. It looks exactly like a healthy, running endpoint. The only signal that it's idle is the invocation count &#8212; which lives in CloudWatch, not in Cost Explorer.
+      </p>
+
+      <div class="callout">
+        <p>
+          <strong>The detection gap:</strong> Cost dashboards show you spending. CloudWatch shows you traffic. Neither tool tells you when spending is happening with zero traffic. That's the gap CleanCloud's <code>aws.sagemaker.endpoint.idle</code> rule fills.
+        </p>
+      </div>
+
+      <h2 id="how-the-rule-works">How the Detection Rule Works</h2>
+
+      <p>
+        The <code>aws.sagemaker.endpoint.idle</code> rule does three things:
+      </p>
+
+      <ol>
+        <li><strong>Lists all SageMaker endpoints</strong> in the account/region using <code>sagemaker:ListEndpoints</code> filtered to <code>InService</code> status</li>
+        <li><strong>Checks InvocationCount</strong> via CloudWatch Metrics (<code>cloudwatch:GetMetricStatistics</code>) over the idle window (default: 7 days)</li>
+        <li><strong>Classifies by risk</strong> based on instance type: GPU-backed endpoints are rated HIGH confidence (zero invocations on a GPU instance is definitively wasteful), CPU-backed endpoints at lower cost tiers are rated MEDIUM</li>
+      </ol>
+
+      <p>
+        The cost estimate comes from the instance type's on-demand pricing in the endpoint's region, multiplied by 720 hours/month. It's deliberately conservative &#8212; it doesn't assume multi-AZ deployment or data transfer costs, so the real figure is often higher.
+      </p>
+
+      <table class="compare-table">
+        <thead>
+          <tr><th>Instance type</th><th>GPUs</th><th>Idle cost/month</th><th>Confidence</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>ml.t3.medium</td><td>&#8212;</td><td>~$30</td><td class="td-warn">MEDIUM</td></tr>
+          <tr><td>ml.m5.xlarge</td><td>&#8212;</td><td>~$140</td><td class="td-warn">MEDIUM</td></tr>
+          <tr><td>ml.g4dn.xlarge</td><td>1x T4</td><td class="td-bad">~$504</td><td class="td-bad">HIGH</td></tr>
+          <tr><td>ml.g4dn.12xlarge</td><td>4x T4</td><td class="td-bad">~$1,800</td><td class="td-bad">HIGH</td></tr>
+          <tr><td>ml.p3.2xlarge</td><td>1x V100</td><td class="td-bad">~$2,800</td><td class="td-bad">HIGH</td></tr>
+          <tr><td>ml.p3.8xlarge</td><td>4x V100</td><td class="td-bad">~$5,600</td><td class="td-bad">HIGH</td></tr>
+          <tr><td>ml.p4d.24xlarge</td><td>8x A100</td><td class="td-bad">~$23,000+</td><td class="td-bad">HIGH</td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="catching-it-in-ci">Catching It in CI: The Setup That Caught $25K</h2>
+
+      <p>
+        The fintech team's setup was simple. A scheduled workflow running every Monday, scanning their AWS Organization across all regions, with <code>category: ai</code> to focus on AI/ML rules and <code>fail-on-confidence: HIGH</code> to fail the job when GPU endpoints are found idle:
+      </p>
+
+      <div class="code-block">
+        <div class="code-hd">
+          <span class="code-fn">.github/workflows/ai-waste.yml</span>
+          <span class="code-lg">The exact setup that caught $25K</span>
+        </div>
+        <div class="code-bd"><pre>
+<span class="k">name:</span> <span class="v">AI/ML waste scan</span>
+<span class="k">on:</span>
+  <span class="k">schedule:</span>
+    <span class="k">- cron:</span> <span class="s">'0 8 * * 1'</span>   <span class="c"># Every Monday at 08:00 UTC</span>
+
+<span class="k">jobs:</span>
+  <span class="k">scan:</span>
+    <span class="k">runs-on:</span> <span class="v">ubuntu-latest</span>
+    <span class="k">permissions:</span>
+      <span class="k">id-token:</span> <span class="v">write</span>
+      <span class="k">contents:</span> <span class="v">read</span>
+    <span class="k">steps:</span>
+      <span class="k">- uses:</span> <span class="v">aws-actions/configure-aws-credentials@v4</span>
+        <span class="k">with:</span>
+          <span class="k">role-to-assume:</span> <span class="v">arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/CleanCloudCIReadOnly</span>
+          <span class="k">aws-region:</span> <span class="v">us-east-1</span>
+
+      <span class="k">- uses:</span> <span class="v">cleancloud-io/scan-action@v1</span>
+        <span class="k">with:</span>
+          <span class="k">provider:</span> <span class="v">aws</span>
+          <span class="k">org:</span> <span class="s">'true'</span>          <span class="c"># Scan entire AWS Organization</span>
+          <span class="k">all-regions:</span> <span class="s">'true'</span>
+          <span class="k">category:</span> <span class="v">ai</span>          <span class="c"># Only AI/ML rules</span>
+          <span class="k">fail-on-confidence:</span> <span class="v">HIGH</span>
+          <span class="k">fail-on-cost:</span> <span class="s">'500'</span>
+          <span class="k">output:</span> <span class="v">json</span>
+          <span class="k">output-file:</span> <span class="v">ai-findings.json</span>
+          <span class="k">artifact-name:</span> <span class="v">ai-waste-report</span></pre>
+        </div>
+      </div>
+
+      <p>
+        That's it. The scan ran for the first time on a Monday morning. It failed the job. The platform lead got the notification, opened the artifact, and found the eight endpoints. <strong>Four minutes of CI time caught $25,312 in waste.</strong>
+      </p>
+
+      <div class="stat-row">
+        <div class="stat-card">
+          <div class="stat-n">$25K</div>
+          <div class="stat-l">Waste found in first scan</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-n">4 min</div>
+          <div class="stat-l">Time for the scan to complete</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-n">8</div>
+          <div class="stat-l">Idle endpoints across 3 regions</div>
+        </div>
+      </div>
+
+      <h2 id="what-happened-next">What Happened Next</h2>
+
+      <p>
+        The platform team contacted the data science lead. The endpoints were confirmed abandoned &#8212; the hackathon models had been superseded by a new architecture and nobody had cleaned up the serving infrastructure. The endpoints were deleted the same day the scan ran.
+      </p>
+
+      <p>
+        One endpoint &#8212; <code>txn-scoring-prod-shadow</code> &#8212; turned out to be a legitimate shadow deployment that was still needed. The team added it to their <code>cleancloud.yaml</code> with a reason and an expiry date:
+      </p>
+
+      <div class="code-block">
+        <div class="code-hd">
+          <span class="code-fn">cleancloud.yaml — legitimate exception suppressed</span>
+          <span class="code-lg">documented, expiring</span>
+        </div>
+        <div class="code-bd"><pre>
+<span class="k">exceptions:</span>
+  <span class="k">- rule_id:</span> <span class="v">aws.sagemaker.endpoint.idle</span>
+    <span class="k">resource_id:</span> <span class="v">txn-scoring-prod-shadow</span>
+    <span class="k">reason:</span> <span class="s">"Shadow deployment for v4 rollout — receives mirrored traffic, low volume"</span>
+    <span class="k">expires_at:</span> <span class="s">"2026-06-30"</span></pre>
+        </div>
+      </div>
+
+      <p>
+        The other seven endpoints were deleted. Monthly saving: ~$21,700. The scan now runs every Monday. Any new idle GPU endpoint fails the build within seven days of going idle &#8212; before it can accumulate significant waste.
+      </p>
+
+      <h2 id="required-permissions">Required IAM Permissions</h2>
+
+      <p>
+        The rule requires read-only access to SageMaker and CloudWatch. Add these actions to your CleanCloud IAM policy:
+      </p>
+
+      <div class="code-block">
+        <div class="code-hd">
+          <span class="code-fn">IAM policy additions for SageMaker idle detection</span>
+          <span class="code-lg">read-only, no writes</span>
+        </div>
+        <div class="code-bd"><pre>
+<span class="k">"Action":</span> <span class="v">[</span>
+  <span class="s">"sagemaker:ListEndpoints"</span><span class="v">,</span>
+  <span class="s">"sagemaker:DescribeEndpoint"</span><span class="v">,</span>
+  <span class="s">"cloudwatch:GetMetricStatistics"</span>
+<span class="v">]</span><span class="k">,</span>
+<span class="k">"Effect":</span> <span class="v">"Allow"</span><span class="k">,</span>
+<span class="k">"Resource":</span> <span class="v">"*"</span></pre>
+        </div>
+      </div>
+
+      <h2 id="faq">Frequently Asked Questions</h2>
+
+      <h3>Does SageMaker charge when an endpoint has zero traffic?</h3>
+      <p>
+        Yes. SageMaker endpoints are always-on infrastructure. The EC2 instance behind the endpoint runs continuously regardless of traffic. AWS bills at full on-demand rates including GPU capacity &#8212; even with zero invocations.
+      </p>
+
+      <h3>How do I detect idle SageMaker endpoints automatically?</h3>
+      <p>
+        Run <code>cleancloud scan --provider aws --all-regions --category ai</code> or use the <code>cleancloud-io/scan-action</code> GitHub Action on a weekly schedule with <code>fail-on-confidence: HIGH</code>. GPU-backed endpoints with zero invocations over 7 days will fail the build.
+      </p>
+
+      <h3>What's the cheapest GPU endpoint I might have forgotten?</h3>
+      <p>
+        An <code>ml.g4dn.xlarge</code> &#8212; the smallest GPU instance available in SageMaker &#8212; costs approximately $504/month at idle. If you have one left over from a hackathon or proof-of-concept, it's costing you around $6,000/year with zero traffic.
+      </p>
+
+      <!-- CTA -->
+      <div class="post-cta">
+        <h3>Find your idle SageMaker endpoints now</h3>
+        <p>Run a scan in under 60 seconds. Paste this into AWS CloudShell &#8212; no local setup, no IAM policy to create. Your existing portal session is enough.</p>
+        <div class="post-cta-acts">
+          <a href="https://pypi.org/project/cleancloud/" class="btn btn-wh" target="_blank" rel="noopener">Install via PyPI &#8594;</a>
+          <a href="https://github.com/cleancloud-io/cleancloud" class="btn btn-ow" target="_blank" rel="noopener">&#9733; View on GitHub</a>
+        </div>
+      </div>
+
+      <div class="code-block" style="margin-top:24px">
+        <div class="code-hd">
+          <span class="code-fn">AWS CloudShell — 60-second scan</span>
+          <span class="code-lg">no local setup required</span>
+        </div>
+        <div class="code-bd"><pre>
+<span class="co">pip install cleancloud && cleancloud scan --provider aws --all-regions --category ai</span></pre>
+        </div>
+      </div>
+
+    </article>
+
+    <aside class="post-sidebar rv">
+      <div class="toc">
+        <div class="toc-title">In this article</div>
+        <ul class="toc-list">
+          <li><a href="#the-story">The Hackathon That Kept Billing</a></li>
+          <li><a href="#why-sagemaker-hides-this">Why SageMaker Hides This</a></li>
+          <li><a href="#how-the-rule-works">How the Detection Rule Works</a></li>
+          <li><a href="#catching-it-in-ci">Catching It in CI</a></li>
+          <li><a href="#what-happened-next">What Happened Next</a></li>
+          <li><a href="#required-permissions">Required IAM Permissions</a></li>
+          <li><a href="#faq">FAQ</a></li>
+        </ul>
+      </div>
+      <div class="sidebar-card">
+        <div class="sidebar-card-title">SageMaker idle costs</div>
+        <div class="sidebar-stat"><span class="ss-label">ml.g4dn.xlarge</span><span class="ss-val">~$504/mo</span></div>
+        <div class="sidebar-stat"><span class="ss-label">ml.g4dn.12xlarge</span><span class="ss-val">~$1,800/mo</span></div>
+        <div class="sidebar-stat"><span class="ss-label">ml.p3.2xlarge</span><span class="ss-val">~$2,800/mo</span></div>
+        <div class="sidebar-stat"><span class="ss-label">ml.p3.8xlarge</span><span class="ss-val">~$5,600/mo</span></div>
+        <div class="sidebar-stat"><span class="ss-label">ml.p4d.24xlarge</span><span class="ss-val">~$23K+/mo</span></div>
+      </div>
+      <div class="sidebar-card">
+        <div class="sidebar-card-title">Quick scan</div>
+        <div style="background:#0d1117;border:1px solid #21262d;border-radius:7px;padding:10px 13px;font-family:var(--mono);font-size:11px;color:#56d364;margin-bottom:10px;line-height:1.7">
+          pip install cleancloud<br>cleancloud scan \<br>&nbsp;&nbsp;--provider aws \<br>&nbsp;&nbsp;--all-regions \<br>&nbsp;&nbsp;--category ai
+        </div>
+        <a href="https://github.com/cleancloud-io/cleancloud/blob/main/docs/aws.md" target="_blank" rel="noopener" style="display:block;text-align:center;font-family:var(--sans);font-size:14px;font-weight:600;color:var(--accent-hi);padding:9px;border:1px solid var(--accent-md);border-radius:7px;background:var(--accent-lt);text-decoration:none">
+          AWS setup guide &#8594;
+        </a>
+      </div>
+    </aside>
+
+  </div>
+
+  <div class="related rv">
+    <div class="related-title">More from the CleanCloud blog</div>
+    <div class="related-grid">
+      <div class="related-card">
+        <div class="rc-tag">Azure</div>
+        <div class="rc-title"><a href="/blog/azure-ml-compute-idle-cost.html" style="color:inherit">$11,400/Month in Idle Azure ML Compute</a></div>
+        <div class="rc-desc">An AML compute cluster with min_nodes: 2 and no training jobs for 23 days. The fix takes one line of config.</div>
+      </div>
+      <div class="related-card">
+        <div class="rc-tag">GCP</div>
+        <div class="rc-title"><a href="/blog/vertex-ai-idle-endpoint-cost.html" style="color:inherit">Vertex AI Endpoint Running for 3 Months After a PoC Ended</a></div>
+        <div class="rc-desc">A Vertex AI endpoint with an A100 GPU, idle since a proof-of-concept wrapped up. $7,200 in avoidable spend.</div>
+      </div>
+      <div class="related-card">
+        <div class="rc-tag">Policy-as-Code</div>
+        <div class="rc-title"><a href="/blog/policy-as-code-cloud-governance.html" style="color:inherit">Policy-as-Code Cloud Governance</a></div>
+        <div class="rc-desc">Stop managing exceptions in spreadsheets. Put suppression rules in git — reviewable, auditable, expiring automatically.</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</main>
+
+<footer>
+  <div class="fi">
+    <div class="f-logo">
+      <div class="lm"><svg viewBox="0 0 14 14" fill="none" stroke="#00ffd0" stroke-width="2"><path d="M2 7L5 10L12 3" stroke-linecap="round" stroke-linejoin="round"/><circle cx="7" cy="7" r="6" stroke="#00ffd0" stroke-width="1.4" opacity=".4"/></svg></div>
+      cleancloud
+    </div>
+    <ul class="f-links">
+      <li><a href="/">Home</a></li>
+      <li><a href="/blog">Blog</a></li>
+      <li><a href="https://github.com/cleancloud-io/cleancloud" target="_blank" rel="noopener">GitHub</a></li>
+      <li><a href="https://pypi.org/project/cleancloud/" target="_blank" rel="noopener">PyPI</a></li>
+      <li><a href="mailto:suresh@getcleancloud.com">Contact</a></li>
+    </ul>
+    <span class="f-copy">&copy; 2026 CleanCloud. MIT License.</span>
+  </div>
+</footer>
+
+<script>
+const obs=new IntersectionObserver(entries=>{entries.forEach(e=>{if(e.isIntersecting)e.target.classList.add('in');});},{threshold:0.06});
+document.querySelectorAll('.rv').forEach(el=>obs.observe(el));
+const headings=document.querySelectorAll('.post-body h2,.post-body h3');
+const tocLinks=document.querySelectorAll('.toc-list a');
+const tocObs=new IntersectionObserver(entries=>{entries.forEach(entry=>{if(entry.isIntersecting){tocLinks.forEach(l=>l.classList.remove('active'));const id=entry.target.getAttribute('id');const active=document.querySelector(`.toc-list a[href="#${id}"]`);if(active)active.classList.add('active');}});},{rootMargin:'-20% 0px -70% 0px'});
+headings.forEach(h=>{if(h.id)tocObs.observe(h);});
+</script>
+</body>
+</html>

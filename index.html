@@ -459,10 +459,10 @@ footer{border-top:1px solid var(--border);background:var(--white);position:relat
       <span class="pill p-gr">Compliance-safe</span>
     </div>
     <div class="fc">
-      <div class="fc-icon">&#9881;&#65039;</div>
-      <div class="fc-t">CI enforcement gates</div>
-      <p class="fc-b">Fail builds on your terms. <code style="font-family:var(--mono);font-size:11px;background:var(--bg);padding:1px 5px;border-radius:3px">--fail-on-confidence HIGH</code> or <code style="font-family:var(--mono);font-size:11px;background:var(--bg);padding:1px 5px;border-radius:3px">--fail-on-cost 100</code> &#8212; your policy.</p>
-      <span class="pill p-bl">Shift-left</span>
+      <div class="fc-icon">&#128196;</div>
+      <div class="fc-t">Policy-as-code governance</div>
+      <p class="fc-b">Commit a <code style="font-family:var(--mono);font-size:11px;background:var(--bg);padding:1px 5px;border-radius:3px">cleancloud.yaml</code> to your repo. Exceptions, thresholds, and tag rules live in git &#8212; every approval is version-controlled and reviewable. CI enforcement with <code style="font-family:var(--mono);font-size:11px;background:var(--bg);padding:1px 5px;border-radius:3px">fail_on_confidence</code> and <code style="font-family:var(--mono);font-size:11px;background:var(--bg);padding:1px 5px;border-radius:3px">fail_on_cost</code> thresholds.</p>
+      <span class="pill p-bl">Git-reviewable</span>
     </div>
     <div class="fc">
       <div class="fc-icon">&#127760;</div>
@@ -596,6 +596,18 @@ footer{border-top:1px solid var(--border);background:var(--white);position:relat
         </tbody>
       </table>
       <p style="margin-top:14px;font-family:var(--sans);font-size:14px;color:var(--muted)">Full guide &#8594; <a href="https://github.com/cleancloud-io/cleancloud/blob/main/docs/ci.md">docs/ci.md</a></p>
+      <div style="margin-top:20px;padding:14px 16px;background:var(--bg);border:1px solid var(--bd);border-radius:8px;font-family:var(--mono);font-size:12px;line-height:1.7">
+        <div style="color:var(--muted);font-family:var(--sans);font-size:12px;margin-bottom:8px;font-weight:600">Or set thresholds in <code style="background:none;padding:0">cleancloud.yaml</code> &#8212; auto-detected from repo root:</div>
+        <span style="color:#94a3b8">thresholds:</span><br>
+        <span style="color:#94a3b8">&nbsp;&nbsp;fail_on_confidence:</span> <span style="color:#00ffd0">HIGH</span><br>
+        <span style="color:#94a3b8">&nbsp;&nbsp;fail_on_cost:</span> <span style="color:#00ffd0">500</span><br>
+        <span style="color:#94a3b8">exceptions:</span><br>
+        <span style="color:#94a3b8">&nbsp;&nbsp;- rule_id:</span> <span style="color:#fbbf24">aws.ec2.instance.stopped</span><br>
+        <span style="color:#94a3b8">&nbsp;&nbsp;&nbsp;&nbsp;resource_id:</span> <span style="color:#fbbf24">i-0abc1234</span><br>
+        <span style="color:#94a3b8">&nbsp;&nbsp;&nbsp;&nbsp;reason:</span> <span style="color:#86efac">"Bastion &#8212; started on demand"</span><br>
+        <span style="color:#94a3b8">&nbsp;&nbsp;&nbsp;&nbsp;expires_at:</span> <span style="color:#86efac">"2026-12-31"</span>
+      </div>
+      <p style="margin-top:10px;font-family:var(--sans);font-size:14px;color:var(--muted)">Policy config reference &#8594; <a href="https://github.com/cleancloud-io/cleancloud/blob/main/docs/configuration.md">docs/configuration.md</a></p>
     </div>
     <div>
       <div class="cc">
@@ -712,9 +724,9 @@ footer{border-top:1px solid var(--border);background:var(--white);position:relat
       </div>
     </div>
     <div class="uc">
-      <div class="uc-hd"><span class="uc-n">03</span><span class="uc-ti">CI enforcement gate</span></div>
-      <div class="uc-bd">Block PRs when waste crosses your threshold. Engineers fix it at review time, not production. FinOps meets DevOps at the pull request.
-        <div class="uc-cmd">$ cleancloud scan --fail-on-cost 100</div>
+      <div class="uc-hd"><span class="uc-n">03</span><span class="uc-ti">Policy-as-code enforcement</span></div>
+      <div class="uc-bd">Commit a <code style="font-family:var(--mono);font-size:11px">cleancloud.yaml</code> to your repo. Exceptions, thresholds, and tag rules are version-controlled. Block on waste thresholds &#8212; every approval is a git-reviewable decision.
+        <div class="uc-cmd">$ cleancloud scan --provider aws --org --all-regions</div>
       </div>
     </div>
   </div>
@@ -824,7 +836,7 @@ footer{border-top:1px solid var(--border);background:var(--white);position:relat
       <p class="fl-tag">Shift-left cloud hygiene for AWS, Azure, and GCP.<br>Catch waste in CI &#8212; read-only, deterministic, zero telemetry.</p>
       <div class="fl-bgs">
         <span class="fl-bg">MIT License</span>
-        <span class="fl-bg">PyPI v1.12.0+</span>
+        <span class="fl-bg">PyPI v1.13.0+</span>
         <span class="fl-bg">Python 3.10+</span>
         <span class="fl-bg">Zero writes</span>
       </div>
@@ -846,6 +858,7 @@ footer{border-top:1px solid var(--border);background:var(--white);position:relat
         <li><a href="https://github.com/cleancloud-io/cleancloud/blob/main/docs/azure.md">Azure setup</a></li>
         <li><a href="https://github.com/cleancloud-io/cleancloud/blob/main/docs/gcp.md">GCP setup</a></li>
         <li><a href="https://github.com/cleancloud-io/cleancloud/blob/main/docs/ci.md">CI/CD guide</a></li>
+        <li><a href="https://github.com/cleancloud-io/cleancloud/blob/main/docs/configuration.md">Policy config</a></li>
         <li><a href="https://github.com/cleancloud-io/cleancloud/blob/main/docs/infosec-readiness.md">Infosec readiness</a></li>
       </ul>
     </div>
