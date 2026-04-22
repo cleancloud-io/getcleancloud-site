@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- ── SEO ── -->
+<title>The Notebook Nobody Touched for Three Weeks: Vertex AI Workbench Idle Cost | CleanCloud</title>
+<meta name="description" content="A Vertex AI Workbench instance with a V100 GPU left ACTIVE for 23 days after model training moved to a dedicated pipeline. $1,523/month billed with no activity. CleanCloud's gcp.vertex.workbench.idle rule caught it automatically.">
+<meta name="keywords" content="vertex ai workbench idle, gcp.vertex.workbench.idle, Vertex AI Workbench cost, Google Cloud Vertex AI notebook billing, idle Vertex AI Workbench ACTIVE state, GCP Jupyter notebook GPU cost, Vertex Workbench FinOps, detect idle Vertex AI Workbench, Vertex AI Workbench V100 cost, reduce GCP AI notebook cost, vertex ai workbench stop billing, GCP machine learning notebook idle, vertex ai managed workbench cost">
+<meta name="author" content="Suresh, CleanCloud">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://www.getcleancloud.com/blog/gcp-vertex-workbench-idle.html">
+
+<!-- ── Open Graph ── -->
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://www.getcleancloud.com/blog/gcp-vertex-workbench-idle.html">
+<meta property="og:title" content="The Notebook Nobody Touched for Three Weeks: Vertex AI Workbench Idle Cost">
+<meta property="og:description" content="A Vertex AI Workbench instance with a V100 GPU left ACTIVE for 23 days after training moved to a pipeline. $1,523/month billed with zero activity. CleanCloud found it on the first scan.">
+<meta property="og:image" content="https://www.getcleancloud.com/og-image.png">
+<meta property="og:site_name" content="CleanCloud">
+<meta property="article:published_time" content="2026-04-22">
+<meta property="article:author" content="Suresh">
+<meta property="article:tag" content="GCP">
+<meta property="article:tag" content="AI/ML">
+<meta property="article:tag" content="FinOps">
+
+<!-- ── Twitter Card ── -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@getcleancloud">
+<meta name="twitter:title" content="The Notebook Nobody Touched for Three Weeks: Vertex AI Workbench Idle Cost">
+<meta name="twitter:description" content="Vertex AI Workbench V100 instance left ACTIVE for 23 days after training moved to a pipeline. $1,523/month. CleanCloud caught it automatically.">
+
+<!-- ── Schema.org Article ── -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "The Notebook Nobody Touched for Three Weeks: Vertex AI Workbench Idle Cost",
+  "description": "A Vertex AI Workbench instance left ACTIVE with a V100 GPU for 23 days after model training moved to a dedicated pipeline. CleanCloud's gcp.vertex.workbench.idle rule flagged it automatically.",
+  "author": { "@type": "Person", "name": "Suresh", "url": "https://www.getcleancloud.com" },
+  "publisher": { "@type": "Organization", "name": "CleanCloud", "url": "https://www.getcleancloud.com" },
+  "datePublished": "2026-04-22",
+  "dateModified": "2026-04-22",
+  "keywords": ["Vertex AI Workbench idle", "gcp.vertex.workbench.idle", "GCP GPU notebook waste", "FinOps GCP AI"],
+  "articleSection": "Engineering"
+}
+</script>
+
+<!-- ── FAQ Schema ── -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Does Vertex AI Workbench charge when no notebooks are running?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. Vertex AI Workbench instances in ACTIVE state bill at the full GCE instance rate for the configured machine type and any attached accelerators, regardless of notebook kernel activity. A stopped (STOPPED state) instance does not incur compute charges. To stop billing, the instance must be stopped or deleted."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How do I detect idle Vertex AI Workbench instances automatically?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "CleanCloud's gcp.vertex.workbench.idle rule checks the updateTime field from the Vertex AI Workbench API for each ACTIVE instance. Instances with no control-plane activity for 14+ days are flagged. GPU-backed instances (with accelerators) idle for 2x the threshold are rated CRITICAL. Run: cleancloud scan --provider gcp --category ai"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How much does an idle Vertex AI Workbench instance cost per month?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Costs depend on the machine type and accelerator. An n1-standard-4 without a GPU costs roughly $138/month idle. Adding a T4 GPU brings it to ~$449/month. A V100 configuration costs ~$1,523/month. An a2-highgpu-1g (A100 GPU) can reach ~$2,933/month — all with no notebook activity."
+      }
+    }
+  ]
+}
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500;600&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+
+<style>
+:root{--bg:#f6f7f9;--white:#ffffff;--border:#e2e6ea;--border2:#d0d5dc;--text:#0d1b2a;--text2:#374151;--muted:#6b7a8d;--muted2:#9aa3af;--accent:#0b7a6e;--accent-lt:#e6f4f2;--accent-md:#c2e8e3;--accent-hi:#0d9488;--sans:'Inter',system-ui,-apple-system,sans-serif;--mono:'JetBrains Mono',monospace;--serif:'Lora',Georgia,serif;--sh-sm:0 1px 3px rgba(13,27,42,.06),0 1px 2px rgba(13,27,42,.04);--sh-md:0 4px 16px rgba(13,27,42,.08),0 2px 4px rgba(13,27,42,.04);--sh-lg:0 12px 40px rgba(13,27,42,.12),0 4px 8px rgba(13,27,42,.06);--content-width:720px}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;background-image:linear-gradient(rgba(13,27,42,.022) 1px,transparent 1px),linear-gradient(90deg,rgba(13,27,42,.022) 1px,transparent 1px);background-size:40px 40px}
+a{color:var(--accent-hi);text-decoration:none}
+a:hover{text-decoration:underline}
+nav{position:sticky;top:0;z-index:100;background:rgba(246,247,249,.93);backdrop-filter:blur(16px);border-bottom:1px solid var(--border)}
+.nav-in{max-width:1120px;margin:0 auto;padding:0 28px;height:58px;display:flex;align-items:center;justify-content:space-between}
+.nav-logo{font-family:var(--mono);font-size:14px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:9px;text-decoration:none}
+.lm{width:26px;height:26px;border-radius:6px;background:var(--text);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.lm svg{width:14px;height:14px}
+.nav-links{display:flex;align-items:center;gap:2px;list-style:none}
+.nav-links a{font-family:var(--sans);font-size:14px;font-weight:600;color:var(--muted);padding:5px 11px;border-radius:5px;transition:color .15s,background .15s}
+.nav-links a:hover{color:var(--text);background:var(--white);text-decoration:none}
+.nav-cta{font-family:var(--sans)!important;font-size:14px!important;font-weight:600!important;color:var(--white)!important;background:var(--text)!important;padding:7px 16px!important;border-radius:6px!important}
+.nav-cta:hover{background:#1a2f44!important}
+.blog-wrap{max-width:1120px;margin:0 auto;padding:0 28px;position:relative;z-index:1}
+.post-hero{padding:64px 0 48px;max-width:var(--content-width);margin:0 auto}
+.post-breadcrumb{font-family:var(--mono);font-size:11px;color:var(--muted);margin-bottom:20px;display:flex;align-items:center;gap:8px}
+.post-breadcrumb a{color:var(--muted)}
+.post-breadcrumb a:hover{color:var(--accent-hi);text-decoration:none}
+.post-breadcrumb span{color:var(--border2)}
+.post-tags{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px}
+.post-tag{font-family:var(--mono);font-size:10px;font-weight:600;padding:3px 10px;border-radius:4px;text-transform:uppercase;letter-spacing:.06em}
+.tag-gcp{background:#e8f5e9;color:#1b5e20;border:1px solid #a5d6a7}
+.tag-ai{background:#fdf4ff;color:#7e22ce;border:1px solid #e9d5ff}
+.tag-finops{background:#fffbeb;color:#d97706;border:1px solid #fde68a}
+.post-h1{font-size:clamp(28px,4vw,44px);font-weight:800;line-height:1.12;letter-spacing:-.025em;color:var(--text);margin-bottom:20px}
+.post-h1 em{font-style:normal;background:linear-gradient(135deg,var(--accent) 0%,var(--accent-hi) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.post-lede{font-size:18px;color:var(--text2);line-height:1.7;margin-bottom:28px;font-family:var(--serif);font-style:italic}
+.post-meta{display:flex;align-items:center;gap:20px;padding:16px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border);font-family:var(--mono);font-size:11px;color:var(--muted)}
+.meta-author{display:flex;align-items:center;gap:8px}
+.meta-avatar{width:28px;height:28px;border-radius:50%;background:var(--text);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#00ffd0;flex-shrink:0}
+.meta-dot{color:var(--border2)}
+.post-layout{display:grid;grid-template-columns:var(--content-width) 1fr;gap:60px;padding:48px 0 96px;align-items:start}
+.post-body{min-width:0}
+.post-body h2{font-size:22px;font-weight:800;color:var(--text);letter-spacing:-.02em;line-height:1.2;margin:48px 0 16px;padding-top:8px}
+.post-body h2:first-child{margin-top:0}
+.post-body h3{font-size:16px;font-weight:700;color:var(--text);letter-spacing:-.01em;margin:28px 0 10px}
+.post-body p{font-size:16px;line-height:1.8;color:var(--text2);margin-bottom:20px}
+.post-body p strong{color:var(--text);font-weight:600}
+.post-body ul,.post-body ol{margin:0 0 20px 0;padding-left:24px}
+.post-body li{font-size:16px;line-height:1.75;color:var(--text2);margin-bottom:8px}
+.post-body li strong{color:var(--text)}
+.callout{border-left:3px solid var(--accent-hi);background:var(--accent-lt);border-radius:0 8px 8px 0;padding:18px 20px;margin:28px 0}
+.callout p{margin:0;font-size:15px;color:var(--accent);font-weight:500;line-height:1.65}
+.callout-warn{border-left-color:#d97706;background:#fffbeb}
+.callout-warn p{color:#92400e}
+.code-block{background:#0d1117;border:1px solid #21262d;border-radius:10px;overflow:hidden;margin:24px 0;box-shadow:var(--sh-md);font-family:var(--mono);font-size:12.5px;line-height:1.7}
+.code-hd{background:#161b22;border-bottom:1px solid #21262d;padding:9px 16px;display:flex;align-items:center;justify-content:space-between}
+.code-fn{font-size:11px;color:#6e7681;font-family:var(--mono)}
+.code-lg{font-size:10px;padding:2px 8px;border-radius:4px;background:#21262d;color:#6e7681;border:1px solid #30363d;font-family:var(--mono)}
+.code-bd{padding:16px 18px;overflow-x:auto;color:#e6edf3}
+.code-bd .c{color:#6e7681}.code-bd .k{color:#79c0ff}.code-bd .v{color:#a5f3a5}.code-bd .s{color:#ffa657}.code-bd .hi{color:#ff7b72}.code-bd .co{color:#3fb950;font-weight:500}.code-bd .me{color:#e3b341}.code-bd .pu{color:#d2a8ff}
+.post-body code{font-family:var(--mono);font-size:13px;background:var(--bg);border:1px solid var(--border);padding:1px 6px;border-radius:4px;color:var(--accent-hi)}
+.compare-table{width:100%;border-collapse:collapse;font-size:13px;border:1px solid var(--border);border-radius:10px;overflow:hidden;box-shadow:var(--sh-sm);margin:24px 0}
+.compare-table th{text-align:left;padding:10px 14px;background:var(--bg);color:var(--muted);border-bottom:1px solid var(--border2);font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.07em;font-weight:600}
+.compare-table td{padding:10px 14px;border-bottom:1px solid var(--border);background:var(--white);color:var(--text2);font-family:var(--mono);font-size:12px;vertical-align:top}
+.compare-table tr:last-child td{border-bottom:none}
+.compare-table tr:hover td{background:var(--bg)}
+.td-good{color:#059669;font-weight:600}.td-bad{color:#dc2626;font-weight:600}.td-warn{color:#d97706;font-weight:600}
+.pull-quote{border-top:3px solid var(--text);border-bottom:1px solid var(--border);padding:24px 0 20px;margin:36px 0}
+.pull-quote p{font-family:var(--serif);font-size:20px;font-style:italic;color:var(--text);line-height:1.5;margin:0}
+.stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:28px 0}
+.stat-card{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:20px;text-align:center;box-shadow:var(--sh-sm)}
+.stat-n{font-size:28px;font-weight:800;color:var(--accent-hi);letter-spacing:-.03em;line-height:1;margin-bottom:6px}
+.stat-l{font-family:var(--mono);font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;line-height:1.4}
+.post-cta{background:var(--text);border-radius:12px;padding:32px 36px;margin:48px 0 0;position:relative;overflow:hidden}
+.post-cta::before{content:'';position:absolute;top:-60px;right:-60px;width:200px;height:200px;border-radius:50%;background:radial-gradient(circle,rgba(13,148,136,.3),transparent 70%);pointer-events:none}
+.post-cta h3{font-size:20px;font-weight:800;color:#fff;letter-spacing:-.02em;margin-bottom:8px}
+.post-cta p{font-family:var(--sans);font-size:15px;color:rgba(255,255,255,.55);margin-bottom:20px;line-height:1.65}
+.post-cta-acts{display:flex;gap:10px;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;gap:7px;font-family:var(--sans);font-size:14px;font-weight:600;padding:10px 20px;border-radius:7px;transition:transform .15s,box-shadow .15s;text-decoration:none!important;letter-spacing:.01em}
+.btn:hover{transform:translateY(-1px)}
+.btn-wh{background:#fff;color:var(--text)}
+.btn-wh:hover{background:#f0f0f0}
+.btn-ow{background:transparent;color:rgba(255,255,255,.75);border:1px solid rgba(255,255,255,.25)}
+.btn-ow:hover{background:rgba(255,255,255,.08);color:#fff}
+.post-sidebar{position:sticky;top:78px}
+.toc{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:20px;box-shadow:var(--sh-sm);margin-bottom:20px}
+.toc-title{font-family:var(--mono);font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:14px}
+.toc-list{list-style:none}
+.toc-list li{margin-bottom:4px}
+.toc-list a{font-family:var(--mono);font-size:12px;color:var(--muted);display:block;padding:4px 8px;border-radius:5px;transition:color .15s,background .15s;line-height:1.4}
+.toc-list a:hover{color:var(--accent-hi);background:var(--accent-lt);text-decoration:none}
+.toc-list a.active{color:var(--accent-hi);background:var(--accent-lt);font-weight:500}
+.sidebar-card{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:20px;box-shadow:var(--sh-sm);margin-bottom:16px}
+.sidebar-card-title{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--text);margin-bottom:10px;text-transform:uppercase;letter-spacing:.06em}
+.sidebar-stat{display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);font-family:var(--mono);font-size:11px}
+.sidebar-stat:last-child{border-bottom:none}
+.ss-label{color:var(--muted)}
+.ss-val{font-weight:600;color:var(--accent-hi)}
+.related{border-top:1px solid var(--border);padding:48px 0 80px}
+.related-title{font-family:var(--mono);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:24px}
+.related-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.related-card{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:20px;transition:box-shadow .2s,transform .2s;box-shadow:var(--sh-sm)}
+.related-card:hover{box-shadow:var(--sh-md);transform:translateY(-2px)}
+.rc-tag{font-family:var(--mono);font-size:10px;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px}
+.rc-title{font-size:14px;font-weight:700;color:var(--text);line-height:1.35;letter-spacing:-.01em;margin-bottom:8px}
+.rc-desc{font-family:var(--mono);font-size:11px;color:var(--muted);line-height:1.6}
+footer{border-top:1px solid var(--border);background:var(--white);position:relative;z-index:1}
+.fi{max-width:1120px;margin:0 auto;padding:40px 28px;display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap}
+.f-logo{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:8px}
+.f-links{display:flex;gap:20px;list-style:none}
+.f-links a{font-family:var(--sans);font-size:13px;color:var(--muted2);transition:color .15s}
+.f-links a:hover{color:var(--text);text-decoration:none}
+.f-copy{font-family:var(--sans);font-size:13px;color:var(--muted2)}
+.rv{opacity:0;transform:translateY(16px);transition:opacity .5s ease,transform .5s ease}
+.rv.in{opacity:1;transform:translateY(0)}
+@media(max-width:960px){.post-layout{grid-template-columns:1fr;gap:0}.post-sidebar{position:static;margin-top:48px}.stat-row{grid-template-columns:1fr 1fr}.related-grid{grid-template-columns:1fr}.nav-links{display:none}}
+@media(max-width:600px){.post-h1{font-size:26px}.stat-row{grid-template-columns:1fr}.post-meta{flex-wrap:wrap;gap:10px}}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-in">
+    <a class="nav-logo" href="/">
+      <div class="lm"><svg viewBox="0 0 14 14" fill="none" stroke="#00ffd0" stroke-width="2"><path d="M2 7L5 10L12 3" stroke-linecap="round" stroke-linejoin="round"/><circle cx="7" cy="7" r="6" stroke="#00ffd0" stroke-width="1.4" opacity=".4"/></svg></div>
+      cleancloud
+    </a>
+    <ul class="nav-links">
+      <li><a href="/#rules">Rules</a></li>
+      <li><a href="/#ci">CI/CD</a></li>
+      <li><a href="/blog">Blog</a></li>
+      <li><a href="https://github.com/cleancloud-io/cleancloud" target="_blank" rel="noopener">GitHub &#9733; 106</a></li>
+      <li><a href="/#contact" class="nav-cta">Contact us &#8594;</a></li>
+    </ul>
+  </div>
+</nav>
+
+<main>
+<div class="blog-wrap">
+
+  <div class="post-hero rv">
+    <div class="post-breadcrumb">
+      <a href="/">Home</a><span>&#8250;</span>
+      <a href="/blog">Blog</a><span>&#8250;</span>
+      Vertex AI Workbench Idle Cost
+    </div>
+    <div class="post-tags">
+      <span class="post-tag tag-gcp">GCP</span>
+      <span class="post-tag tag-ai">AI/ML</span>
+      <span class="post-tag tag-finops">FinOps</span>
+    </div>
+    <h1 class="post-h1">
+      The Notebook Nobody<br>
+      <em>Touched for Three Weeks</em>
+    </h1>
+    <p class="post-lede">
+      A Vertex AI Workbench instance with a <code style="font-style:normal;font-size:15px">V100 GPU</code> sitting ACTIVE for 23 days after model training moved to a dedicated Vertex AI pipeline. No kernel activity. No SSH connections. No notebook opens. $1,523/month billed continuously. CleanCloud found it on the first scan.
+    </p>
+    <div class="post-meta">
+      <div class="meta-author"><div class="meta-avatar">S</div><span>Suresh &middot; CleanCloud</span></div>
+      <span class="meta-dot">&middot;</span>
+      <span>April 22, 2026</span>
+      <span class="meta-dot">&middot;</span>
+      <span>8 min read</span>
+    </div>
+  </div>
+
+  <div class="post-layout">
+    <article class="post-body rv">
+
+      <h2 id="story">The Notebook Environment That Wasn't Needed Anymore</h2>
+      <p>
+        The data science team had been using a Vertex AI Workbench instance for exploratory model development — iterating on feature engineering, running training experiments, visualizing results. The instance was configured with an <code>n1-highmem-8</code> machine type and a V100 GPU, sized for the largest datasets they needed to process interactively.
+      </p>
+      <p>
+        When the model reached a stable state, the team productionized training as a Vertex AI Training Pipeline with its own managed compute. The Workbench instance became redundant: the notebooks were version-controlled in Git, the experiments were tracked in Vertex AI Experiments, and the pipeline handled scheduled retraining. Nobody needed the interactive notebook environment anymore.
+      </p>
+      <p>
+        Nobody turned it off, either. The instance stayed ACTIVE. Twenty-three days later, a quarterly GCP billing review surfaced the line item. At $1,523/month for the V100 configuration, the team had wasted roughly $1,165 over the idle period — for a machine that hadn't been opened.
+      </p>
+
+      <div class="callout-warn callout">
+        <p><strong>Vertex AI Workbench ACTIVE = billing.</strong> An instance in ACTIVE state bills continuously for the GCE machine type and any attached accelerators. Stopping the instance (STOPPED state) eliminates compute charges. Deletion eliminates all charges. Neither happens automatically.</p>
+      </div>
+
+      <h2 id="why-instances-persist">Why Workbench Instances Stay Running</h2>
+      <p>
+        Vertex AI Workbench instances are easy to create and nearly invisible from a cost perspective — they appear in GCP Billing as Compute Engine charges mixed with other VM costs, making them easy to overlook. The patterns that leave them running:
+      </p>
+      <ul>
+        <li><strong>Workflow graduation:</strong> Interactive exploration notebook environments that aren't cleaned up when work moves to production pipelines or scheduled jobs.</li>
+        <li><strong>Team transition:</strong> An ML engineer who built the Workbench instance leaves or rotates to another project. The new team member doesn't know the instance exists or assumes someone else owns it.</li>
+        <li><strong>Experiment preservation instinct:</strong> Teams keep instances running "just in case" they need to reproduce a result or debug something interactively. The option value is real but rarely exercised — especially for months.</li>
+        <li><strong>GPU provisioning difficulty:</strong> GPU quota can be hard to obtain in some regions. Teams keep GPU instances running rather than risk being unable to reprovision one when needed.</li>
+      </ul>
+
+      <div class="stat-row">
+        <div class="stat-card">
+          <div class="stat-n">$138</div>
+          <div class="stat-l">n1-std-4 (no GPU) / mo</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-n">$449</div>
+          <div class="stat-l">n1-std-4 + T4 / mo</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-n">$2,933</div>
+          <div class="stat-l">a2-highgpu-1g (A100) / mo</div>
+        </div>
+      </div>
+
+      <h2 id="how-detection-works">How the Detection Rule Works</h2>
+      <p>
+        CleanCloud's <code>gcp.vertex.workbench.idle</code> rule detects Vertex AI Workbench instances in ACTIVE state that have had no control-plane activity for 14 or more days. It uses the <code>updateTime</code> field from the Vertex AI Workbench API as the idle signal.
+      </p>
+      <p>
+        Why <code>updateTime</code> rather than a user activity metric? Vertex AI Workbench does not expose a reliable "last notebook access" timestamp through Cloud Monitoring for all instance types. The <code>updateTime</code> field reflects the last time the instance's configuration was modified — which changes when users start/stop kernels, modify notebook content via the API, or perform any operation that touches the instance record. An instance with no <code>updateTime</code> movement for 14+ days is one that nobody has meaningfully interacted with.
+      </p>
+      <p>
+        Detection logic:
+      </p>
+      <ol>
+        <li><strong>State filter:</strong> Only instances in <code>ACTIVE</code> state are evaluated. <code>STOPPED</code> instances are excluded — they already don't incur compute charges.</li>
+        <li><strong>Idle window check:</strong> The rule compares the current time to <code>updateTime</code>. Instances with <code>(now - updateTime) &ge; idle_days</code> (default: 14 days) are flagged.</li>
+        <li><strong>Accelerator detection:</strong> The instance's accelerator configuration is checked. GPU-backed instances (any accelerator type and count) are treated as higher risk.</li>
+        <li><strong>idle_ratio calculation:</strong> <code>idle_ratio = idle_days_actual / idle_threshold</code>. An instance idle for 28 days on a 14-day threshold has an <code>idle_ratio</code> of 2.0.</li>
+      </ol>
+
+      <p>Risk and confidence tiers:</p>
+      <ul>
+        <li><strong>CRITICAL risk:</strong> GPU-backed instance with <code>idle_ratio &ge; 2.0</code> (idle for at least twice the threshold). A V100 instance idle for 28+ days on a 14-day window.</li>
+        <li><strong>HIGH risk:</strong> GPU-backed instance within the normal idle window (idle_ratio &lt; 2.0).</li>
+        <li><strong>MEDIUM risk:</strong> CPU-only instance, regardless of idle duration.</li>
+        <li><strong>HIGH confidence:</strong> <code>updateTime</code> is authoritative and clearly older than the threshold.</li>
+        <li><strong>MEDIUM confidence:</strong> <code>updateTime</code> is missing or the instance is newer than the threshold but other signals suggest idleness.</li>
+      </ul>
+
+      <div class="code-block">
+        <div class="code-hd"><span class="code-fn">CleanCloud scan output — gcp.vertex.workbench.idle</span><span class="code-lg">SHELL</span></div>
+        <div class="code-bd"><pre>
+<span class="co">$ cleancloud scan --provider gcp --category ai</span>
+
+<span class="me">Rule    :</span> <span class="k">gcp.vertex.workbench.idle</span>
+<span class="me">Resource:</span> <span class="v">ml-dev-v100-notebook</span>  <span class="c">(us-central1 / ml-platform)</span>
+<span class="me">Machine :</span> <span class="s">n1-highmem-8</span>  <span class="c">+ 1× NVIDIA V100</span>
+<span class="me">State   :</span> <span class="v">ACTIVE</span>
+<span class="me">Updated :</span> <span class="hi">23 days ago</span>  <span class="c">(updateTime: 2026-03-30T09:14:22Z)</span>
+<span class="me">Idle    :</span> <span class="hi">23 days</span>  <span class="c">(idle_ratio: 1.64 on 14-day threshold)</span>
+<span class="me">Conf    :</span> <span class="hi">HIGH</span>    <span class="c">(updateTime clearly exceeds threshold)</span>
+<span class="me">Risk    :</span> <span class="hi">HIGH</span>    <span class="c">(GPU + idle_ratio &lt; 2.0)</span>
+<span class="me">Cost    :</span> <span class="s">~$1,523/month</span>
+</pre></div>
+      </div>
+
+      <h2 id="cost-table">Cost by Machine Type and Accelerator</h2>
+      <p>
+        Vertex AI Workbench instances span a wide range of machine types. GPU configurations — common for deep learning model development — represent the largest idle cost exposure.
+      </p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>Machine Type</th>
+            <th>Accelerator</th>
+            <th>Idle Cost / Mo</th>
+            <th>Risk (idle)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>n1-standard-4</td>
+            <td>None</td>
+            <td class="td-warn">~$138</td>
+            <td class="td-warn">MEDIUM</td>
+          </tr>
+          <tr>
+            <td>n1-standard-4</td>
+            <td>1x T4</td>
+            <td class="td-warn">~$449</td>
+            <td class="td-bad">HIGH</td>
+          </tr>
+          <tr>
+            <td>n1-highmem-8</td>
+            <td>1x V100</td>
+            <td class="td-bad">~$1,523</td>
+            <td class="td-bad">HIGH / CRITICAL</td>
+          </tr>
+          <tr>
+            <td>a2-highgpu-1g</td>
+            <td>1x A100</td>
+            <td class="td-bad">~$2,933</td>
+            <td class="td-bad">HIGH / CRITICAL</td>
+          </tr>
+          <tr>
+            <td>g2-standard-8</td>
+            <td>1x L4</td>
+            <td class="td-bad">~$1,060</td>
+            <td class="td-bad">HIGH / CRITICAL</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2 id="ci-integration">Catching It in CI Before 23 Days Pass</h2>
+      <p>
+        With a 14-day idle threshold and weekly CI scans, an idle Workbench instance would first appear as a finding in the second week — before the team has accumulated more than two weeks of unnecessary spend.
+      </p>
+
+      <div class="code-block">
+        <div class="code-hd"><span class="code-fn">.github/workflows/cleancloud-gcp.yml</span><span class="code-lg">YAML</span></div>
+        <div class="code-bd"><pre>
+<span class="k">name</span>: <span class="v">CleanCloud GCP AI/ML Scan</span>
+<span class="k">on</span>:
+  <span class="k">schedule</span>:
+    - <span class="k">cron</span>: <span class="s">'0 8 * * 1'</span>  <span class="c"># Every Monday at 08:00 UTC</span>
+  <span class="k">workflow_dispatch</span>:
+
+<span class="k">jobs</span>:
+  <span class="k">cleancloud-scan</span>:
+    <span class="k">runs-on</span>: <span class="v">ubuntu-latest</span>
+    <span class="k">steps</span>:
+      - <span class="k">uses</span>: <span class="v">actions/checkout@v4</span>
+
+      - <span class="k">name</span>: <span class="v">GCP authentication</span>
+        <span class="k">uses</span>: <span class="v">google-github-actions/auth@v2</span>
+        <span class="k">with</span>:
+          <span class="k">credentials_json</span>: <span class="s">${{ secrets.GCP_CREDENTIALS }}</span>
+
+      - <span class="k">name</span>: <span class="v">CleanCloud — GCP AI/ML scan</span>
+        <span class="k">uses</span>: <span class="v">cleancloud-io/scan-action@v1</span>
+        <span class="k">with</span>:
+          <span class="k">provider</span>: <span class="v">gcp</span>
+          <span class="k">category</span>: <span class="v">ai</span>
+          <span class="k">fail-on-confidence</span>: <span class="v">HIGH</span>
+</pre></div>
+      </div>
+
+      <p>
+        The workflow fails when a HIGH-confidence idle Workbench instance is found. For GPU instances (T4, V100, A100, L4), the finding is HIGH confidence as soon as the 14-day threshold is passed. The team gets a notification in week 2, not week 4.
+      </p>
+
+      <div class="pull-quote">
+        <p>"The pipeline was doing the training. The notebook was just costing money. Nobody noticed because ACTIVE state looks healthy in any GCP console view."</p>
+      </div>
+
+      <h2 id="permissions">Required GCP Permissions</h2>
+      <p>
+        CleanCloud needs read access to the Vertex AI Workbench API. The following roles or permissions are sufficient:
+      </p>
+
+      <div class="code-block">
+        <div class="code-hd"><span class="code-fn">Required GCP IAM permissions (Vertex AI Workbench)</span><span class="code-lg">YAML</span></div>
+        <div class="code-bd"><pre>
+<span class="c"># Predefined role (simplest)</span>
+<span class="k">roles/notebooks.viewer</span>
+
+<span class="c"># Or individual permissions</span>
+<span class="v">notebooks.instances.list</span>
+<span class="v">notebooks.instances.get</span>
+<span class="v">resourcemanager.projects.get</span>
+</pre></div>
+      </div>
+
+      <h2 id="prevention">Stopping the Cycle of Forgotten Notebooks</h2>
+      <p>
+        Workbench instances are one of the highest-frequency idle resource patterns in GCP AI/ML environments. The instinct to keep them running is understandable — they take minutes to provision but represent hours of environment setup. Some practices that help:
+      </p>
+      <ul>
+        <li><strong>Stop instances at the end of every work session:</strong> Make stopping the Workbench instance part of the end-of-day routine. A stopped instance costs nothing for compute; it only incurs disk storage charges.</li>
+        <li><strong>Use Vertex AI Workbench idle shutdown:</strong> The managed notebooks feature includes a configurable idle shutdown timer. Set it to 60 minutes for development instances. This won't help with instances that were intentionally left running for batch tasks, but it catches sessions left open accidentally.</li>
+        <li><strong>Prefer training pipelines over interactive training:</strong> For any training run exceeding 30 minutes, run it as a Vertex AI Custom Job rather than in a notebook. Custom Jobs provision compute on demand and terminate automatically.</li>
+        <li><strong>Run CleanCloud weekly on AI resources:</strong> Weekly scans with HIGH confidence alerting surface idle GPU instances within two weeks of the last activity.</li>
+      </ul>
+
+      <h2 id="faq">Frequently Asked Questions</h2>
+
+      <h3>Does stopping a Vertex AI Workbench instance preserve my notebooks?</h3>
+      <p>
+        Yes. Stopping an instance (transitioning to STOPPED state) preserves the boot disk, data disks, and all notebook files. Compute charges stop; disk storage charges continue at standard GCS/PD rates. When you start the instance again, it resumes from where you left off. Deletion removes all data permanently.
+      </p>
+
+      <h3>What is the difference between Vertex AI Workbench and Vertex AI Workbench Instances (managed)?</h3>
+      <p>
+        Vertex AI offers two notebook environments: the original user-managed Notebooks (based on Compute Engine VMs) and the newer managed Workbench Instances. The <code>gcp.vertex.workbench.idle</code> rule covers both. The detection signal (<code>updateTime</code> from the Notebooks API) applies to both instance types.
+      </p>
+
+      <h3>Why does CleanCloud use updateTime instead of a kernel activity metric?</h3>
+      <p>
+        Vertex AI Workbench does not expose a standardized "last notebook kernel activity" metric through Cloud Monitoring across all instance types and configurations. The <code>updateTime</code> field from the control plane API is reliable, consistently available, and changes whenever any meaningful user or system action touches the instance record. It is a conservative signal — some instances with zero kernel activity might have had configuration changes — but it is the most dependable idle proxy available across both managed and user-managed instances.
+      </p>
+
+      <h3>Will CleanCloud flag my Workbench instance if I use it weekly?</h3>
+      <p>
+        No. If you access your Workbench instance at least once within the <code>idle_days</code> window (default: 14 days), the <code>updateTime</code> will be updated and the rule will not flag it. Teams with weekly usage patterns should consider setting <code>idle_days: 21</code> to avoid false positives during normal work patterns with occasional gaps.
+      </p>
+
+      <div class="post-cta">
+        <h3>Find your idle Vertex AI Workbench instances today</h3>
+        <p>CleanCloud scans your GCP projects and flags Workbench instances with no activity for 14+ days. Free, open-source, runs in 5 minutes.</p>
+        <div class="post-cta-acts">
+          <a href="https://github.com/cleancloud-io/cleancloud" class="btn btn-wh" target="_blank" rel="noopener">View on GitHub</a>
+          <a href="/#contact" class="btn btn-ow">Get a demo &#8594;</a>
+        </div>
+      </div>
+
+    </article>
+
+    <aside class="post-sidebar rv">
+      <nav class="toc">
+        <div class="toc-title">On This Page</div>
+        <ul class="toc-list">
+          <li><a href="#story">The Notebook Environment That Wasn't Needed</a></li>
+          <li><a href="#why-instances-persist">Why Workbench Instances Stay Running</a></li>
+          <li><a href="#how-detection-works">How the Detection Rule Works</a></li>
+          <li><a href="#cost-table">Cost by Machine Type</a></li>
+          <li><a href="#ci-integration">Catching It in CI</a></li>
+          <li><a href="#permissions">Required GCP Permissions</a></li>
+          <li><a href="#prevention">Stopping the Cycle</a></li>
+          <li><a href="#faq">FAQ</a></li>
+        </ul>
+      </nav>
+
+      <div class="sidebar-card">
+        <div class="sidebar-card-title">Rule Details</div>
+        <div class="sidebar-stat"><span class="ss-label">Rule ID</span><span class="ss-val">gcp.vertex.workbench.idle</span></div>
+        <div class="sidebar-stat"><span class="ss-label">Provider</span><span class="ss-val">GCP</span></div>
+        <div class="sidebar-stat"><span class="ss-label">Category</span><span class="ss-val">AI/ML</span></div>
+        <div class="sidebar-stat"><span class="ss-label">Signal</span><span class="ss-val">updateTime (control plane)</span></div>
+        <div class="sidebar-stat"><span class="ss-label">Default window</span><span class="ss-val">14 days</span></div>
+        <div class="sidebar-stat"><span class="ss-label">State filter</span><span class="ss-val">ACTIVE only</span></div>
+        <div class="sidebar-stat"><span class="ss-label">Confidence</span><span class="ss-val">HIGH / MEDIUM</span></div>
+        <div class="sidebar-stat"><span class="ss-label">Risk</span><span class="ss-val">CRITICAL / HIGH / MEDIUM</span></div>
+      </div>
+
+      <div class="sidebar-card">
+        <div class="sidebar-card-title">Idle Cost by Config</div>
+        <div class="sidebar-stat"><span class="ss-label">n1-standard-4 (CPU)</span><span class="ss-val">~$138/mo</span></div>
+        <div class="sidebar-stat"><span class="ss-label">n1-std-4 + T4</span><span class="ss-val">~$449/mo</span></div>
+        <div class="sidebar-stat"><span class="ss-label">n1-highmem-8 + V100</span><span class="ss-val">~$1,523/mo</span></div>
+        <div class="sidebar-stat"><span class="ss-label">g2-standard-8 (L4)</span><span class="ss-val">~$1,060/mo</span></div>
+        <div class="sidebar-stat"><span class="ss-label">a2-highgpu-1g (A100)</span><span class="ss-val">~$2,933/mo</span></div>
+      </div>
+
+      <div class="sidebar-card">
+        <div class="sidebar-card-title">Quick Scan</div>
+        <div class="code-block" style="margin:0;font-size:11.5px">
+          <div class="code-bd" style="padding:12px 14px"><pre style="white-space:pre-wrap"><span class="co">pip install cleancloud</span>
+<span class="co">cleancloud scan \</span>
+<span class="co">  --provider gcp \</span>
+<span class="co">  --category ai</span></pre></div>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+</div>
+
+<div class="blog-wrap">
+  <div class="related rv">
+    <div class="related-title">Related Posts</div>
+    <div class="related-grid">
+      <a class="related-card" href="/blog/gcp-vertex-training-job-long-running.html">
+        <div class="rc-tag">GCP &middot; AI/ML</div>
+        <div class="rc-title">The Training Job That Forgot to Finish: Vertex AI Long-Running Job Cost</div>
+        <div class="rc-desc">Vertex AI Custom Jobs and Training Pipelines that exceed their expected duration. How CleanCloud's gcp.vertex.training_job.long_running rule catches runaway training costs.</div>
+      </a>
+      <a class="related-card" href="/blog/vertex-ai-idle-endpoint-cost.html">
+        <div class="rc-tag">GCP &middot; AI/ML</div>
+        <div class="rc-title">Vertex AI Endpoint Running 3 Months After a PoC Ended: $6,300 in Avoidable Spend</div>
+        <div class="rc-desc">A Vertex AI prediction endpoint left running with zero prediction traffic after a proof-of-concept ended. How CleanCloud catches idle Vertex AI endpoints.</div>
+      </a>
+      <a class="related-card" href="/blog/azure-ml-compute-instance-idle.html">
+        <div class="rc-tag">Azure &middot; AI/ML</div>
+        <div class="rc-title">$8,812/Month for a Jupyter Instance Nobody Was Using</div>
+        <div class="rc-desc">The same pattern on Azure: a Compute Instance left Running after a sprint ended. How CleanCloud's azure.ml.compute_instance.idle rule catches it.</div>
+      </a>
+    </div>
+  </div>
+</div>
+</main>
+
+<footer>
+  <div class="fi">
+    <div class="f-logo">
+      <div class="lm"><svg viewBox="0 0 14 14" fill="none" stroke="#00ffd0" stroke-width="2"><path d="M2 7L5 10L12 3" stroke-linecap="round" stroke-linejoin="round"/><circle cx="7" cy="7" r="6" stroke="#00ffd0" stroke-width="1.4" opacity=".4"/></svg></div>
+      cleancloud
+    </div>
+    <ul class="f-links">
+      <li><a href="https://github.com/cleancloud-io/cleancloud" target="_blank" rel="noopener">GitHub</a></li>
+      <li><a href="https://pypi.org/project/cleancloud/" target="_blank" rel="noopener">PyPI</a></li>
+      <li><a href="/blog">Blog</a></li>
+      <li><a href="/#contact">Contact</a></li>
+    </ul>
+    <span class="f-copy">&copy; 2026 CleanCloud &mdash; MIT License</span>
+  </div>
+</footer>
+
+<script>
+(function(){
+  const els = document.querySelectorAll('.rv');
+  const io = new IntersectionObserver(entries => {
+    entries.forEach(e => { if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); } });
+  }, {threshold:0.08});
+  els.forEach(el => io.observe(el));
+
+  const tocLinks = document.querySelectorAll('.toc-list a');
+  const headings = Array.from(document.querySelectorAll('.post-body h2[id], .post-body h3[id]'));
+  const hio = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if(e.isIntersecting){
+        tocLinks.forEach(a => a.classList.remove('active'));
+        const active = document.querySelector('.toc-list a[href="#'+e.target.id+'"]');
+        if(active) active.classList.add('active');
+      }
+    });
+  }, {rootMargin:'-20% 0px -70% 0px'});
+  headings.forEach(h => hio.observe(h));
+})();
+</script>
+</body>
+</html>

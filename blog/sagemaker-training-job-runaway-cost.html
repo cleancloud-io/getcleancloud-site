@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- ── SEO ── -->
+<title>Runaway SageMaker Training Jobs: How a Hung GPU Job Can Cost $2,000 a Day | CleanCloud</title>
+<meta name="description" content="A SageMaker training job that gets stuck in InProgress keeps billing GPU instances at full on-demand rates — $670–$2,360+ per day depending on instance type. Learn how CleanCloud's aws.sagemaker.training_job.long_running rule catches runaway jobs automatically.">
+<meta name="keywords" content="SageMaker training job hung, runaway SageMaker training cost, aws.sagemaker.training_job.long_running, SageMaker GPU waste, AWS AI training cost, detect long running training job">
+<meta name="author" content="Suresh, CleanCloud">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://www.getcleancloud.com/blog/sagemaker-training-job-runaway-cost.html">
+
+<!-- ── Open Graph ── -->
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://www.getcleancloud.com/blog/sagemaker-training-job-runaway-cost.html">
+<meta property="og:title" content="Runaway SageMaker Training Jobs: How a Hung GPU Job Can Cost $2,000 a Day">
+<meta property="og:description" content="A hung SageMaker training job bills GPU capacity at full on-demand rates indefinitely. CleanCloud flags jobs running beyond 24 hours automatically.">
+<meta property="og:image" content="https://www.getcleancloud.com/og-image.png">
+<meta property="og:site_name" content="CleanCloud">
+<meta property="article:published_time" content="2026-04-22">
+<meta property="article:author" content="Suresh">
+<meta property="article:tag" content="AWS">
+<meta property="article:tag" content="SageMaker">
+<meta property="article:tag" content="AI/ML">
+<meta property="article:tag" content="FinOps">
+
+<!-- ── Twitter Card ── -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@getcleancloud">
+<meta name="twitter:title" content="Runaway SageMaker Training Jobs: $2,000/Day for a Job That Won't Terminate">
+<meta name="twitter:description" content="A hung SageMaker training job bills GPU capacity at full on-demand rates indefinitely. Here's how to catch them automatically.">
+
+<!-- ── Schema.org Article ── -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "Runaway SageMaker Training Jobs: How a Hung GPU Job Can Cost $2,000 a Day",
+  "description": "A SageMaker training job stuck in InProgress keeps billing GPU instances at full rate. CleanCloud flags training jobs running beyond the 24-hour threshold.",
+  "author": { "@type": "Person", "name": "Suresh", "url": "https://www.getcleancloud.com" },
+  "publisher": { "@type": "Organization", "name": "CleanCloud", "url": "https://www.getcleancloud.com" },
+  "datePublished": "2026-04-22",
+  "dateModified": "2026-04-22",
+  "keywords": ["SageMaker training job", "runaway training job", "AWS GPU waste", "AI ML cloud cost"],
+  "articleSection": "Engineering"
+}
+</script>
+
+<!-- ── FAQ Schema ── -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Does SageMaker bill while a training job is stuck in InProgress?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. SageMaker training jobs bill for the full duration the instances are running, including any time spent hung waiting for data, deadlocked in distributed training, or stuck waiting for a checkpoint. Billing continues until the job reaches a terminal state (Completed, Failed, or Stopped)."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How do I detect long-running SageMaker training jobs automatically?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "CleanCloud's aws.sagemaker.training_job.long_running rule flags training jobs still in InProgress state beyond the configured threshold (default 24 hours). Run: cleancloud scan --provider aws --all-regions --category ai"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How much does a hung SageMaker training job cost per day?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Costs depend on instance type. A single ml.p3.2xlarge costs ~$27.90/hr or ~$670/day. A 4-node ml.p3.8xlarge cluster costs ~$98/hr or ~$2,360/day. GPU instances like ml.p4d.24xlarge can exceed $32/hr per instance — a multi-node job can cost tens of thousands per day if hung."
+      }
+    }
+  ]
+}
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500;600&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+
+<style>
+:root{--bg:#f6f7f9;--white:#ffffff;--border:#e2e6ea;--border2:#d0d5dc;--text:#0d1b2a;--text2:#374151;--muted:#6b7a8d;--muted2:#9aa3af;--accent:#0b7a6e;--accent-lt:#e6f4f2;--accent-md:#c2e8e3;--accent-hi:#0d9488;--sans:'Inter',system-ui,-apple-system,sans-serif;--mono:'JetBrains Mono',monospace;--serif:'Lora',Georgia,serif;--sh-sm:0 1px 3px rgba(13,27,42,.06),0 1px 2px rgba(13,27,42,.04);--sh-md:0 4px 16px rgba(13,27,42,.08),0 2px 4px rgba(13,27,42,.04);--sh-lg:0 12px 40px rgba(13,27,42,.12),0 4px 8px rgba(13,27,42,.06);--content-width:720px}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;background-image:linear-gradient(rgba(13,27,42,.022) 1px,transparent 1px),linear-gradient(90deg,rgba(13,27,42,.022) 1px,transparent 1px);background-size:40px 40px}
+a{color:var(--accent-hi);text-decoration:none}
+a:hover{text-decoration:underline}
+nav{position:sticky;top:0;z-index:100;background:rgba(246,247,249,.93);backdrop-filter:blur(16px);border-bottom:1px solid var(--border)}
+.nav-in{max-width:1120px;margin:0 auto;padding:0 28px;height:58px;display:flex;align-items:center;justify-content:space-between}
+.nav-logo{font-family:var(--mono);font-size:14px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:9px;text-decoration:none}
+.lm{width:26px;height:26px;border-radius:6px;background:var(--text);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.lm svg{width:14px;height:14px}
+.nav-links{display:flex;align-items:center;gap:2px;list-style:none}
+.nav-links a{font-family:var(--sans);font-size:14px;font-weight:600;color:var(--muted);padding:5px 11px;border-radius:5px;transition:color .15s,background .15s}
+.nav-links a:hover{color:var(--text);background:var(--white);text-decoration:none}
+.nav-cta{font-family:var(--sans)!important;font-size:14px!important;font-weight:600!important;color:var(--white)!important;background:var(--text)!important;padding:7px 16px!important;border-radius:6px!important}
+.nav-cta:hover{background:#1a2f44!important}
+.blog-wrap{max-width:1120px;margin:0 auto;padding:0 28px;position:relative;z-index:1}
+.post-hero{padding:64px 0 48px;max-width:var(--content-width);margin:0 auto}
+.post-breadcrumb{font-family:var(--mono);font-size:11px;color:var(--muted);margin-bottom:20px;display:flex;align-items:center;gap:8px}
+.post-breadcrumb a{color:var(--muted)}
+.post-breadcrumb a:hover{color:var(--accent-hi);text-decoration:none}
+.post-breadcrumb span{color:var(--border2)}
+.post-tags{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px}
+.post-tag{font-family:var(--mono);font-size:10px;font-weight:600;padding:3px 10px;border-radius:4px;text-transform:uppercase;letter-spacing:.06em}
+.tag-aws{background:#fff8ec;color:#b45309;border:1px solid #fde68a}
+.tag-ai{background:#fdf4ff;color:#7e22ce;border:1px solid #e9d5ff}
+.tag-finops{background:#fffbeb;color:#d97706;border:1px solid #fde68a}
+.post-h1{font-size:clamp(28px,4vw,44px);font-weight:800;line-height:1.12;letter-spacing:-.025em;color:var(--text);margin-bottom:20px}
+.post-h1 em{font-style:normal;background:linear-gradient(135deg,var(--accent) 0%,var(--accent-hi) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.post-lede{font-size:18px;color:var(--text2);line-height:1.7;margin-bottom:28px;font-family:var(--serif);font-style:italic}
+.post-meta{display:flex;align-items:center;gap:20px;padding:16px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border);font-family:var(--mono);font-size:11px;color:var(--muted)}
+.meta-author{display:flex;align-items:center;gap:8px}
+.meta-avatar{width:28px;height:28px;border-radius:50%;background:var(--text);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#00ffd0;flex-shrink:0}
+.meta-dot{color:var(--border2)}
+.post-layout{display:grid;grid-template-columns:var(--content-width) 1fr;gap:60px;padding:48px 0 96px;align-items:start}
+.post-body{min-width:0}
+.post-body h2{font-size:22px;font-weight:800;color:var(--text);letter-spacing:-.02em;line-height:1.2;margin:48px 0 16px;padding-top:8px}
+.post-body h2:first-child{margin-top:0}
+.post-body h3{font-size:16px;font-weight:700;color:var(--text);letter-spacing:-.01em;margin:28px 0 10px}
+.post-body p{font-size:16px;line-height:1.8;color:var(--text2);margin-bottom:20px}
+.post-body p strong{color:var(--text);font-weight:600}
+.post-body ul,.post-body ol{margin:0 0 20px 0;padding-left:24px}
+.post-body li{font-size:16px;line-height:1.75;color:var(--text2);margin-bottom:8px}
+.post-body li strong{color:var(--text)}
+.callout{border-left:3px solid var(--accent-hi);background:var(--accent-lt);border-radius:0 8px 8px 0;padding:18px 20px;margin:28px 0}
+.callout p{margin:0;font-size:15px;color:var(--accent);font-weight:500;line-height:1.65}
+.callout-warn{border-left-color:#d97706;background:#fffbeb}
+.callout-warn p{color:#92400e}
+.code-block{background:#0d1117;border:1px solid #21262d;border-radius:10px;overflow:hidden;margin:24px 0;box-shadow:var(--sh-md);font-family:var(--mono);font-size:12.5px;line-height:1.7}
+.code-hd{background:#161b22;border-bottom:1px solid #21262d;padding:9px 16px;display:flex;align-items:center;justify-content:space-between}
+.code-fn{font-size:11px;color:#6e7681;font-family:var(--mono)}
+.code-lg{font-size:10px;padding:2px 8px;border-radius:4px;background:#21262d;color:#6e7681;border:1px solid #30363d;font-family:var(--mono)}
+.code-bd{padding:16px 18px;overflow-x:auto;color:#e6edf3}
+.code-bd .c{color:#6e7681}.code-bd .k{color:#79c0ff}.code-bd .v{color:#a5f3a5}.code-bd .s{color:#ffa657}.code-bd .hi{color:#ff7b72}.code-bd .co{color:#3fb950;font-weight:500}.code-bd .me{color:#e3b341}.code-bd .pu{color:#d2a8ff}
+.post-body code{font-family:var(--mono);font-size:13px;background:var(--bg);border:1px solid var(--border);padding:1px 6px;border-radius:4px;color:var(--accent-hi)}
+.compare-table{width:100%;border-collapse:collapse;font-size:13px;border:1px solid var(--border);border-radius:10px;overflow:hidden;box-shadow:var(--sh-sm);margin:24px 0}
+.compare-table th{text-align:left;padding:10px 14px;background:var(--bg);color:var(--muted);border-bottom:1px solid var(--border2);font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.07em;font-weight:600}
+.compare-table td{padding:10px 14px;border-bottom:1px solid var(--border);background:var(--white);color:var(--text2);font-family:var(--mono);font-size:12px;vertical-align:top}
+.compare-table tr:last-child td{border-bottom:none}
+.compare-table tr:hover td{background:var(--bg)}
+.td-good{color:#059669;font-weight:600}.td-bad{color:#dc2626;font-weight:600}.td-warn{color:#d97706;font-weight:600}
+.pull-quote{border-top:3px solid var(--text);border-bottom:1px solid var(--border);padding:24px 0 20px;margin:36px 0}
+.pull-quote p{font-family:var(--serif);font-size:20px;font-style:italic;color:var(--text);line-height:1.5;margin:0}
+.stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:28px 0}
+.stat-card{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:20px;text-align:center;box-shadow:var(--sh-sm)}
+.stat-n{font-size:28px;font-weight:800;color:var(--accent-hi);letter-spacing:-.03em;line-height:1;margin-bottom:6px}
+.stat-l{font-family:var(--mono);font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;line-height:1.4}
+.post-cta{background:var(--text);border-radius:12px;padding:32px 36px;margin:48px 0 0;position:relative;overflow:hidden}
+.post-cta::before{content:'';position:absolute;top:-60px;right:-60px;width:200px;height:200px;border-radius:50%;background:radial-gradient(circle,rgba(13,148,136,.3),transparent 70%);pointer-events:none}
+.post-cta h3{font-size:20px;font-weight:800;color:#fff;letter-spacing:-.02em;margin-bottom:8px}
+.post-cta p{font-family:var(--sans);font-size:15px;color:rgba(255,255,255,.55);margin-bottom:20px;line-height:1.65}
+.post-cta-acts{display:flex;gap:10px;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;gap:7px;font-family:var(--sans);font-size:14px;font-weight:600;padding:10px 20px;border-radius:7px;transition:transform .15s,box-shadow .15s;text-decoration:none!important;letter-spacing:.01em}
+.btn:hover{transform:translateY(-1px)}
+.btn-wh{background:#fff;color:var(--text)}
+.btn-wh:hover{background:#f0f0f0}
+.btn-ow{background:transparent;color:rgba(255,255,255,.75);border:1px solid rgba(255,255,255,.25)}
+.btn-ow:hover{background:rgba(255,255,255,.08);color:#fff}
+.post-sidebar{position:sticky;top:78px}
+.toc{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:20px;box-shadow:var(--sh-sm);margin-bottom:20px}
+.toc-title{font-family:var(--mono);font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:14px}
+.toc-list{list-style:none}
+.toc-list li{margin-bottom:4px}
+.toc-list a{font-family:var(--mono);font-size:12px;color:var(--muted);display:block;padding:4px 8px;border-radius:5px;transition:color .15s,background .15s;line-height:1.4}
+.toc-list a:hover{color:var(--accent-hi);background:var(--accent-lt);text-decoration:none}
+.toc-list a.active{color:var(--accent-hi);background:var(--accent-lt);font-weight:500}
+.sidebar-card{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:20px;box-shadow:var(--sh-sm);margin-bottom:16px}
+.sidebar-card-title{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--text);margin-bottom:10px;text-transform:uppercase;letter-spacing:.06em}
+.sidebar-stat{display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);font-family:var(--mono);font-size:11px}
+.sidebar-stat:last-child{border-bottom:none}
+.ss-label{color:var(--muted)}
+.ss-val{font-weight:600;color:var(--accent-hi)}
+.related{border-top:1px solid var(--border);padding:48px 0 80px}
+.related-title{font-family:var(--mono);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:24px}
+.related-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.related-card{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:20px;transition:box-shadow .2s,transform .2s;box-shadow:var(--sh-sm)}
+.related-card:hover{box-shadow:var(--sh-md);transform:translateY(-2px)}
+.rc-tag{font-family:var(--mono);font-size:10px;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px}
+.rc-title{font-size:14px;font-weight:700;color:var(--text);line-height:1.35;letter-spacing:-.01em;margin-bottom:8px}
+.rc-desc{font-family:var(--mono);font-size:11px;color:var(--muted);line-height:1.6}
+footer{border-top:1px solid var(--border);background:var(--white);position:relative;z-index:1}
+.fi{max-width:1120px;margin:0 auto;padding:40px 28px;display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap}
+.f-logo{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:8px}
+.f-links{display:flex;gap:20px;list-style:none}
+.f-links a{font-family:var(--sans);font-size:13px;color:var(--muted2);transition:color .15s}
+.f-links a:hover{color:var(--text);text-decoration:none}
+.f-copy{font-family:var(--sans);font-size:13px;color:var(--muted2)}
+.rv{opacity:0;transform:translateY(16px);transition:opacity .5s ease,transform .5s ease}
+.rv.in{opacity:1;transform:translateY(0)}
+@media(max-width:960px){.post-layout{grid-template-columns:1fr;gap:0}.post-sidebar{position:static;margin-top:48px}.stat-row{grid-template-columns:1fr 1fr}.related-grid{grid-template-columns:1fr}.nav-links{display:none}}
+@media(max-width:600px){.post-h1{font-size:26px}.stat-row{grid-template-columns:1fr}.post-meta{flex-wrap:wrap;gap:10px}}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-in">
+    <a class="nav-logo" href="/">
+      <div class="lm"><svg viewBox="0 0 14 14" fill="none" stroke="#00ffd0" stroke-width="2"><path d="M2 7L5 10L12 3" stroke-linecap="round" stroke-linejoin="round"/><circle cx="7" cy="7" r="6" stroke="#00ffd0" stroke-width="1.4" opacity=".4"/></svg></div>
+      cleancloud
+    </a>
+    <ul class="nav-links">
+      <li><a href="/#rules">Rules</a></li>
+      <li><a href="/#ci">CI/CD</a></li>
+      <li><a href="/blog">Blog</a></li>
+      <li><a href="https://github.com/cleancloud-io/cleancloud" target="_blank" rel="noopener">GitHub &#9733;</a></li>
+      <li><a href="/#contact" class="nav-cta">Contact us &#8594;</a></li>
+    </ul>
+  </div>
+</nav>
+
+<main>
+<div class="blog-wrap">
+
+  <div class="post-hero rv">
+    <div class="post-breadcrumb">
+      <a href="/">Home</a><span>&#8250;</span>
+      <a href="/blog">Blog</a><span>&#8250;</span>
+      Runaway SageMaker Training Jobs
+    </div>
+    <div class="post-tags">
+      <span class="post-tag tag-aws">AWS</span>
+      <span class="post-tag tag-ai">AI/ML</span>
+      <span class="post-tag tag-finops">FinOps</span>
+    </div>
+    <h1 class="post-h1">
+      Runaway SageMaker Training Jobs:<br>
+      <em>How a Hung GPU Job Can Cost $2,000 a Day</em>
+    </h1>
+    <p class="post-lede">
+      A SageMaker training job that gets stuck — waiting for data, deadlocked in distributed synchronization, or simply misconfigured — keeps billing GPU instances at full on-demand rates until someone manually stops it. The meter doesn't stop because the job stopped making progress.
+    </p>
+    <div class="post-meta">
+      <div class="meta-author"><div class="meta-avatar">S</div><span>Suresh &middot; CleanCloud</span></div>
+      <span class="meta-dot">&middot;</span>
+      <span>April 22, 2026</span>
+      <span class="meta-dot">&middot;</span>
+      <span>8 min read</span>
+    </div>
+  </div>
+
+  <div class="post-layout">
+    <article class="post-body rv">
+
+      <h2 id="the-problem">The Problem With Long-Running Training Jobs</h2>
+
+      <p>
+        Unlike SageMaker endpoints (which are meant to run continuously), training jobs are expected to finish. A well-behaved training job runs for a predictable duration, writes its model artifacts to S3, and terminates. The billing stops when the job terminates.
+      </p>
+
+      <p>
+        The problem is that jobs don't always terminate cleanly. A job can get stuck in <code>InProgress</code> state for many reasons, and SageMaker has no default timeout configured — <strong>by default, a training job will run forever unless you set a stopping condition.</strong>
+      </p>
+
+      <p>
+        Common causes of runaway training jobs:
+      </p>
+
+      <ul>
+        <li><strong>Data pipeline stall:</strong> A distributed training job hangs waiting for a slow or failed data worker to catch up. The job is technically still running — no errors, no failures — but making zero forward progress.</li>
+        <li><strong>Distributed training deadlock:</strong> In multi-node jobs using AllReduce or AllGather operations (PyTorch DDP, Horovod), a single failed rank can cause the entire job to hang indefinitely waiting for gradient synchronization.</li>
+        <li><strong>Evaluation loop hang:</strong> A custom evaluation callback hits a resource that becomes unavailable (database, external API, mounted EFS), blocking the training loop without raising an exception.</li>
+        <li><strong>Checkpoint write failure:</strong> The job finishes training but hangs trying to write a checkpoint to S3, often due to a permissions issue or network partition.</li>
+        <li><strong>Developer-left job:</strong> A data scientist started a job for experimentation, saw intermediate results they liked, and moved on to other work — without realizing the job was still running and billing.</li>
+      </ul>
+
+      <div class="callout callout-warn">
+        <p>
+          <strong>SageMaker's default behavior:</strong> No timeout. A job with no <code>StoppingCondition.MaxRuntimeInSeconds</code> will run indefinitely. This is the default for new training jobs unless you explicitly configure it.
+        </p>
+      </div>
+
+      <h2 id="cost-scale">The Cost Scale of a Hung Job</h2>
+
+      <p>
+        SageMaker training jobs bill per instance-hour from job start to job termination. A job stuck for three days on a GPU cluster bills at full on-demand rate for three days:
+      </p>
+
+      <table class="compare-table">
+        <thead>
+          <tr><th>Instance type</th><th>GPUs</th><th>Cost/hr</th><th>Cost/day</th><th>Cost/week if hung</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>ml.p3.2xlarge</td><td>1x V100</td><td>~$3.50</td><td class="td-warn">~$84</td><td class="td-warn">~$588</td></tr>
+          <tr><td>ml.p3.8xlarge</td><td>4x V100</td><td>~$14</td><td class="td-bad">~$336</td><td class="td-bad">~$2,352</td></tr>
+          <tr><td>ml.p3.16xlarge</td><td>8x V100</td><td>~$28</td><td class="td-bad">~$672</td><td class="td-bad">~$4,704</td></tr>
+          <tr><td>ml.p4d.24xlarge</td><td>8x A100</td><td>~$32</td><td class="td-bad">~$768</td><td class="td-bad">~$5,376</td></tr>
+          <tr><td>4× ml.p3.8xlarge cluster</td><td>16x V100</td><td>~$56</td><td class="td-bad">~$1,344</td><td class="td-bad">~$9,408</td></tr>
+        </tbody>
+      </table>
+
+      <p>
+        A 4-node <code>ml.p3.8xlarge</code> cluster hung for just three days accumulates ~$4,032 in waste. A job involving <code>ml.p4d.24xlarge</code> instances for a week: ~$5,376 per instance. These are not edge cases — they're the exact scenarios that happen in ML teams doing large-scale distributed training experiments.
+      </p>
+
+      <div class="pull-quote">
+        <p>&#8220;The job had been running for 11 days. It was supposed to take 6 hours. Nobody had checked on it.&#8221;</p>
+      </div>
+
+      <h2 id="how-the-rule-works">How CleanCloud Detects Runaway Jobs</h2>
+
+      <p>
+        The <code>aws.sagemaker.training_job.long_running</code> rule checks for training jobs that remain in <code>InProgress</code> state beyond the configured threshold (default: 24 hours):
+      </p>
+
+      <ol>
+        <li><strong>Lists in-progress jobs:</strong> Queries <code>sagemaker:ListTrainingJobs</code> filtered to <code>InProgress</code> status.</li>
+        <li><strong>Measures elapsed time:</strong> Uses <code>TrainingStartTime</code> when available (the time instances were actually provisioned and training began), falling back to <code>CreationTime</code> when TrainingStartTime isn't yet set.</li>
+        <li><strong>Classifies by duration and instance type:</strong> GPU-backed jobs beyond the threshold are flagged HIGH risk. CPU-backed jobs are flagged MEDIUM risk. Confidence is HIGH when the job has exceeded a configured SageMaker stopping-condition limit, MEDIUM otherwise.</li>
+      </ol>
+
+      <div class="code-block">
+        <div class="code-hd">
+          <span class="code-fn">CleanCloud scan output</span>
+          <span class="code-lg">aws.sagemaker.training_job.long_running</span>
+        </div>
+        <div class="code-bd"><pre>
+<span class="me">Rule    :</span> <span class="v">aws.sagemaker.training_job.long_running</span>
+<span class="me">Resource:</span> <span class="s">llm-finetune-experiment-2026-04-10</span>  <span class="c">(us-east-1)</span>
+<span class="me">Instance:</span> <span class="hi">ml.p3.8xlarge × 4</span>  <span class="c">(16x V100)</span>
+<span class="me">Running :</span> <span class="hi">11 days, 4 hours</span>  <span class="c">(started 2026-04-11T06:14:22Z)</span>
+<span class="me">Conf    :</span> <span class="hi">HIGH</span>    <span class="c">(stopping condition exceeded)</span>
+<span class="me">Cost    :</span> <span class="hi">~$4,032</span>  <span class="c">(accrued so far — billing continues)</span></pre>
+        </div>
+      </div>
+
+      <p>
+        The rule is opt-in via <code>--category ai</code>. It runs alongside idle endpoint and notebook detection when you use <code>--category ai</code> or <code>--category all</code>.
+      </p>
+
+      <h2 id="configuring-thresholds">Configuring the Time Threshold</h2>
+
+      <p>
+        The default 24-hour threshold works well for most teams. If your training jobs routinely take longer — multi-day pretraining runs, for example — you can adjust the threshold per-rule in <code>cleancloud.yaml</code>:
+      </p>
+
+      <div class="code-block">
+        <div class="code-hd">
+          <span class="code-fn">cleancloud.yaml — custom threshold</span>
+          <span class="code-lg">adjust for long training runs</span>
+        </div>
+        <div class="code-bd"><pre>
+<span class="k">rules:</span>
+  <span class="k">aws.sagemaker.training_job.long_running:</span>
+    <span class="k">max_runtime_hours:</span> <span class="v">72</span>   <span class="c"># 3 days — adjust for your team's typical job duration</span></pre>
+        </div>
+      </div>
+
+      <p>
+        Setting a per-rule threshold does not affect other rules and does not change how findings are reported — it only adjusts when a job crosses the threshold and becomes a finding.
+      </p>
+
+      <h2 id="prevention-best-practices">Prevention: Configure Stopping Conditions</h2>
+
+      <p>
+        The most reliable way to prevent runaway training cost is to configure SageMaker's built-in stopping condition on every training job. This sets a hard maximum runtime after which SageMaker automatically terminates the job:
+      </p>
+
+      <div class="code-block">
+        <div class="code-hd">
+          <span class="code-fn">Python SDK — set a stopping condition</span>
+          <span class="code-lg">prevents runaway billing</span>
+        </div>
+        <div class="code-bd"><pre>
+<span class="k">from</span> <span class="v">sagemaker.estimator</span> <span class="k">import</span> <span class="v">Estimator</span>
+
+<span class="v">estimator</span> <span class="k">=</span> <span class="v">Estimator</span>(
+    <span class="s">image_uri</span><span class="k">=</span><span class="v">training_image</span>,
+    <span class="s">instance_type</span><span class="k">=</span><span class="s">'ml.p3.8xlarge'</span>,
+    <span class="s">instance_count</span><span class="k">=</span><span class="v">4</span>,
+    <span class="c"># Hard stop after 6 hours — prevents runaway billing</span>
+    <span class="s">max_run</span><span class="k">=</span><span class="v">6 * 60 * 60</span>,  <span class="c"># seconds</span>
+    <span class="s">max_wait</span><span class="k">=</span><span class="v">7 * 60 * 60</span>,  <span class="c"># queue wait time (for spot instances)</span>
+)</pre>
+        </div>
+      </div>
+
+      <p>
+        CleanCloud flags jobs that don't have a stopping condition (or have one set far beyond typical job durations) as a governance finding. Detection catches what prevention misses — jobs where the stopping condition was set but too high, or where it was accidentally omitted on an experimental run.
+      </p>
+
+      <h2 id="ci-setup">Setting Up Automated Detection</h2>
+
+      <p>
+        For a team running regular training experiments, a daily scan (not just weekly) makes sense — a runaway job detected on day two costs far less than one caught after a week:
+      </p>
+
+      <div class="code-block">
+        <div class="code-hd">
+          <span class="code-fn">.github/workflows/sagemaker-training-watch.yml</span>
+          <span class="code-lg">Daily scan — catches runaway jobs within 24 hours</span>
+        </div>
+        <div class="code-bd"><pre>
+<span class="k">name:</span> <span class="v">SageMaker training job watch</span>
+<span class="k">on:</span>
+  <span class="k">schedule:</span>
+    <span class="k">- cron:</span> <span class="s">'0 */12 * * *'</span>   <span class="c"># Twice daily</span>
+
+<span class="k">jobs:</span>
+  <span class="k">scan:</span>
+    <span class="k">runs-on:</span> <span class="v">ubuntu-latest</span>
+    <span class="k">permissions:</span>
+      <span class="k">id-token:</span> <span class="v">write</span>
+      <span class="k">contents:</span> <span class="v">read</span>
+    <span class="k">steps:</span>
+      <span class="k">- uses:</span> <span class="v">aws-actions/configure-aws-credentials@v4</span>
+        <span class="k">with:</span>
+          <span class="k">role-to-assume:</span> <span class="v">arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/CleanCloudCIReadOnly</span>
+          <span class="k">aws-region:</span> <span class="v">us-east-1</span>
+
+      <span class="k">- uses:</span> <span class="v">cleancloud-io/scan-action@v1</span>
+        <span class="k">with:</span>
+          <span class="k">provider:</span> <span class="v">aws</span>
+          <span class="k">all-regions:</span> <span class="s">'true'</span>
+          <span class="k">category:</span> <span class="v">ai</span>
+          <span class="k">fail-on-confidence:</span> <span class="v">HIGH</span>
+          <span class="k">output:</span> <span class="v">json</span>
+          <span class="k">output-file:</span> <span class="v">training-findings.json</span>
+          <span class="k">artifact-name:</span> <span class="v">training-watch-report</span></pre>
+        </div>
+      </div>
+
+      <div class="stat-row">
+        <div class="stat-card">
+          <div class="stat-n">24h</div>
+          <div class="stat-l">Default detection threshold</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-n">$2,360</div>
+          <div class="stat-l">Max daily cost (p3.8xlarge × 4)</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-n">~2min</div>
+          <div class="stat-l">Scan time across all regions</div>
+        </div>
+      </div>
+
+      <h2 id="required-permissions">Required IAM Permissions</h2>
+
+      <div class="code-block">
+        <div class="code-hd">
+          <span class="code-fn">IAM policy additions for training job detection</span>
+          <span class="code-lg">read-only</span>
+        </div>
+        <div class="code-bd"><pre>
+<span class="k">"Action":</span> <span class="v">[</span>
+  <span class="s">"sagemaker:ListTrainingJobs"</span><span class="v">,</span>
+  <span class="s">"sagemaker:DescribeTrainingJob"</span>
+<span class="v">]</span><span class="k">,</span>
+<span class="k">"Effect":</span> <span class="v">"Allow"</span><span class="k">,</span>
+<span class="k">"Resource":</span> <span class="v">"*"</span></pre>
+        </div>
+      </div>
+
+      <h2 id="faq">Frequently Asked Questions</h2>
+
+      <h3>Does SageMaker bill while a training job is stuck in InProgress?</h3>
+      <p>
+        Yes. Billing is based on instance uptime from job start to job termination. A job stuck in <code>InProgress</code> — making zero progress but not raising any error — bills at the same rate as a healthy, actively training job.
+      </p>
+
+      <h3>How do I stop a runaway SageMaker training job?</h3>
+      <p>
+        Call <code>sagemaker:StopTrainingJob</code> with the job name. In the console: navigate to SageMaker Training Jobs, select the job, and click Stop. Billing stops when the job transitions to <code>Stopping</code> and then <code>Stopped</code>.
+      </p>
+
+      <h3>What's the difference between max_run and a stopping condition?</h3>
+      <p>
+        They're the same thing expressed differently. <code>max_run</code> in the SageMaker Python SDK sets <code>StoppingCondition.MaxRuntimeInSeconds</code> in the API. Both cause SageMaker to automatically stop the job after the specified number of seconds regardless of training progress.
+      </p>
+
+      <!-- CTA -->
+      <div class="post-cta">
+        <h3>Catch runaway SageMaker training jobs now</h3>
+        <p>Scan your AWS account in under 60 seconds. All AI/ML rules including training job detection are opt-in via --category ai.</p>
+        <div class="post-cta-acts">
+          <a href="https://pypi.org/project/cleancloud/" class="btn btn-wh" target="_blank" rel="noopener">Install via PyPI &#8594;</a>
+          <a href="https://github.com/cleancloud-io/cleancloud" class="btn btn-ow" target="_blank" rel="noopener">&#9733; View on GitHub</a>
+        </div>
+      </div>
+
+      <div class="code-block" style="margin-top:24px">
+        <div class="code-hd">
+          <span class="code-fn">AWS CloudShell — 60-second scan</span>
+          <span class="code-lg">no local setup required</span>
+        </div>
+        <div class="code-bd"><pre>
+<span class="co">pip install cleancloud && cleancloud scan --provider aws --all-regions --category ai</span></pre>
+        </div>
+      </div>
+
+    </article>
+
+    <aside class="post-sidebar rv">
+      <div class="toc">
+        <div class="toc-title">In this article</div>
+        <ul class="toc-list">
+          <li><a href="#the-problem">The Problem</a></li>
+          <li><a href="#cost-scale">The Cost Scale</a></li>
+          <li><a href="#how-the-rule-works">How CleanCloud Detects It</a></li>
+          <li><a href="#configuring-thresholds">Configuring Thresholds</a></li>
+          <li><a href="#prevention-best-practices">Prevention Best Practices</a></li>
+          <li><a href="#ci-setup">CI Setup</a></li>
+          <li><a href="#required-permissions">Required Permissions</a></li>
+          <li><a href="#faq">FAQ</a></li>
+        </ul>
+      </div>
+      <div class="sidebar-card">
+        <div class="sidebar-card-title">Training job costs/day</div>
+        <div class="sidebar-stat"><span class="ss-label">ml.p3.2xlarge</span><span class="ss-val">~$84/day</span></div>
+        <div class="sidebar-stat"><span class="ss-label">ml.p3.8xlarge</span><span class="ss-val">~$336/day</span></div>
+        <div class="sidebar-stat"><span class="ss-label">ml.p3.16xlarge</span><span class="ss-val">~$672/day</span></div>
+        <div class="sidebar-stat"><span class="ss-label">ml.p4d.24xlarge</span><span class="ss-val">~$768/day</span></div>
+        <div class="sidebar-stat"><span class="ss-label">Threshold (default)</span><span class="ss-val">24 hours</span></div>
+      </div>
+      <div class="sidebar-card">
+        <div class="sidebar-card-title">Quick scan</div>
+        <div style="background:#0d1117;border:1px solid #21262d;border-radius:7px;padding:10px 13px;font-family:var(--mono);font-size:11px;color:#56d364;margin-bottom:10px;line-height:1.7">
+          pip install cleancloud<br>cleancloud scan \<br>&nbsp;&nbsp;--provider aws \<br>&nbsp;&nbsp;--all-regions \<br>&nbsp;&nbsp;--category ai
+        </div>
+        <a href="https://github.com/cleancloud-io/cleancloud/blob/main/docs/aws.md" target="_blank" rel="noopener" style="display:block;text-align:center;font-family:var(--sans);font-size:14px;font-weight:600;color:var(--accent-hi);padding:9px;border:1px solid var(--accent-md);border-radius:7px;background:var(--accent-lt);text-decoration:none">
+          AWS setup guide &#8594;
+        </a>
+      </div>
+    </aside>
+
+  </div>
+
+  <div class="related rv">
+    <div class="related-title">More from the CleanCloud blog</div>
+    <div class="related-grid">
+      <div class="related-card">
+        <div class="rc-tag">AWS</div>
+        <div class="rc-title"><a href="/blog/sagemaker-idle-endpoint-cost.html" style="color:inherit">$25K in Idle SageMaker Endpoints Nobody Knew Were Running</a></div>
+        <div class="rc-desc">Eight GPU endpoints, six weeks of billing. The scan took four minutes to catch $25K in waste.</div>
+      </div>
+      <div class="related-card">
+        <div class="rc-tag">GCP</div>
+        <div class="rc-title"><a href="/blog/gcp-tpu-idle-cost.html" style="color:inherit">Cloud TPU Idle Costs: $12/hr for a Node Not Training Anything</a></div>
+        <div class="rc-desc">Idle Cloud TPU nodes in READY state keep billing. CleanCloud detects near-zero utilization automatically.</div>
+      </div>
+      <div class="related-card">
+        <div class="rc-tag">AI/ML</div>
+        <div class="rc-title"><a href="/blog/idle-ai-ml-infrastructure-cost.html" style="color:inherit">The Hidden Cost of Idle AI/ML Infrastructure</a></div>
+        <div class="rc-desc">SageMaker, AML, and Vertex AI — a complete guide to why idle AI infrastructure is the fastest-growing source of invisible cloud spend.</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</main>
+
+<footer>
+  <div class="fi">
+    <div class="f-logo">
+      <div class="lm"><svg viewBox="0 0 14 14" fill="none" stroke="#00ffd0" stroke-width="2"><path d="M2 7L5 10L12 3" stroke-linecap="round" stroke-linejoin="round"/><circle cx="7" cy="7" r="6" stroke="#00ffd0" stroke-width="1.4" opacity=".4"/></svg></div>
+      cleancloud
+    </div>
+    <ul class="f-links">
+      <li><a href="/">Home</a></li>
+      <li><a href="/blog">Blog</a></li>
+      <li><a href="https://github.com/cleancloud-io/cleancloud" target="_blank" rel="noopener">GitHub</a></li>
+      <li><a href="https://pypi.org/project/cleancloud/" target="_blank" rel="noopener">PyPI</a></li>
+      <li><a href="mailto:suresh@getcleancloud.com">Contact</a></li>
+    </ul>
+    <span class="f-copy">&copy; 2026 CleanCloud. MIT License.</span>
+  </div>
+</footer>
+
+<script>
+const obs=new IntersectionObserver(entries=>{entries.forEach(e=>{if(e.isIntersecting)e.target.classList.add('in');});},{threshold:0.06});
+document.querySelectorAll('.rv').forEach(el=>obs.observe(el));
+const headings=document.querySelectorAll('.post-body h2,.post-body h3');
+const tocLinks=document.querySelectorAll('.toc-list a');
+const tocObs=new IntersectionObserver(entries=>{entries.forEach(entry=>{if(entry.isIntersecting){tocLinks.forEach(l=>l.classList.remove('active'));const id=entry.target.getAttribute('id');const active=document.querySelector(`.toc-list a[href="#${id}"]`);if(active)active.classList.add('active');}});},{rootMargin:'-20% 0px -70% 0px'});
+headings.forEach(h=>tocObs.observe(h));
+</script>
+</body>
+</html>

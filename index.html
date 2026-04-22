@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>CleanCloud — Find Cloud Waste Before It Ships | AWS, Azure &amp; GCP CI/CD Scanner</title>
-<meta name="description" content="CleanCloud is a shift-left cloud hygiene scanner for AWS, Azure, and GCP. Catch orphaned resources, idle databases, and unattached volumes in CI/CD — read-only, zero telemetry, no agents. 33 high-signal rules. Free and open source.">
+<meta name="description" content="CleanCloud is a shift-left cloud hygiene scanner for AWS, Azure, and GCP. Catch orphaned resources, idle databases, unattached volumes, and idle AI/ML infrastructure in CI/CD — read-only, zero telemetry, no agents. 45 high-signal rules. Free and open source.">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="https://getcleancloud.com/">
 <meta property="og:type" content="website">
@@ -16,7 +16,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:site" content="@getcleancloud">
 <meta name="twitter:title" content="CleanCloud — Find Cloud Waste Before It Ships">
-<meta name="twitter:description" content="Shift-left cloud hygiene for AWS, Azure, and GCP. 33 rules. Read-only. Zero telemetry. Runs in CI.">
+<meta name="twitter:description" content="Shift-left cloud hygiene for AWS, Azure, and GCP. 45 rules. Read-only. Zero telemetry. Runs in CI.">
 <meta name="twitter:image" content="https://getcleancloud.com/og-image.png">
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"CleanCloud","url":"https://getcleancloud.com","applicationCategory":"DeveloperApplication","operatingSystem":"Linux, macOS, Windows","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"softwareVersion":"1.11.0","license":"https://opensource.org/licenses/MIT","codeRepository":"https://github.com/cleancloud-io/cleancloud"}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -438,7 +438,7 @@ footer{border-top:1px solid var(--border);background:var(--white);position:relat
 
 <div class="stats">
   <div class="stats-in">
-    <div class="stat"><div class="st-n"><span>33</span></div><div class="st-l">Detection rules</div></div>
+    <div class="stat"><div class="st-n"><span>45</span></div><div class="st-l">Detection rules</div></div>
     <div class="stat"><div class="st-n">AWS <span style="color:var(--muted2);font-size:20px">+</span> Azure <span style="color:var(--muted2);font-size:20px">+</span> GCP</div><div class="st-l">Cloud providers</div></div>
     <div class="stat"><div class="st-n"><span>0</span></div><div class="st-l">Writes / mutations</div></div>
     <div class="stat"><div class="st-n"><span>60</span>s</div><div class="st-l">First scan, CloudShell</div></div>
@@ -496,23 +496,23 @@ footer{border-top:1px solid var(--border);background:var(--white);position:relat
 <div class="wrap">
   <div class="rv">
     <p class="sec-ey">Detection coverage</p>
-    <h2 class="sec-h">33 high-signal rules.<br><em>Zero false-positive tolerance.</em></h2>
-    <p class="sec-sub">Conservative, deterministic, designed to avoid false positives in IaC environments. Start with HIGH confidence and tighten as your team validates.</p>
+    <h2 class="sec-h">45 high-signal rules.<br><em>Zero false-positive tolerance.</em></h2>
+    <p class="sec-sub">Conservative, deterministic, designed to avoid false positives in IaC environments. 30 hygiene rules + 15 AI/ML rules across AWS, Azure, and GCP. Start with HIGH confidence and tighten as your team validates.</p>
   </div>
   <div class="rules-grid rv" style="grid-template-columns:repeat(3,1fr)">
     <div>
       <div class="rb-hd"><span>13 rules</span><span class="pb aws-b">AWS</span></div>
       <div class="rules-list">
         <div class="r-row"><span class="r-nm">Unattached EBS volumes</span><span class="r-cf c-hi">High</span></div>
-        <div class="r-row"><span class="r-nm">Idle RDS instances</span><span class="r-cf c-hi">High</span></div>
+        <div class="r-row"><span class="r-nm">Idle RDS instances</span><span class="r-cf c-md">Medium</span></div>
         <div class="r-row"><span class="r-nm">Idle load balancers</span><span class="r-cf c-hi">High</span></div>
         <div class="r-row"><span class="r-nm">Unattached Elastic IPs</span><span class="r-cf c-hi">High</span></div>
         <div class="r-row"><span class="r-nm">Idle NAT gateways</span><span class="r-cf c-md">Medium</span></div>
         <div class="r-row"><span class="r-nm">Old EBS snapshots</span><span class="r-cf c-md">Medium</span></div>
         <div class="r-row"><span class="r-nm">Old RDS snapshots</span><span class="r-cf c-md">Medium</span></div>
-        <div class="r-row"><span class="r-nm">Detached ENIs</span><span class="r-cf c-md">Medium</span></div>
-        <div class="r-row"><span class="r-nm">CloudWatch infinite retention</span><span class="r-cf c-md">Medium</span></div>
-        <div class="r-row"><span class="r-nm">Untagged resources</span><span class="r-cf c-md">Medium</span></div>
+        <div class="r-row"><span class="r-nm">Detached ENIs</span><span class="r-cf c-hi">High</span></div>
+        <div class="r-row"><span class="r-nm">CloudWatch infinite retention</span><span class="r-cf c-hi">High</span></div>
+        <div class="r-row"><span class="r-nm">Untagged resources</span><span class="r-cf c-hi">High</span></div>
         <div class="r-row"><span class="r-nm">Old AMIs</span><span class="r-cf c-md">Medium</span></div>
         <div class="r-row"><span class="r-nm">Stopped EC2 instances</span><span class="r-cf c-md">Medium</span></div>
         <div class="r-row"><span class="r-nm">Unused security groups</span><span class="r-cf c-md">Medium</span></div>
@@ -538,10 +538,10 @@ footer{border-top:1px solid var(--border);background:var(--white);position:relat
     <div>
       <div class="rb-hd"><span>5 rules</span><span class="pb" style="background:#e8f5e9;color:#1b5e20;border-color:#a5d6a7">GCP</span></div>
       <div class="rules-list">
+        <div class="r-row"><span class="r-nm">Stopped VM instances</span><span class="r-cf c-hi">High</span></div>
         <div class="r-row"><span class="r-nm">Unattached persistent disks</span><span class="r-cf c-hi">High</span></div>
         <div class="r-row"><span class="r-nm">Idle Cloud SQL instances</span><span class="r-cf c-hi">High</span></div>
-        <div class="r-row"><span class="r-nm">Unused static IP addresses</span><span class="r-cf c-hi">High</span></div>
-        <div class="r-row"><span class="r-nm">Unattached reserved IPs</span><span class="r-cf c-md">Medium</span></div>
+        <div class="r-row"><span class="r-nm">Unused reserved static IPs</span><span class="r-cf c-hi">High</span></div>
         <div class="r-row"><span class="r-nm">Old disk snapshots</span><span class="r-cf c-md">Medium</span></div>
       </div>
     </div>
@@ -553,21 +553,34 @@ footer{border-top:1px solid var(--border);background:var(--white);position:relat
     </div>
     <div class="rules-grid" style="grid-template-columns:repeat(3,1fr)">
       <div>
-        <div class="rb-hd"><span>1 rule</span><span class="pb aws-b">AWS</span></div>
+        <div class="rb-hd"><span>6 rules</span><span class="pb aws-b">AWS</span></div>
         <div class="rules-list">
           <div class="r-row"><span class="r-nm">Idle SageMaker endpoints</span><span class="r-cf c-hi">High</span></div>
+          <div class="r-row"><span class="r-nm">Idle SageMaker notebook instances</span><span class="r-cf c-hi">High</span></div>
+          <div class="r-row"><span class="r-nm">Idle SageMaker Studio apps</span><span class="r-cf c-hi">High</span></div>
+          <div class="r-row"><span class="r-nm">Long-running SageMaker training jobs</span><span class="r-cf c-hi">High</span></div>
+          <div class="r-row"><span class="r-nm">Idle GPU EC2 instances</span><span class="r-cf c-hi">High</span></div>
+          <div class="r-row"><span class="r-nm">Idle Bedrock Provisioned Throughput</span><span class="r-cf c-hi">High</span></div>
         </div>
       </div>
       <div>
-        <div class="rb-hd"><span>1 rule</span><span class="pb az-b">Azure</span></div>
+        <div class="rb-hd"><span>5 rules</span><span class="pb az-b">Azure</span></div>
         <div class="rules-list">
           <div class="r-row"><span class="r-nm">Idle AML compute clusters</span><span class="r-cf c-hi">High</span></div>
+          <div class="r-row"><span class="r-nm">Idle ML compute instances</span><span class="r-cf c-hi">High</span></div>
+          <div class="r-row"><span class="r-nm">Idle ML online endpoints</span><span class="r-cf c-hi">High</span></div>
+          <div class="r-row"><span class="r-nm">Idle AI Search services</span><span class="r-cf c-md">Medium</span></div>
+          <div class="r-row"><span class="r-nm">Idle OpenAI provisioned deployments (PTU)</span><span class="r-cf c-hi">High</span></div>
         </div>
       </div>
       <div>
-        <div class="rb-hd"><span>1 rule</span><span class="pb" style="background:#e8f5e9;color:#1b5e20;border-color:#a5d6a7">GCP</span></div>
+        <div class="rb-hd"><span>5 rules</span><span class="pb" style="background:#e8f5e9;color:#1b5e20;border-color:#a5d6a7">GCP</span></div>
         <div class="rules-list">
           <div class="r-row"><span class="r-nm">Idle Vertex AI endpoints</span><span class="r-cf c-hi">High</span></div>
+          <div class="r-row"><span class="r-nm">Idle Vertex AI Workbench instances</span><span class="r-cf c-hi">High</span></div>
+          <div class="r-row"><span class="r-nm">Long-running Vertex AI training jobs</span><span class="r-cf c-hi">High</span></div>
+          <div class="r-row"><span class="r-nm">Idle Cloud TPU nodes</span><span class="r-cf c-hi">High</span></div>
+          <div class="r-row"><span class="r-nm">Idle Vertex AI Feature Store</span><span class="r-cf c-md">Medium</span></div>
         </div>
       </div>
     </div>

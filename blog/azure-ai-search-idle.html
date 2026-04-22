@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- ── SEO ── -->
+<title>The RAG Prototype That Kept Billing: Azure AI Search Idle Cost | CleanCloud</title>
+<meta name="description" content="An Azure AI Search Standard S2 index with zero search queries for 47 days after a RAG prototype was shelved. $523/month per replica-partition, billed regardless of query volume. CleanCloud's azure.ai_search.idle rule caught it automatically.">
+<meta name="keywords" content="azure ai search idle, azure.ai_search.idle, Azure Cognitive Search idle cost, idle Azure AI Search service, RAG infrastructure cost Azure, Azure AI Search Standard billing, unused azure search index, Azure AI Search FinOps, reduce Azure Cognitive Search cost, azure ai search standard tier cost, azure search zero queries, azure ai search pause, RAG prototype cleanup cost">
+<meta name="author" content="Suresh, CleanCloud">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://www.getcleancloud.com/blog/azure-ai-search-idle.html">
+
+<!-- ── Open Graph ── -->
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://www.getcleancloud.com/blog/azure-ai-search-idle.html">
+<meta property="og:title" content="The RAG Prototype That Kept Billing: Azure AI Search Idle Cost">
+<meta property="og:description" content="An Azure AI Search S2 service with zero queries for 47 days after a RAG prototype was shelved. $523/month per replica-partition. CleanCloud found it on the first scan.">
+<meta property="og:image" content="https://www.getcleancloud.com/og-image.png">
+<meta property="og:site_name" content="CleanCloud">
+<meta property="article:published_time" content="2026-04-22">
+<meta property="article:author" content="Suresh">
+<meta property="article:tag" content="Azure">
+<meta property="article:tag" content="AI/ML">
+<meta property="article:tag" content="FinOps">
+
+<!-- ── Twitter Card ── -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@getcleancloud">
+<meta name="twitter:title" content="The RAG Prototype That Kept Billing: Azure AI Search Idle Cost">
+<meta name="twitter:description" content="Azure AI Search S2 service running 47 days with zero queries after a RAG prototype was shelved. $523/month per replica-partition. CleanCloud caught it.">
+
+<!-- ── Schema.org Article ── -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "The RAG Prototype That Kept Billing: Azure AI Search Idle Cost",
+  "description": "An Azure AI Search Standard S2 service left running with zero search queries for 47 days after a RAG proof-of-concept was shelved. CleanCloud's azure.ai_search.idle rule flagged it automatically.",
+  "author": { "@type": "Person", "name": "Suresh", "url": "https://www.getcleancloud.com" },
+  "publisher": { "@type": "Organization", "name": "CleanCloud", "url": "https://www.getcleancloud.com" },
+  "datePublished": "2026-04-22",
+  "dateModified": "2026-04-22",
+  "keywords": ["Azure AI Search idle", "azure.ai_search.idle", "Azure Cognitive Search waste", "FinOps Azure AI"],
+  "articleSection": "Engineering"
+}
+</script>
+
+<!-- ── FAQ Schema ── -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Does Azure AI Search charge when there are zero search queries?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. Azure AI Search bills by the hour for each replica-partition unit, regardless of query volume. A Standard S2 service with 1 replica and 1 partition costs ~$523/month with zero queries. The service must be deleted or scaled to Free tier to stop billing."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How do I detect idle Azure AI Search services automatically?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "CleanCloud's azure.ai_search.idle rule queries Azure Monitor for the SearchQueriesPerSecond metric over a 30-day window. Standard-tier and higher services with zero confirmed queries are flagged. Run: cleancloud scan --provider azure --category ai"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How much does an idle Azure AI Search service cost per month?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Costs depend on the tier and scale. Standard S1 costs ~$261/month per replica-partition. Standard S2 costs ~$523/month. Standard S3 costs ~$1,047/month. Storage Optimized L1 costs ~$2,014/month. L2 can reach ~$4,028/month — all with zero search traffic."
+      }
+    }
+  ]
+}
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500;600&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+
+<style>
+:root{--bg:#f6f7f9;--white:#ffffff;--border:#e2e6ea;--border2:#d0d5dc;--text:#0d1b2a;--text2:#374151;--muted:#6b7a8d;--muted2:#9aa3af;--accent:#0b7a6e;--accent-lt:#e6f4f2;--accent-md:#c2e8e3;--accent-hi:#0d9488;--sans:'Inter',system-ui,-apple-system,sans-serif;--mono:'JetBrains Mono',monospace;--serif:'Lora',Georgia,serif;--sh-sm:0 1px 3px rgba(13,27,42,.06),0 1px 2px rgba(13,27,42,.04);--sh-md:0 4px 16px rgba(13,27,42,.08),0 2px 4px rgba(13,27,42,.04);--sh-lg:0 12px 40px rgba(13,27,42,.12),0 4px 8px rgba(13,27,42,.06);--content-width:720px}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;background-image:linear-gradient(rgba(13,27,42,.022) 1px,transparent 1px),linear-gradient(90deg,rgba(13,27,42,.022) 1px,transparent 1px);background-size:40px 40px}
+a{color:var(--accent-hi);text-decoration:none}
+a:hover{text-decoration:underline}
+nav{position:sticky;top:0;z-index:100;background:rgba(246,247,249,.93);backdrop-filter:blur(16px);border-bottom:1px solid var(--border)}
+.nav-in{max-width:1120px;margin:0 auto;padding:0 28px;height:58px;display:flex;align-items:center;justify-content:space-between}
+.nav-logo{font-family:var(--mono);font-size:14px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:9px;text-decoration:none}
+.lm{width:26px;height:26px;border-radius:6px;background:var(--text);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.lm svg{width:14px;height:14px}
+.nav-links{display:flex;align-items:center;gap:2px;list-style:none}
+.nav-links a{font-family:var(--sans);font-size:14px;font-weight:600;color:var(--muted);padding:5px 11px;border-radius:5px;transition:color .15s,background .15s}
+.nav-links a:hover{color:var(--text);background:var(--white);text-decoration:none}
+.nav-cta{font-family:var(--sans)!important;font-size:14px!important;font-weight:600!important;color:var(--white)!important;background:var(--text)!important;padding:7px 16px!important;border-radius:6px!important}
+.nav-cta:hover{background:#1a2f44!important}
+.blog-wrap{max-width:1120px;margin:0 auto;padding:0 28px;position:relative;z-index:1}
+.post-hero{padding:64px 0 48px;max-width:var(--content-width);margin:0 auto}
+.post-breadcrumb{font-family:var(--mono);font-size:11px;color:var(--muted);margin-bottom:20px;display:flex;align-items:center;gap:8px}
+.post-breadcrumb a{color:var(--muted)}
+.post-breadcrumb a:hover{color:var(--accent-hi);text-decoration:none}
+.post-breadcrumb span{color:var(--border2)}
+.post-tags{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px}
+.post-tag{font-family:var(--mono);font-size:10px;font-weight:600;padding:3px 10px;border-radius:4px;text-transform:uppercase;letter-spacing:.06em}
+.tag-azure{background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe}
+.tag-ai{background:#fdf4ff;color:#7e22ce;border:1px solid #e9d5ff}
+.tag-finops{background:#fffbeb;color:#d97706;border:1px solid #fde68a}
+.post-h1{font-size:clamp(28px,4vw,44px);font-weight:800;line-height:1.12;letter-spacing:-.025em;color:var(--text);margin-bottom:20px}
+.post-h1 em{font-style:normal;background:linear-gradient(135deg,var(--accent) 0%,var(--accent-hi) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.post-lede{font-size:18px;color:var(--text2);line-height:1.7;margin-bottom:28px;font-family:var(--serif);font-style:italic}
+.post-meta{display:flex;align-items:center;gap:20px;padding:16px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border);font-family:var(--mono);font-size:11px;color:var(--muted)}
+.meta-author{display:flex;align-items:center;gap:8px}
+.meta-avatar{width:28px;height:28px;border-radius:50%;background:var(--text);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#00ffd0;flex-shrink:0}
+.meta-dot{color:var(--border2)}
+.post-layout{display:grid;grid-template-columns:var(--content-width) 1fr;gap:60px;padding:48px 0 96px;align-items:start}
+.post-body{min-width:0}
+.post-body h2{font-size:22px;font-weight:800;color:var(--text);letter-spacing:-.02em;line-height:1.2;margin:48px 0 16px;padding-top:8px}
+.post-body h2:first-child{margin-top:0}
+.post-body h3{font-size:16px;font-weight:700;color:var(--text);letter-spacing:-.01em;margin:28px 0 10px}
+.post-body p{font-size:16px;line-height:1.8;color:var(--text2);margin-bottom:20px}
+.post-body p strong{color:var(--text);font-weight:600}
+.post-body ul,.post-body ol{margin:0 0 20px 0;padding-left:24px}
+.post-body li{font-size:16px;line-height:1.75;color:var(--text2);margin-bottom:8px}
+.post-body li strong{color:var(--text)}
+.callout{border-left:3px solid var(--accent-hi);background:var(--accent-lt);border-radius:0 8px 8px 0;padding:18px 20px;margin:28px 0}
+.callout p{margin:0;font-size:15px;color:var(--accent);font-weight:500;line-height:1.65}
+.callout-warn{border-left-color:#d97706;background:#fffbeb}
+.callout-warn p{color:#92400e}
+.code-block{background:#0d1117;border:1px solid #21262d;border-radius:10px;overflow:hidden;margin:24px 0;box-shadow:var(--sh-md);font-family:var(--mono);font-size:12.5px;line-height:1.7}
+.code-hd{background:#161b22;border-bottom:1px solid #21262d;padding:9px 16px;display:flex;align-items:center;justify-content:space-between}
+.code-fn{font-size:11px;color:#6e7681;font-family:var(--mono)}
+.code-lg{font-size:10px;padding:2px 8px;border-radius:4px;background:#21262d;color:#6e7681;border:1px solid #30363d;font-family:var(--mono)}
+.code-bd{padding:16px 18px;overflow-x:auto;color:#e6edf3}
+.code-bd .c{color:#6e7681}.code-bd .k{color:#79c0ff}.code-bd .v{color:#a5f3a5}.code-bd .s{color:#ffa657}.code-bd .hi{color:#ff7b72}.code-bd .co{color:#3fb950;font-weight:500}.code-bd .me{color:#e3b341}.code-bd .pu{color:#d2a8ff}
+.post-body code{font-family:var(--mono);font-size:13px;background:var(--bg);border:1px solid var(--border);padding:1px 6px;border-radius:4px;color:var(--accent-hi)}
+.compare-table{width:100%;border-collapse:collapse;font-size:13px;border:1px solid var(--border);border-radius:10px;overflow:hidden;box-shadow:var(--sh-sm);margin:24px 0}
+.compare-table th{text-align:left;padding:10px 14px;background:var(--bg);color:var(--muted);border-bottom:1px solid var(--border2);font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.07em;font-weight:600}
+.compare-table td{padding:10px 14px;border-bottom:1px solid var(--border);background:var(--white);color:var(--text2);font-family:var(--mono);font-size:12px;vertical-align:top}
+.compare-table tr:last-child td{border-bottom:none}
+.compare-table tr:hover td{background:var(--bg)}
+.td-good{color:#059669;font-weight:600}.td-bad{color:#dc2626;font-weight:600}.td-warn{color:#d97706;font-weight:600}
+.pull-quote{border-top:3px solid var(--text);border-bottom:1px solid var(--border);padding:24px 0 20px;margin:36px 0}
+.pull-quote p{font-family:var(--serif);font-size:20px;font-style:italic;color:var(--text);line-height:1.5;margin:0}
+.stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:28px 0}
+.stat-card{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:20px;text-align:center;box-shadow:var(--sh-sm)}
+.stat-n{font-size:28px;font-weight:800;color:var(--accent-hi);letter-spacing:-.03em;line-height:1;margin-bottom:6px}
+.stat-l{font-family:var(--mono);font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;line-height:1.4}
+.post-cta{background:var(--text);border-radius:12px;padding:32px 36px;margin:48px 0 0;position:relative;overflow:hidden}
+.post-cta::before{content:'';position:absolute;top:-60px;right:-60px;width:200px;height:200px;border-radius:50%;background:radial-gradient(circle,rgba(13,148,136,.3),transparent 70%);pointer-events:none}
+.post-cta h3{font-size:20px;font-weight:800;color:#fff;letter-spacing:-.02em;margin-bottom:8px}
+.post-cta p{font-family:var(--sans);font-size:15px;color:rgba(255,255,255,.55);margin-bottom:20px;line-height:1.65}
+.post-cta-acts{display:flex;gap:10px;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;gap:7px;font-family:var(--sans);font-size:14px;font-weight:600;padding:10px 20px;border-radius:7px;transition:transform .15s,box-shadow .15s;text-decoration:none!important;letter-spacing:.01em}
+.btn:hover{transform:translateY(-1px)}
+.btn-wh{background:#fff;color:var(--text)}
+.btn-wh:hover{background:#f0f0f0}
+.btn-ow{background:transparent;color:rgba(255,255,255,.75);border:1px solid rgba(255,255,255,.25)}
+.btn-ow:hover{background:rgba(255,255,255,.08);color:#fff}
+.post-sidebar{position:sticky;top:78px}
+.toc{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:20px;box-shadow:var(--sh-sm);margin-bottom:20px}
+.toc-title{font-family:var(--mono);font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:14px}
+.toc-list{list-style:none}
+.toc-list li{margin-bottom:4px}
+.toc-list a{font-family:var(--mono);font-size:12px;color:var(--muted);display:block;padding:4px 8px;border-radius:5px;transition:color .15s,background .15s;line-height:1.4}
+.toc-list a:hover{color:var(--accent-hi);background:var(--accent-lt);text-decoration:none}
+.toc-list a.active{color:var(--accent-hi);background:var(--accent-lt);font-weight:500}
+.sidebar-card{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:20px;box-shadow:var(--sh-sm);margin-bottom:16px}
+.sidebar-card-title{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--text);margin-bottom:10px;text-transform:uppercase;letter-spacing:.06em}
+.sidebar-stat{display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);font-family:var(--mono);font-size:11px}
+.sidebar-stat:last-child{border-bottom:none}
+.ss-label{color:var(--muted)}
+.ss-val{font-weight:600;color:var(--accent-hi)}
+.related{border-top:1px solid var(--border);padding:48px 0 80px}
+.related-title{font-family:var(--mono);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:24px}
+.related-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.related-card{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:20px;transition:box-shadow .2s,transform .2s;box-shadow:var(--sh-sm)}
+.related-card:hover{box-shadow:var(--sh-md);transform:translateY(-2px)}
+.rc-tag{font-family:var(--mono);font-size:10px;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px}
+.rc-title{font-size:14px;font-weight:700;color:var(--text);line-height:1.35;letter-spacing:-.01em;margin-bottom:8px}
+.rc-desc{font-family:var(--mono);font-size:11px;color:var(--muted);line-height:1.6}
+footer{border-top:1px solid var(--border);background:var(--white);position:relative;z-index:1}
+.fi{max-width:1120px;margin:0 auto;padding:40px 28px;display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap}
+.f-logo{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:8px}
+.f-links{display:flex;gap:20px;list-style:none}
+.f-links a{font-family:var(--sans);font-size:13px;color:var(--muted2);transition:color .15s}
+.f-links a:hover{color:var(--text);text-decoration:none}
+.f-copy{font-family:var(--sans);font-size:13px;color:var(--muted2)}
+.rv{opacity:0;transform:translateY(16px);transition:opacity .5s ease,transform .5s ease}
+.rv.in{opacity:1;transform:translateY(0)}
+@media(max-width:960px){.post-layout{grid-template-columns:1fr;gap:0}.post-sidebar{position:static;margin-top:48px}.stat-row{grid-template-columns:1fr 1fr}.related-grid{grid-template-columns:1fr}.nav-links{display:none}}
+@media(max-width:600px){.post-h1{font-size:26px}.stat-row{grid-template-columns:1fr}.post-meta{flex-wrap:wrap;gap:10px}}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-in">
+    <a class="nav-logo" href="/">
+      <div class="lm"><svg viewBox="0 0 14 14" fill="none" stroke="#00ffd0" stroke-width="2"><path d="M2 7L5 10L12 3" stroke-linecap="round" stroke-linejoin="round"/><circle cx="7" cy="7" r="6" stroke="#00ffd0" stroke-width="1.4" opacity=".4"/></svg></div>
+      cleancloud
+    </a>
+    <ul class="nav-links">
+      <li><a href="/#rules">Rules</a></li>
+      <li><a href="/#ci">CI/CD</a></li>
+      <li><a href="/blog">Blog</a></li>
+      <li><a href="https://github.com/cleancloud-io/cleancloud" target="_blank" rel="noopener">GitHub &#9733; 106</a></li>
+      <li><a href="/#contact" class="nav-cta">Contact us &#8594;</a></li>
+    </ul>
+  </div>
+</nav>
+
+<main>
+<div class="blog-wrap">
+
+  <div class="post-hero rv">
+    <div class="post-breadcrumb">
+      <a href="/">Home</a><span>&#8250;</span>
+      <a href="/blog">Blog</a><span>&#8250;</span>
+      Azure AI Search Idle Cost
+    </div>
+    <div class="post-tags">
+      <span class="post-tag tag-azure">Azure</span>
+      <span class="post-tag tag-ai">AI/ML</span>
+      <span class="post-tag tag-finops">FinOps</span>
+    </div>
+    <h1 class="post-h1">
+      The RAG Prototype That<br>
+      <em>Kept Billing</em>
+    </h1>
+    <p class="post-lede">
+      An Azure AI Search <code style="font-style:normal;font-size:15px">Standard S2</code> service provisioned for a retrieval-augmented generation prototype, receiving zero search queries for 47 days after the prototype was shelved. $523/month per replica-partition, billed regardless of query volume. CleanCloud found it on the first scan.
+    </p>
+    <div class="post-meta">
+      <div class="meta-author"><div class="meta-avatar">S</div><span>Suresh &middot; CleanCloud</span></div>
+      <span class="meta-dot">&middot;</span>
+      <span>April 22, 2026</span>
+      <span class="meta-dot">&middot;</span>
+      <span>8 min read</span>
+    </div>
+  </div>
+
+  <div class="post-layout">
+    <article class="post-body rv">
+
+      <h2 id="story">The Search Index That Outlasted the Project</h2>
+      <p>
+        The team was building a document Q&amp;A system using Azure OpenAI and Azure AI Search — a retrieval-augmented generation (RAG) architecture that had become the default approach for enterprise AI applications. They stood up an Azure AI Search service at Standard S2 tier, indexed 40,000 documents, and connected it to a chatbot frontend for a proof-of-concept.
+      </p>
+      <p>
+        The PoC worked well enough to demonstrate value, but the project was paused while waiting for security review and data governance sign-off. The ML engineer who built it moved on to another team sprint. The Azure AI Search service stayed provisioned, indexed, and billing.
+      </p>
+      <p>
+        Forty-seven days later, during a cost anomaly review, the Azure Cost Management dashboard flagged a consistent ~$523/month charge with no associated Azure DevOps pipeline, no active application using the endpoint, and no search traffic according to Azure Monitor. The team had been paying for an idle search index for a month and a half.
+      </p>
+
+      <div class="callout-warn callout">
+        <p><strong>Azure AI Search does not scale to zero.</strong> Standard-tier and higher services bill continuously by the hour for every provisioned replica-partition unit, regardless of query volume. Only the Free tier is exempt from idle billing. Deletion is the only way to stop charges on a paid tier.</p>
+      </div>
+
+      <h2 id="why-indexes-persist">Why AI Search Services Outlive Their Projects</h2>
+      <p>
+        Azure AI Search services are more persistent than typical compute resources because they carry data — the indexed documents represent real work that teams don't want to throw away "just in case." That instinct to preserve indexed data is what keeps idle services running.
+      </p>
+      <p>
+        The common patterns:
+      </p>
+      <ul>
+        <li><strong>RAG/AI application prototypes:</strong> Built during a hackathon or sprint to demonstrate AI-powered search. The prototype is shelved; the search backend stays up.</li>
+        <li><strong>Seasonal or batch workloads:</strong> A search service built for a product launch or event. Traffic peaked during the launch window, then dropped to zero.</li>
+        <li><strong>Migrated applications:</strong> Search traffic was moved to a newer service or a different search backend. The old service was left as a fallback that was never decommissioned.</li>
+        <li><strong>Development and staging environments:</strong> Search services provisioned at production-tier scale for performance testing, then forgotten after the test concluded.</li>
+      </ul>
+
+      <div class="stat-row">
+        <div class="stat-card">
+          <div class="stat-n">$261</div>
+          <div class="stat-l">S1 / replica-partition / mo</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-n">$523</div>
+          <div class="stat-l">S2 / replica-partition / mo</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-n">$1,047</div>
+          <div class="stat-l">S3 / replica-partition / mo</div>
+        </div>
+      </div>
+
+      <h2 id="how-billing-works">How Azure AI Search Billing Works</h2>
+      <p>
+        Azure AI Search uses a <strong>replica-partition unit</strong> (SU) billing model. The service bills for the number of replicas multiplied by the number of partitions, each charged at the hourly rate for the selected tier. A service with 2 replicas and 2 partitions has 4 SUs and bills at 4× the base tier rate.
+      </p>
+      <p>
+        Key billing facts:
+      </p>
+      <ul>
+        <li><strong>Billing starts at provisioning:</strong> The moment a paid-tier service is created, the billing clock starts at the configured replica/partition count.</li>
+        <li><strong>Query volume has no effect:</strong> Unlike API-based services, search query volume does not affect your bill. Zero queries/day costs the same as 1 million queries/day at the same SU count.</li>
+        <li><strong>Indexing operations are separate:</strong> Document indexing (AI enrichment pipelines, custom skills) can incur additional charges, but base SU billing is always on.</li>
+        <li><strong>Semantic ranker has incremental cost:</strong> Semantic search queries add per-query costs, but zero semantic queries still incur the base SU charge.</li>
+        <li><strong>Only the Free tier scales to zero:</strong> F1 (Free) tier is the only tier that can be idle without cost. It supports only one service per subscription and has capacity limits that make it unsuitable for production workloads.</li>
+      </ul>
+
+      <h2 id="how-detection-works">How the Detection Rule Works</h2>
+      <p>
+        CleanCloud's <code>azure.ai_search.idle</code> rule detects Standard-tier and higher Azure AI Search services that are provisioned but receiving no search traffic. It operates over a 30-day monitoring window to distinguish genuinely abandoned services from those with infrequent but legitimate traffic.
+      </p>
+      <p>
+        Detection logic:
+      </p>
+      <ol>
+        <li><strong>Tier filter:</strong> The rule only evaluates <code>Standard</code>, <code>Standard2</code>, <code>Standard3</code>, <code>StorageOptimizedL1</code>, and <code>StorageOptimizedL2</code> tiers. Free and Basic tiers are excluded. Standard and above are the tiers where idle cost is meaningful.</li>
+        <li><strong>Azure Monitor metric query:</strong> The rule queries the <code>SearchQueriesPerSecond</code> metric aggregated over the full 30-day window. A confirmed zero-query result triggers HIGH confidence.</li>
+        <li><strong>Cost-based risk classification:</strong> Risk tier is determined by the estimated monthly cost of the idle service. Services costing ≥ $1,000/month are flagged HIGH risk. Services below that threshold are MEDIUM risk.</li>
+      </ol>
+
+      <p>Confidence levels:</p>
+      <ul>
+        <li><strong>HIGH confidence:</strong> Azure Monitor confirms zero <code>SearchQueriesPerSecond</code> across the full 30-day window.</li>
+        <li><strong>MEDIUM confidence:</strong> Metric data is incomplete (e.g., the service is newer than 30 days, or monitoring gaps exist), but available data suggests no active traffic.</li>
+      </ul>
+
+      <div class="code-block">
+        <div class="code-hd"><span class="code-fn">CleanCloud scan output — azure.ai_search.idle</span><span class="code-lg">SHELL</span></div>
+        <div class="code-bd"><pre>
+<span class="co">$ cleancloud scan --provider azure --category ai</span>
+
+<span class="me">Rule    :</span> <span class="k">azure.ai_search.idle</span>
+<span class="me">Resource:</span> <span class="v">rag-prototype-search</span>  <span class="c">(eastus2 / rg-ai-experiments)</span>
+<span class="me">Tier    :</span> <span class="s">Standard2</span>
+<span class="me">Scale   :</span> <span class="v">1 replica × 1 partition</span>  <span class="c">(1 SU)</span>
+<span class="me">Queries :</span> <span class="hi">0 / 30 days</span>
+<span class="me">Idle    :</span> <span class="hi">47 days</span>
+<span class="me">Conf    :</span> <span class="hi">HIGH</span>    <span class="c">(Monitor SearchQueriesPerSecond confirmed zero)</span>
+<span class="me">Risk    :</span> <span class="v">MEDIUM</span>  <span class="c">(cost &lt; $1,000/month at 1 SU)</span>
+<span class="me">Cost    :</span> <span class="s">~$523/month</span>
+</pre></div>
+      </div>
+
+      <h2 id="cost-table">Cost by Tier and Scale</h2>
+      <p>
+        Azure AI Search costs scale with tier and replica-partition configuration. A service with multiple replicas for high availability or multiple partitions for large indexes can accumulate significant idle spend.
+      </p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>Tier</th>
+            <th>Per SU / Mo</th>
+            <th>3-replica HA cost</th>
+            <th>Risk (idle)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Standard (S1)</td>
+            <td>~$261</td>
+            <td class="td-warn">~$783</td>
+            <td class="td-warn">MEDIUM</td>
+          </tr>
+          <tr>
+            <td>Standard2 (S2)</td>
+            <td>~$523</td>
+            <td class="td-bad">~$1,569</td>
+            <td class="td-bad">HIGH (&ge;$1,000)</td>
+          </tr>
+          <tr>
+            <td>Standard3 (S3)</td>
+            <td>~$1,047</td>
+            <td class="td-bad">~$3,141</td>
+            <td class="td-bad">HIGH (&ge;$1,000)</td>
+          </tr>
+          <tr>
+            <td>Storage Opt. L1</td>
+            <td>~$2,014</td>
+            <td class="td-bad">~$6,042</td>
+            <td class="td-bad">HIGH (&ge;$1,000)</td>
+          </tr>
+          <tr>
+            <td>Storage Opt. L2</td>
+            <td>~$4,028</td>
+            <td class="td-bad">~$12,084</td>
+            <td class="td-bad">HIGH (&ge;$1,000)</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2 id="ci-integration">Catching It in CI Before 47 Days Pass</h2>
+      <p>
+        The 30-day monitoring window means that the earliest an idle service can be flagged HIGH confidence is after 30 days of zero queries. For teams running weekly scans, an idle service provisioned today would appear as MEDIUM confidence during the first 30 days (incomplete data window) and escalate to HIGH once 30 days of zero-query data is confirmed.
+      </p>
+
+      <div class="code-block">
+        <div class="code-hd"><span class="code-fn">.github/workflows/cleancloud-azure.yml</span><span class="code-lg">YAML</span></div>
+        <div class="code-bd"><pre>
+<span class="k">name</span>: <span class="v">CleanCloud Azure AI Scan</span>
+<span class="k">on</span>:
+  <span class="k">schedule</span>:
+    - <span class="k">cron</span>: <span class="s">'0 8 * * 1'</span>  <span class="c"># Every Monday at 08:00 UTC</span>
+  <span class="k">workflow_dispatch</span>:
+
+<span class="k">jobs</span>:
+  <span class="k">cleancloud-scan</span>:
+    <span class="k">runs-on</span>: <span class="v">ubuntu-latest</span>
+    <span class="k">steps</span>:
+      - <span class="k">uses</span>: <span class="v">actions/checkout@v4</span>
+
+      - <span class="k">name</span>: <span class="v">Azure login</span>
+        <span class="k">uses</span>: <span class="v">azure/login@v2</span>
+        <span class="k">with</span>:
+          <span class="k">creds</span>: <span class="s">${{ secrets.AZURE_CREDENTIALS }}</span>
+
+      - <span class="k">name</span>: <span class="v">CleanCloud — Azure AI scan</span>
+        <span class="k">uses</span>: <span class="v">cleancloud-io/scan-action@v1</span>
+        <span class="k">with</span>:
+          <span class="k">provider</span>: <span class="v">azure</span>
+          <span class="k">category</span>: <span class="v">ai</span>
+          <span class="k">fail-on-confidence</span>: <span class="v">HIGH</span>
+</pre></div>
+      </div>
+
+      <p>
+        Running with <code>fail-on-confidence: HIGH</code> ensures that a HIGH-confidence idle search service — confirmed zero queries for 30 days — fails the CI check, notifying the team before a second billing month passes.
+      </p>
+
+      <div class="pull-quote">
+        <p>"The search index had the documents. The chatbot was gone. Nobody had told the search service."</p>
+      </div>
+
+      <h2 id="permissions">Required Azure Permissions</h2>
+      <p>
+        CleanCloud needs read access to Azure AI Search service properties and the Azure Monitor metrics API. The following actions are required:
+      </p>
+
+      <div class="code-block">
+        <div class="code-hd"><span class="code-fn">Required RBAC actions (Azure AI Search)</span><span class="code-lg">JSON</span></div>
+        <div class="code-bd"><pre>
+<span class="pu">{</span>
+  <span class="k">"Actions"</span>: <span class="pu">[</span>
+    <span class="s">"Microsoft.Search/searchServices/read"</span>,
+    <span class="s">"Microsoft.Search/searchServices/listQueryKeys/action"</span>,
+    <span class="s">"Microsoft.Insights/metrics/read"</span>
+  <span class="pu">]</span>
+<span class="pu">}</span>
+</pre></div>
+      </div>
+
+      <h2 id="prevention">Reducing AI Search Sprawl</h2>
+      <p>
+        The 47-day idle service in this story was the result of a governance gap: no policy requiring AI search services to have an owner tag or a TTL, and no automated visibility into which services were receiving queries. Fixing the gap requires both prevention and detection.
+      </p>
+      <ul>
+        <li><strong>Require owner and project tags:</strong> Azure Policy can enforce that all Standard-tier and above search services carry an <code>owner</code> and <code>project</code> tag at creation time. CleanCloud's untagged resource rules provide a secondary check.</li>
+        <li><strong>Use naming conventions that signal environment:</strong> A service named <code>rag-prototype-search-dev</code> signals to any reviewer that it may be non-production and subject to cleanup.</li>
+        <li><strong>Establish a prototype lifecycle policy:</strong> Any search service provisioned for a PoC should have a maximum lifetime (e.g., 30 days) without a formal request to extend. Encode this in your team's runbook.</li>
+        <li><strong>Run CleanCloud weekly on AI resources:</strong> The 30-day detection window means MEDIUM confidence findings appear in the first month. Reviewing them promptly prevents escalation to HIGH.</li>
+        <li><strong>Export index definitions before deletion:</strong> If the concern is losing indexed content, export the index schema and re-index later if the project is revived. Re-indexing is cheaper than keeping the service running indefinitely.</li>
+      </ul>
+
+      <h2 id="faq">Frequently Asked Questions</h2>
+
+      <h3>Does Azure AI Search have an auto-pause or idle mode?</h3>
+      <p>
+        No. Azure AI Search Standard-tier and above services do not have a pause, suspend, or idle mode. The service bills continuously at the provisioned SU count. The only way to stop billing is to delete the service or downgrade to the Free tier (which has significant capacity limits).
+      </p>
+
+      <h3>Why does CleanCloud use a 30-day window instead of 7 days?</h3>
+      <p>
+        Azure AI Search is commonly used for infrequent but legitimate workloads — batch document retrieval, monthly report generation, seasonal search traffic. A 7-day window would generate false positives for these patterns. The 30-day window is long enough to distinguish genuinely abandoned services from infrequently used ones. It is configurable via the <code>idle_days</code> parameter if your workload requires a different threshold.
+      </p>
+
+      <h3>What if my search service has queries from indexer pipelines but no user traffic?</h3>
+      <p>
+        Azure Monitor's <code>SearchQueriesPerSecond</code> metric counts user-facing search API calls, not indexer operations. Indexer runs are tracked separately as <code>DocumentsProcessedCount</code>. If your service is running indexers but receiving zero user queries, the rule will still flag it — which may be intentional if you are pre-indexing for a future go-live.
+      </p>
+
+      <h3>Is Basic tier covered by this rule?</h3>
+      <p>
+        No. The <code>azure.ai_search.idle</code> rule targets Standard tier and above. Basic tier services bill at a lower rate (~$75/month) and are common for small-scale production workloads. CleanCloud focuses the AI Search rule on Standard+ tiers where idle spend is materially significant.
+      </p>
+
+      <div class="post-cta">
+        <h3>Find your idle Azure AI Search services today</h3>
+        <p>CleanCloud scans your Azure subscriptions and flags search services with no query traffic for 30+ days. Free, open-source, runs in 5 minutes.</p>
+        <div class="post-cta-acts">
+          <a href="https://github.com/cleancloud-io/cleancloud" class="btn btn-wh" target="_blank" rel="noopener">View on GitHub</a>
+          <a href="/#contact" class="btn btn-ow">Get a demo &#8594;</a>
+        </div>
+      </div>
+
+    </article>
+
+    <aside class="post-sidebar rv">
+      <nav class="toc">
+        <div class="toc-title">On This Page</div>
+        <ul class="toc-list">
+          <li><a href="#story">The Search Index That Outlasted the Project</a></li>
+          <li><a href="#why-indexes-persist">Why AI Search Services Persist</a></li>
+          <li><a href="#how-billing-works">How Azure AI Search Billing Works</a></li>
+          <li><a href="#how-detection-works">How the Detection Rule Works</a></li>
+          <li><a href="#cost-table">Cost by Tier and Scale</a></li>
+          <li><a href="#ci-integration">Catching It in CI</a></li>
+          <li><a href="#permissions">Required Azure Permissions</a></li>
+          <li><a href="#prevention">Reducing AI Search Sprawl</a></li>
+          <li><a href="#faq">FAQ</a></li>
+        </ul>
+      </nav>
+
+      <div class="sidebar-card">
+        <div class="sidebar-card-title">Rule Details</div>
+        <div class="sidebar-stat"><span class="ss-label">Rule ID</span><span class="ss-val">azure.ai_search.idle</span></div>
+        <div class="sidebar-stat"><span class="ss-label">Provider</span><span class="ss-val">Azure</span></div>
+        <div class="sidebar-stat"><span class="ss-label">Category</span><span class="ss-val">AI/ML</span></div>
+        <div class="sidebar-stat"><span class="ss-label">Signal</span><span class="ss-val">Monitor SearchQPS</span></div>
+        <div class="sidebar-stat"><span class="ss-label">Window</span><span class="ss-val">30 days</span></div>
+        <div class="sidebar-stat"><span class="ss-label">Tiers</span><span class="ss-val">Standard and above</span></div>
+        <div class="sidebar-stat"><span class="ss-label">Confidence</span><span class="ss-val">HIGH / MEDIUM</span></div>
+        <div class="sidebar-stat"><span class="ss-label">Risk</span><span class="ss-val">HIGH (&ge;$1k) / MEDIUM</span></div>
+      </div>
+
+      <div class="sidebar-card">
+        <div class="sidebar-card-title">Idle Cost by Tier (per SU)</div>
+        <div class="sidebar-stat"><span class="ss-label">Standard S1</span><span class="ss-val">~$261/mo</span></div>
+        <div class="sidebar-stat"><span class="ss-label">Standard S2</span><span class="ss-val">~$523/mo</span></div>
+        <div class="sidebar-stat"><span class="ss-label">Standard S3</span><span class="ss-val">~$1,047/mo</span></div>
+        <div class="sidebar-stat"><span class="ss-label">Storage Opt. L1</span><span class="ss-val">~$2,014/mo</span></div>
+        <div class="sidebar-stat"><span class="ss-label">Storage Opt. L2</span><span class="ss-val">~$4,028/mo</span></div>
+      </div>
+
+      <div class="sidebar-card">
+        <div class="sidebar-card-title">Quick Scan</div>
+        <div class="code-block" style="margin:0;font-size:11.5px">
+          <div class="code-bd" style="padding:12px 14px"><pre style="white-space:pre-wrap"><span class="co">pip install cleancloud</span>
+<span class="co">cleancloud scan \</span>
+<span class="co">  --provider azure \</span>
+<span class="co">  --category ai</span></pre></div>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+</div>
+
+<div class="blog-wrap">
+  <div class="related rv">
+    <div class="related-title">Related Posts</div>
+    <div class="related-grid">
+      <a class="related-card" href="/blog/azure-ml-online-endpoint-idle.html">
+        <div class="rc-tag">Azure &middot; AI/ML</div>
+        <div class="rc-title">The Demo That Never Got Cleaned Up: Azure ML Online Endpoint Idle Cost</div>
+        <div class="rc-desc">An Azure ML online endpoint answering zero scoring requests for 31 days after a product demo. How CleanCloud's azure.ml.online_endpoint.idle rule catches it.</div>
+      </a>
+      <a class="related-card" href="/blog/azure-openai-provisioned-deployment-ptu-cost.html">
+        <div class="rc-tag">Azure &middot; AI/ML</div>
+        <div class="rc-title">Azure OpenAI Provisioned Deployment Idle PTU Cost</div>
+        <div class="rc-desc">Azure OpenAI provisioned throughput units bill at full PTU rate even with zero token usage. How CleanCloud detects idle PTU deployments.</div>
+      </a>
+      <a class="related-card" href="/blog/idle-ai-ml-infrastructure-cost.html">
+        <div class="rc-tag">Multi-cloud &middot; AI/ML</div>
+        <div class="rc-title">Idle AI/ML Infrastructure: The Hidden Cost Across Every Cloud</div>
+        <div class="rc-desc">A cross-cloud survey of idle AI/ML resource patterns — SageMaker endpoints, Vertex AI, Azure ML — and how CleanCloud detects them all.</div>
+      </a>
+    </div>
+  </div>
+</div>
+</main>
+
+<footer>
+  <div class="fi">
+    <div class="f-logo">
+      <div class="lm"><svg viewBox="0 0 14 14" fill="none" stroke="#00ffd0" stroke-width="2"><path d="M2 7L5 10L12 3" stroke-linecap="round" stroke-linejoin="round"/><circle cx="7" cy="7" r="6" stroke="#00ffd0" stroke-width="1.4" opacity=".4"/></svg></div>
+      cleancloud
+    </div>
+    <ul class="f-links">
+      <li><a href="https://github.com/cleancloud-io/cleancloud" target="_blank" rel="noopener">GitHub</a></li>
+      <li><a href="https://pypi.org/project/cleancloud/" target="_blank" rel="noopener">PyPI</a></li>
+      <li><a href="/blog">Blog</a></li>
+      <li><a href="/#contact">Contact</a></li>
+    </ul>
+    <span class="f-copy">&copy; 2026 CleanCloud &mdash; MIT License</span>
+  </div>
+</footer>
+
+<script>
+(function(){
+  const els = document.querySelectorAll('.rv');
+  const io = new IntersectionObserver(entries => {
+    entries.forEach(e => { if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); } });
+  }, {threshold:0.08});
+  els.forEach(el => io.observe(el));
+
+  const tocLinks = document.querySelectorAll('.toc-list a');
+  const headings = Array.from(document.querySelectorAll('.post-body h2[id], .post-body h3[id]'));
+  const hio = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if(e.isIntersecting){
+        tocLinks.forEach(a => a.classList.remove('active'));
+        const active = document.querySelector('.toc-list a[href="#'+e.target.id+'"]');
+        if(active) active.classList.add('active');
+      }
+    });
+  }, {rootMargin:'-20% 0px -70% 0px'});
+  headings.forEach(h => hio.observe(h));
+})();
+</script>
+</body>
+</html>

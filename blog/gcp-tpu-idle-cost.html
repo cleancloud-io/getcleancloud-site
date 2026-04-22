@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- ── SEO ── -->
+<title>Cloud TPU Idle Costs: $12 an Hour for a Node That Isn't Training Anything | CleanCloud</title>
+<meta name="description" content="Cloud TPU nodes in READY state keep billing even with zero workload. An idle TPU v4 costs $12.88/hr — over $9,000/month. Learn how CleanCloud's gcp.tpu.idle rule detects near-zero utilization automatically.">
+<meta name="keywords" content="Cloud TPU idle cost, GCP TPU waste, gcp.tpu.idle, Cloud TPU billing, idle TPU detection, GCP AI cost optimization, TPU v4 v5 cost">
+<meta name="author" content="Suresh, CleanCloud">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://www.getcleancloud.com/blog/gcp-tpu-idle-cost.html">
+
+<!-- ── Open Graph ── -->
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://www.getcleancloud.com/blog/gcp-tpu-idle-cost.html">
+<meta property="og:title" content="Cloud TPU Idle Costs: $12 an Hour for a Node That Isn't Training Anything">
+<meta property="og:description" content="Cloud TPU nodes in READY state keep billing even with zero workload. CleanCloud detects near-zero utilization automatically.">
+<meta property="og:image" content="https://www.getcleancloud.com/og-image.png">
+<meta property="og:site_name" content="CleanCloud">
+<meta property="article:published_time" content="2026-04-22">
+<meta property="article:author" content="Suresh">
+<meta property="article:tag" content="GCP">
+<meta property="article:tag" content="TPU">
+<meta property="article:tag" content="AI/ML">
+<meta property="article:tag" content="FinOps">
+
+<!-- ── Twitter Card ── -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@getcleancloud">
+<meta name="twitter:title" content="Cloud TPU Idle Costs: $12/hr for a Node Not Training Anything">
+<meta name="twitter:description" content="Cloud TPU nodes bill continuously in READY state. An idle v4 pod costs over $9,000/month. CleanCloud detects near-zero utilization automatically.">
+
+<!-- ── Schema.org Article ── -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "Cloud TPU Idle Costs: $12 an Hour for a Node That Isn't Training Anything",
+  "description": "Cloud TPU nodes in READY state keep billing even with zero workload. CleanCloud's gcp.tpu.idle rule detects near-zero duty cycle automatically.",
+  "author": { "@type": "Person", "name": "Suresh", "url": "https://www.getcleancloud.com" },
+  "publisher": { "@type": "Organization", "name": "CleanCloud", "url": "https://www.getcleancloud.com" },
+  "datePublished": "2026-04-22",
+  "dateModified": "2026-04-22",
+  "keywords": ["Cloud TPU idle", "GCP TPU cost", "GCP AI waste", "FinOps GCP"],
+  "articleSection": "Engineering"
+}
+</script>
+
+<!-- ── FAQ Schema ── -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Does GCP charge for Cloud TPU nodes in READY state?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. Cloud TPU nodes bill continuously once they are in READY state, regardless of whether any workload is using them. A TPU v4-8 costs approximately $12.88/hr. A TPU v5p-8 costs approximately $33.60/hr. READY with zero workload is full idle billing."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How do I detect idle Cloud TPU nodes?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "CleanCloud's gcp.tpu.idle rule checks TPU duty cycle metrics via Cloud Monitoring. Nodes in READY state with duty_cycle at or below 2% for 7+ days are flagged as idle. Run: cleancloud scan --provider gcp --all-projects --category ai"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What is the cheapest way to pause a Cloud TPU node?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Delete the TPU node when not in use. Unlike VMs, TPU nodes do not support a 'stopped' state that avoids billing — they bill whenever they are in READY state. Recreating a TPU node from scratch takes minutes, and the cost of idle TPU time vastly outweighs the inconvenience of recreation."
+      }
+    }
+  ]
+}
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500;600&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+
+<style>
+:root{--bg:#f6f7f9;--white:#ffffff;--border:#e2e6ea;--border2:#d0d5dc;--text:#0d1b2a;--text2:#374151;--muted:#6b7a8d;--muted2:#9aa3af;--accent:#0b7a6e;--accent-lt:#e6f4f2;--accent-md:#c2e8e3;--accent-hi:#0d9488;--sans:'Inter',system-ui,-apple-system,sans-serif;--mono:'JetBrains Mono',monospace;--serif:'Lora',Georgia,serif;--sh-sm:0 1px 3px rgba(13,27,42,.06),0 1px 2px rgba(13,27,42,.04);--sh-md:0 4px 16px rgba(13,27,42,.08),0 2px 4px rgba(13,27,42,.04);--sh-lg:0 12px 40px rgba(13,27,42,.12),0 4px 8px rgba(13,27,42,.06);--content-width:720px}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;background-image:linear-gradient(rgba(13,27,42,.022) 1px,transparent 1px),linear-gradient(90deg,rgba(13,27,42,.022) 1px,transparent 1px);background-size:40px 40px}
+a{color:var(--accent-hi);text-decoration:none}
+a:hover{text-decoration:underline}
+nav{position:sticky;top:0;z-index:100;background:rgba(246,247,249,.93);backdrop-filter:blur(16px);border-bottom:1px solid var(--border)}
+.nav-in{max-width:1120px;margin:0 auto;padding:0 28px;height:58px;display:flex;align-items:center;justify-content:space-between}
+.nav-logo{font-family:var(--mono);font-size:14px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:9px;text-decoration:none}
+.lm{width:26px;height:26px;border-radius:6px;background:var(--text);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.lm svg{width:14px;height:14px}
+.nav-links{display:flex;align-items:center;gap:2px;list-style:none}
+.nav-links a{font-family:var(--sans);font-size:14px;font-weight:600;color:var(--muted);padding:5px 11px;border-radius:5px;transition:color .15s,background .15s}
+.nav-links a:hover{color:var(--text);background:var(--white);text-decoration:none}
+.nav-cta{font-family:var(--sans)!important;font-size:14px!important;font-weight:600!important;color:var(--white)!important;background:var(--text)!important;padding:7px 16px!important;border-radius:6px!important}
+.nav-cta:hover{background:#1a2f44!important}
+.blog-wrap{max-width:1120px;margin:0 auto;padding:0 28px;position:relative;z-index:1}
+.post-hero{padding:64px 0 48px;max-width:var(--content-width);margin:0 auto}
+.post-breadcrumb{font-family:var(--mono);font-size:11px;color:var(--muted);margin-bottom:20px;display:flex;align-items:center;gap:8px}
+.post-breadcrumb a{color:var(--muted)}
+.post-breadcrumb a:hover{color:var(--accent-hi);text-decoration:none}
+.post-breadcrumb span{color:var(--border2)}
+.post-tags{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px}
+.post-tag{font-family:var(--mono);font-size:10px;font-weight:600;padding:3px 10px;border-radius:4px;text-transform:uppercase;letter-spacing:.06em}
+.tag-gcp{background:#e8f5e9;color:#1b5e20;border:1px solid #a5d6a7}
+.tag-ai{background:#fdf4ff;color:#7e22ce;border:1px solid #e9d5ff}
+.tag-finops{background:#fffbeb;color:#d97706;border:1px solid #fde68a}
+.post-h1{font-size:clamp(28px,4vw,44px);font-weight:800;line-height:1.12;letter-spacing:-.025em;color:var(--text);margin-bottom:20px}
+.post-h1 em{font-style:normal;background:linear-gradient(135deg,var(--accent) 0%,var(--accent-hi) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.post-lede{font-size:18px;color:var(--text2);line-height:1.7;margin-bottom:28px;font-family:var(--serif);font-style:italic}
+.post-meta{display:flex;align-items:center;gap:20px;padding:16px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border);font-family:var(--mono);font-size:11px;color:var(--muted)}
+.meta-author{display:flex;align-items:center;gap:8px}
+.meta-avatar{width:28px;height:28px;border-radius:50%;background:var(--text);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#00ffd0;flex-shrink:0}
+.meta-dot{color:var(--border2)}
+.post-layout{display:grid;grid-template-columns:var(--content-width) 1fr;gap:60px;padding:48px 0 96px;align-items:start}
+.post-body{min-width:0}
+.post-body h2{font-size:22px;font-weight:800;color:var(--text);letter-spacing:-.02em;line-height:1.2;margin:48px 0 16px;padding-top:8px}
+.post-body h2:first-child{margin-top:0}
+.post-body h3{font-size:16px;font-weight:700;color:var(--text);letter-spacing:-.01em;margin:28px 0 10px}
+.post-body p{font-size:16px;line-height:1.8;color:var(--text2);margin-bottom:20px}
+.post-body p strong{color:var(--text);font-weight:600}
+.post-body ul,.post-body ol{margin:0 0 20px 0;padding-left:24px}
+.post-body li{font-size:16px;line-height:1.75;color:var(--text2);margin-bottom:8px}
+.post-body li strong{color:var(--text)}
+.callout{border-left:3px solid var(--accent-hi);background:var(--accent-lt);border-radius:0 8px 8px 0;padding:18px 20px;margin:28px 0}
+.callout p{margin:0;font-size:15px;color:var(--accent);font-weight:500;line-height:1.65}
+.callout-warn{border-left-color:#d97706;background:#fffbeb}
+.callout-warn p{color:#92400e}
+.code-block{background:#0d1117;border:1px solid #21262d;border-radius:10px;overflow:hidden;margin:24px 0;box-shadow:var(--sh-md);font-family:var(--mono);font-size:12.5px;line-height:1.7}
+.code-hd{background:#161b22;border-bottom:1px solid #21262d;padding:9px 16px;display:flex;align-items:center;justify-content:space-between}
+.code-fn{font-size:11px;color:#6e7681;font-family:var(--mono)}
+.code-lg{font-size:10px;padding:2px 8px;border-radius:4px;background:#21262d;color:#6e7681;border:1px solid #30363d;font-family:var(--mono)}
+.code-bd{padding:16px 18px;overflow-x:auto;color:#e6edf3}
+.code-bd .c{color:#6e7681}.code-bd .k{color:#79c0ff}.code-bd .v{color:#a5f3a5}.code-bd .s{color:#ffa657}.code-bd .hi{color:#ff7b72}.code-bd .co{color:#3fb950;font-weight:500}.code-bd .me{color:#e3b341}.code-bd .pu{color:#d2a8ff}
+.post-body code{font-family:var(--mono);font-size:13px;background:var(--bg);border:1px solid var(--border);padding:1px 6px;border-radius:4px;color:var(--accent-hi)}
+.compare-table{width:100%;border-collapse:collapse;font-size:13px;border:1px solid var(--border);border-radius:10px;overflow:hidden;box-shadow:var(--sh-sm);margin:24px 0}
+.compare-table th{text-align:left;padding:10px 14px;background:var(--bg);color:var(--muted);border-bottom:1px solid var(--border2);font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.07em;font-weight:600}
+.compare-table td{padding:10px 14px;border-bottom:1px solid var(--border);background:var(--white);color:var(--text2);font-family:var(--mono);font-size:12px;vertical-align:top}
+.compare-table tr:last-child td{border-bottom:none}
+.compare-table tr:hover td{background:var(--bg)}
+.td-good{color:#059669;font-weight:600}.td-bad{color:#dc2626;font-weight:600}.td-warn{color:#d97706;font-weight:600}
+.pull-quote{border-top:3px solid var(--text);border-bottom:1px solid var(--border);padding:24px 0 20px;margin:36px 0}
+.pull-quote p{font-family:var(--serif);font-size:20px;font-style:italic;color:var(--text);line-height:1.5;margin:0}
+.stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:28px 0}
+.stat-card{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:20px;text-align:center;box-shadow:var(--sh-sm)}
+.stat-n{font-size:28px;font-weight:800;color:var(--accent-hi);letter-spacing:-.03em;line-height:1;margin-bottom:6px}
+.stat-l{font-family:var(--mono);font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;line-height:1.4}
+.post-cta{background:var(--text);border-radius:12px;padding:32px 36px;margin:48px 0 0;position:relative;overflow:hidden}
+.post-cta::before{content:'';position:absolute;top:-60px;right:-60px;width:200px;height:200px;border-radius:50%;background:radial-gradient(circle,rgba(13,148,136,.3),transparent 70%);pointer-events:none}
+.post-cta h3{font-size:20px;font-weight:800;color:#fff;letter-spacing:-.02em;margin-bottom:8px}
+.post-cta p{font-family:var(--sans);font-size:15px;color:rgba(255,255,255,.55);margin-bottom:20px;line-height:1.65}
+.post-cta-acts{display:flex;gap:10px;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;gap:7px;font-family:var(--sans);font-size:14px;font-weight:600;padding:10px 20px;border-radius:7px;transition:transform .15s,box-shadow .15s;text-decoration:none!important;letter-spacing:.01em}
+.btn:hover{transform:translateY(-1px)}
+.btn-wh{background:#fff;color:var(--text)}
+.btn-wh:hover{background:#f0f0f0}
+.btn-ow{background:transparent;color:rgba(255,255,255,.75);border:1px solid rgba(255,255,255,.25)}
+.btn-ow:hover{background:rgba(255,255,255,.08);color:#fff}
+.post-sidebar{position:sticky;top:78px}
+.toc{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:20px;box-shadow:var(--sh-sm);margin-bottom:20px}
+.toc-title{font-family:var(--mono);font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:14px}
+.toc-list{list-style:none}
+.toc-list li{margin-bottom:4px}
+.toc-list a{font-family:var(--mono);font-size:12px;color:var(--muted);display:block;padding:4px 8px;border-radius:5px;transition:color .15s,background .15s;line-height:1.4}
+.toc-list a:hover{color:var(--accent-hi);background:var(--accent-lt);text-decoration:none}
+.toc-list a.active{color:var(--accent-hi);background:var(--accent-lt);font-weight:500}
+.sidebar-card{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:20px;box-shadow:var(--sh-sm);margin-bottom:16px}
+.sidebar-card-title{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--text);margin-bottom:10px;text-transform:uppercase;letter-spacing:.06em}
+.sidebar-stat{display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);font-family:var(--mono);font-size:11px}
+.sidebar-stat:last-child{border-bottom:none}
+.ss-label{color:var(--muted)}
+.ss-val{font-weight:600;color:var(--accent-hi)}
+.related{border-top:1px solid var(--border);padding:48px 0 80px}
+.related-title{font-family:var(--mono);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:24px}
+.related-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.related-card{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:20px;transition:box-shadow .2s,transform .2s;box-shadow:var(--sh-sm)}
+.related-card:hover{box-shadow:var(--sh-md);transform:translateY(-2px)}
+.rc-tag{font-family:var(--mono);font-size:10px;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px}
+.rc-title{font-size:14px;font-weight:700;color:var(--text);line-height:1.35;letter-spacing:-.01em;margin-bottom:8px}
+.rc-desc{font-family:var(--mono);font-size:11px;color:var(--muted);line-height:1.6}
+footer{border-top:1px solid var(--border);background:var(--white);position:relative;z-index:1}
+.fi{max-width:1120px;margin:0 auto;padding:40px 28px;display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap}
+.f-logo{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:8px}
+.f-links{display:flex;gap:20px;list-style:none}
+.f-links a{font-family:var(--sans);font-size:13px;color:var(--muted2);transition:color .15s}
+.f-links a:hover{color:var(--text);text-decoration:none}
+.f-copy{font-family:var(--sans);font-size:13px;color:var(--muted2)}
+.rv{opacity:0;transform:translateY(16px);transition:opacity .5s ease,transform .5s ease}
+.rv.in{opacity:1;transform:translateY(0)}
+@media(max-width:960px){.post-layout{grid-template-columns:1fr;gap:0}.post-sidebar{position:static;margin-top:48px}.stat-row{grid-template-columns:1fr 1fr}.related-grid{grid-template-columns:1fr}.nav-links{display:none}}
+@media(max-width:600px){.post-h1{font-size:26px}.stat-row{grid-template-columns:1fr}.post-meta{flex-wrap:wrap;gap:10px}}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-in">
+    <a class="nav-logo" href="/">
+      <div class="lm"><svg viewBox="0 0 14 14" fill="none" stroke="#00ffd0" stroke-width="2"><path d="M2 7L5 10L12 3" stroke-linecap="round" stroke-linejoin="round"/><circle cx="7" cy="7" r="6" stroke="#00ffd0" stroke-width="1.4" opacity=".4"/></svg></div>
+      cleancloud
+    </a>
+    <ul class="nav-links">
+      <li><a href="/#rules">Rules</a></li>
+      <li><a href="/#ci">CI/CD</a></li>
+      <li><a href="/blog">Blog</a></li>
+      <li><a href="https://github.com/cleancloud-io/cleancloud" target="_blank" rel="noopener">GitHub &#9733;</a></li>
+      <li><a href="/#contact" class="nav-cta">Contact us &#8594;</a></li>
+    </ul>
+  </div>
+</nav>
+
+<main>
+<div class="blog-wrap">
+
+  <div class="post-hero rv">
+    <div class="post-breadcrumb">
+      <a href="/">Home</a><span>&#8250;</span>
+      <a href="/blog">Blog</a><span>&#8250;</span>
+      Cloud TPU Idle Cost
+    </div>
+    <div class="post-tags">
+      <span class="post-tag tag-gcp">GCP</span>
+      <span class="post-tag tag-ai">AI/ML</span>
+      <span class="post-tag tag-finops">FinOps</span>
+    </div>
+    <h1 class="post-h1">
+      Cloud TPU Idle Costs:<br>
+      <em>$12 an Hour for a Node That Isn't Training Anything</em>
+    </h1>
+    <p class="post-lede">
+      A research team finished a large-scale pretraining run on a TPU v4 pod. They intended to delete it after reviewing the checkpoints. The code review took two weeks. The TPU stayed in READY state the entire time — billing $12.88/hour, 24 hours a day, for a node with zero workload.
+    </p>
+    <div class="post-meta">
+      <div class="meta-author"><div class="meta-avatar">S</div><span>Suresh &middot; CleanCloud</span></div>
+      <span class="meta-dot">&middot;</span>
+      <span>April 22, 2026</span>
+      <span class="meta-dot">&middot;</span>
+      <span>7 min read</span>
+    </div>
+  </div>
+
+  <div class="post-layout">
+    <article class="post-body rv">
+
+      <h2 id="tpu-billing-model">How Cloud TPU Billing Works</h2>
+
+      <p>
+        Cloud TPUs are Google's custom AI accelerators designed for large-scale machine learning workloads — training large language models, image models, and recommendation systems that would take impractical amounts of time on GPUs alone.
+      </p>
+
+      <p>
+        Unlike Compute Engine VMs (which can be stopped to avoid billing), <strong>Cloud TPU nodes bill continuously in READY state regardless of whether any workload is running on them.</strong> READY is the state a TPU node enters after creation and after a job completes — it's the standby state, and it's not free.
+      </p>
+
+      <p>
+        The reason: TPU capacity is physically reserved when a node is created. Google is holding that silicon for you. Billing reflects that reservation, not the utilization of it.
+      </p>
+
+      <table class="compare-table">
+        <thead>
+          <tr><th>TPU version</th><th>Chip count</th><th>Cost/hr (on-demand)</th><th>Cost/day idle</th><th>Cost/month idle</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>v2-8</td><td>8 chips</td><td>~$4.50</td><td>~$108</td><td>~$3,240</td></tr>
+          <tr><td>v3-8</td><td>8 chips</td><td>~$8.00</td><td>~$192</td><td>~$5,760</td></tr>
+          <tr><td>v4-8</td><td>8 chips</td><td class="td-warn">~$12.88</td><td class="td-warn">~$309</td><td class="td-warn">~$9,274</td></tr>
+          <tr><td>v5p-8</td><td>8 chips</td><td class="td-bad">~$33.60</td><td class="td-bad">~$807</td><td class="td-bad">~$24,192</td></tr>
+          <tr><td>v5p-64 pod</td><td>64 chips</td><td class="td-bad">~$268</td><td class="td-bad">~$6,432</td><td class="td-bad">~$193,536</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout">
+        <p>
+          <strong>No "stopped" state for TPUs:</strong> Unlike VMs, you cannot stop a TPU node to avoid billing. The only cost-free state is deletion. Recreating a TPU node typically takes 2–5 minutes.
+        </p>
+      </div>
+
+      <h2 id="how-tpu-waste-happens">How TPU Waste Happens</h2>
+
+      <p>
+        The most common patterns causing idle TPU spend:
+      </p>
+
+      <ul>
+        <li><strong>Training job completed, node not deleted:</strong> A pretraining or fine-tuning run finishes. The engineer reviews checkpoints, considers next steps, and forgets the TPU is still allocated. Days pass.</li>
+        <li><strong>Experimental nodes kept "just in case":</strong> A team uses a TPU node for hyperparameter sweeps. The experiments conclude, but the node is kept available to avoid the 2–5 minute recreation time if they want to run another experiment soon. "Soon" doesn't come.</li>
+        <li><strong>CI/CD pipeline creates TPU, cleanup step fails:</strong> An automated training pipeline provisions a TPU node, runs a job, but the cleanup step fails silently — perhaps due to a permissions error or a pipeline timeout. The node stays allocated indefinitely.</li>
+        <li><strong>Abandoned proof-of-concept:</strong> A team evaluates JAX on TPUs for a new model architecture. The evaluation concludes (or is deprioritized). The TPU node from the PoC is never deleted.</li>
+      </ul>
+
+      <div class="pull-quote">
+        <p>&#8220;Two weeks of idle billing. $4,381 in waste. The team thought someone else had cleaned it up.&#8221;</p>
+      </div>
+
+      <h2 id="how-the-rule-works">How CleanCloud Detects Idle TPU Nodes</h2>
+
+      <p>
+        The <code>gcp.tpu.idle</code> rule detects Cloud TPU nodes (v2 through v6e) in <code>READY</code> state with near-zero utilization over the idle window (default 7 days):
+      </p>
+
+      <ol>
+        <li><strong>Lists all TPU nodes:</strong> Enumerates TPU nodes across all zones in the project using the Cloud TPU API.</li>
+        <li><strong>Filters to READY state:</strong> Only nodes currently in <code>READY</code> state are evaluated — nodes in <code>CREATING</code> or running a job are excluded.</li>
+        <li><strong>Checks duty cycle:</strong> Queries Cloud Monitoring for the <code>tpu/duty_cycle</code> metric over the idle window. Nodes with <code>duty_cycle ≤ 2%</code> for the full window are flagged as idle.</li>
+        <li><strong>Classifies by generation:</strong> v4 and v5p nodes are flagged CRITICAL risk due to their higher per-hour cost. v2/v3 nodes are HIGH.</li>
+      </ol>
+
+      <div class="code-block">
+        <div class="code-hd">
+          <span class="code-fn">CleanCloud scan output</span>
+          <span class="code-lg">gcp.tpu.idle</span>
+        </div>
+        <div class="code-bd"><pre>
+<span class="me">Rule      :</span> <span class="v">gcp.tpu.idle</span>
+<span class="me">Resource  :</span> <span class="s">projects/ml-research/locations/us-central2-b/nodes/pretrain-v4-node</span>
+<span class="me">Zone      :</span> <span class="c">us-central2-b</span>
+<span class="me">TPU type  :</span> <span class="hi">v4-8</span>  <span class="c">(8 chips)</span>
+<span class="me">State     :</span> <span class="c">READY</span>
+<span class="me">Idle since:</span> <span class="hi">14 days</span>  <span class="c">(duty_cycle ≤ 2%)</span>
+<span class="me">Conf      :</span> <span class="hi">HIGH</span>
+<span class="me">Cost      :</span> <span class="hi">~$9,274/month</span>  <span class="c">(~$12.88/hr × 720 hr)</span></pre>
+        </div>
+      </div>
+
+      <h2 id="the-duty-cycle-signal">The Duty Cycle Signal</h2>
+
+      <p>
+        Cloud TPU exposes a <code>duty_cycle</code> metric via Cloud Monitoring that measures the fraction of time the TPU cores are actively processing. A node running a training job will show duty cycles of 70–99%. A node sitting idle in READY state with no workload will show duty cycles at or near 0%.
+      </p>
+
+      <p>
+        CleanCloud uses a 2% threshold (not 0%) to account for background system processes and metric sampling noise. A node consistently below 2% for a week is definitively not running any meaningful workload.
+      </p>
+
+      <div class="callout callout-warn">
+        <p>
+          <strong>Why not detect idle TPUs without metrics?</strong> READY state alone isn't sufficient — a node between job steps may be in READY state briefly. The duty cycle metric over 7 days confirms the node has had no meaningful activity over an extended period, preventing false positives on nodes actively used with infrequent batch schedules.
+        </p>
+      </div>
+
+      <h2 id="ci-setup">Catching Idle TPUs in CI</h2>
+
+      <div class="code-block">
+        <div class="code-hd">
+          <span class="code-fn">.github/workflows/gcp-ai-waste.yml</span>
+          <span class="code-lg">Weekly scan — GCP AI/ML rules including TPU idle</span>
+        </div>
+        <div class="code-bd"><pre>
+<span class="k">name:</span> <span class="v">GCP AI/ML waste scan</span>
+<span class="k">on:</span>
+  <span class="k">schedule:</span>
+    <span class="k">- cron:</span> <span class="s">'0 8 * * 1'</span>   <span class="c"># Every Monday</span>
+
+<span class="k">jobs:</span>
+  <span class="k">scan:</span>
+    <span class="k">runs-on:</span> <span class="v">ubuntu-latest</span>
+    <span class="k">steps:</span>
+      <span class="k">- uses:</span> <span class="v">google-github-actions/auth@v2</span>
+        <span class="k">with:</span>
+          <span class="k">workload_identity_provider:</span> <span class="s">${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}</span>
+          <span class="k">service_account:</span>            <span class="s">${{ secrets.GCP_SERVICE_ACCOUNT }}</span>
+
+      <span class="k">- run:</span> <span class="v">pip install 'cleancloud[gcp]'</span>
+
+      <span class="k">- run:</span> <span class="v">|</span>
+          <span class="v">cleancloud scan --provider gcp \</span>
+            <span class="v">--all-projects \</span>
+            <span class="v">--category ai \</span>
+            <span class="v">--fail-on-confidence HIGH \</span>
+            <span class="v">--output json --output-file gcp-ai-findings.json</span></pre>
+        </div>
+      </div>
+
+      <div class="stat-row">
+        <div class="stat-card">
+          <div class="stat-n">$12.88</div>
+          <div class="stat-l">v4-8 cost per hour at idle</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-n">7 days</div>
+          <div class="stat-l">Default idle detection window</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-n">2%</div>
+          <div class="stat-l">Duty cycle threshold for idle flag</div>
+        </div>
+      </div>
+
+      <h2 id="required-permissions">Required GCP Permissions</h2>
+
+      <div class="code-block">
+        <div class="code-hd">
+          <span class="code-fn">GCP IAM — minimum permissions</span>
+          <span class="code-lg">read-only</span>
+        </div>
+        <div class="code-bd"><pre>
+<span class="c"># Included in roles/tpu.viewer</span>
+<span class="k">tpu.nodes.list</span>
+<span class="k">tpu.nodes.get</span>
+
+<span class="c"># Included in roles/monitoring.viewer</span>
+<span class="k">monitoring.timeSeries.list</span>  <span class="c"># For duty_cycle metric</span></pre>
+        </div>
+      </div>
+
+      <h2 id="faq">Frequently Asked Questions</h2>
+
+      <h3>Does GCP charge for Cloud TPU nodes in READY state?</h3>
+      <p>
+        Yes. Cloud TPU nodes bill from the time they enter READY state until they are deleted. There is no "stopped" state that avoids billing. READY with zero workload is full idle billing at the on-demand rate for that TPU version and chip count.
+      </p>
+
+      <h3>Can I pause a Cloud TPU node to avoid billing?</h3>
+      <p>
+        No. Unlike Compute Engine VMs, TPU nodes don't support a stopped/paused state. Deletion is the only way to stop billing. Recreating a TPU node from scratch typically takes 2–5 minutes, which is a reasonable tradeoff given the hourly cost of keeping one allocated indefinitely.
+      </p>
+
+      <h3>What TPU versions does CleanCloud detect?</h3>
+      <p>
+        The <code>gcp.tpu.idle</code> rule detects v2, v3, v4, v5e, v5p, and v6e TPU nodes. All generations that support Cloud Monitoring <code>duty_cycle</code> metrics are covered.
+      </p>
+
+      <!-- CTA -->
+      <div class="post-cta">
+        <h3>Find idle Cloud TPU nodes in your GCP projects</h3>
+        <p>Scan all your GCP projects in one run. No agents, no write access, no data leaves your environment.</p>
+        <div class="post-cta-acts">
+          <a href="https://pypi.org/project/cleancloud/" class="btn btn-wh" target="_blank" rel="noopener">Install via PyPI &#8594;</a>
+          <a href="https://github.com/cleancloud-io/cleancloud" class="btn btn-ow" target="_blank" rel="noopener">&#9733; View on GitHub</a>
+        </div>
+      </div>
+
+      <div class="code-block" style="margin-top:24px">
+        <div class="code-hd">
+          <span class="code-fn">Google Cloud Shell — 60-second scan</span>
+          <span class="code-lg">no local setup required</span>
+        </div>
+        <div class="code-bd"><pre>
+<span class="co">pip install 'cleancloud[gcp]' && cleancloud scan --provider gcp --all-projects --category ai</span></pre>
+        </div>
+      </div>
+
+    </article>
+
+    <aside class="post-sidebar rv">
+      <div class="toc">
+        <div class="toc-title">In this article</div>
+        <ul class="toc-list">
+          <li><a href="#tpu-billing-model">How Cloud TPU Billing Works</a></li>
+          <li><a href="#how-tpu-waste-happens">How TPU Waste Happens</a></li>
+          <li><a href="#how-the-rule-works">How CleanCloud Detects It</a></li>
+          <li><a href="#the-duty-cycle-signal">The Duty Cycle Signal</a></li>
+          <li><a href="#ci-setup">CI Setup</a></li>
+          <li><a href="#required-permissions">Required Permissions</a></li>
+          <li><a href="#faq">FAQ</a></li>
+        </ul>
+      </div>
+      <div class="sidebar-card">
+        <div class="sidebar-card-title">TPU idle costs/month</div>
+        <div class="sidebar-stat"><span class="ss-label">v2-8</span><span class="ss-val">~$3,240/mo</span></div>
+        <div class="sidebar-stat"><span class="ss-label">v3-8</span><span class="ss-val">~$5,760/mo</span></div>
+        <div class="sidebar-stat"><span class="ss-label">v4-8</span><span class="ss-val">~$9,274/mo</span></div>
+        <div class="sidebar-stat"><span class="ss-label">v5p-8</span><span class="ss-val">~$24,192/mo</span></div>
+        <div class="sidebar-stat"><span class="ss-label">Idle window</span><span class="ss-val">7 days (default)</span></div>
+      </div>
+      <div class="sidebar-card">
+        <div class="sidebar-card-title">Quick scan</div>
+        <div style="background:#0d1117;border:1px solid #21262d;border-radius:7px;padding:10px 13px;font-family:var(--mono);font-size:11px;color:#56d364;margin-bottom:10px;line-height:1.7">
+          pip install 'cleancloud[gcp]'<br>cleancloud scan \<br>&nbsp;&nbsp;--provider gcp \<br>&nbsp;&nbsp;--all-projects \<br>&nbsp;&nbsp;--category ai
+        </div>
+        <a href="https://github.com/cleancloud-io/cleancloud/blob/main/docs/gcp.md" target="_blank" rel="noopener" style="display:block;text-align:center;font-family:var(--sans);font-size:14px;font-weight:600;color:var(--accent-hi);padding:9px;border:1px solid var(--accent-md);border-radius:7px;background:var(--accent-lt);text-decoration:none">
+          GCP setup guide &#8594;
+        </a>
+      </div>
+    </aside>
+
+  </div>
+
+  <div class="related rv">
+    <div class="related-title">More from the CleanCloud blog</div>
+    <div class="related-grid">
+      <div class="related-card">
+        <div class="rc-tag">GCP</div>
+        <div class="rc-title"><a href="/blog/vertex-ai-idle-endpoint-cost.html" style="color:inherit">Vertex AI Endpoint Running After a PoC Ended: $6,300 in Avoidable Spend</a></div>
+        <div class="rc-desc">A GCP proof-of-concept ended. The Vertex AI A100 endpoint didn't. 78 days and $6,300 later, CleanCloud caught it.</div>
+      </div>
+      <div class="related-card">
+        <div class="rc-tag">GCP</div>
+        <div class="rc-title"><a href="/blog/vertex-ai-feature-store-idle-cost.html" style="color:inherit">Vertex AI Feature Store Idle Costs</a></div>
+        <div class="rc-desc">Bigtable-backed Feature Stores bill ~$197/node/month regardless of ReadFeatureValues traffic. Zero queries is still full billing.</div>
+      </div>
+      <div class="related-card">
+        <div class="rc-tag">AI/ML</div>
+        <div class="rc-title"><a href="/blog/idle-ai-ml-infrastructure-cost.html" style="color:inherit">The Hidden Cost of Idle AI/ML Infrastructure</a></div>
+        <div class="rc-desc">SageMaker, AML, and Vertex AI — the full picture of why idle AI infrastructure is the fastest-growing source of invisible cloud spend.</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</main>
+
+<footer>
+  <div class="fi">
+    <div class="f-logo">
+      <div class="lm"><svg viewBox="0 0 14 14" fill="none" stroke="#00ffd0" stroke-width="2"><path d="M2 7L5 10L12 3" stroke-linecap="round" stroke-linejoin="round"/><circle cx="7" cy="7" r="6" stroke="#00ffd0" stroke-width="1.4" opacity=".4"/></svg></div>
+      cleancloud
+    </div>
+    <ul class="f-links">
+      <li><a href="/">Home</a></li>
+      <li><a href="/blog">Blog</a></li>
+      <li><a href="https://github.com/cleancloud-io/cleancloud" target="_blank" rel="noopener">GitHub</a></li>
+      <li><a href="https://pypi.org/project/cleancloud/" target="_blank" rel="noopener">PyPI</a></li>
+      <li><a href="mailto:suresh@getcleancloud.com">Contact</a></li>
+    </ul>
+    <span class="f-copy">&copy; 2026 CleanCloud. MIT License.</span>
+  </div>
+</footer>
+
+<script>
+const obs=new IntersectionObserver(entries=>{entries.forEach(e=>{if(e.isIntersecting)e.target.classList.add('in');});},{threshold:0.06});
+document.querySelectorAll('.rv').forEach(el=>obs.observe(el));
+const headings=document.querySelectorAll('.post-body h2,.post-body h3');
+const tocLinks=document.querySelectorAll('.toc-list a');
+const tocObs=new IntersectionObserver(entries=>{entries.forEach(entry=>{if(entry.isIntersecting){tocLinks.forEach(l=>l.classList.remove('active'));const id=entry.target.getAttribute('id');const active=document.querySelector(`.toc-list a[href="#${id}"]`);if(active)active.classList.add('active');}});},{rootMargin:'-20% 0px -70% 0px'});
+headings.forEach(h=>tocObs.observe(h));
+</script>
+</body>
+</html>

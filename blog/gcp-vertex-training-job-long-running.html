@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- ── SEO ── -->
+<title>The Training Job That Forgot to Finish: Vertex AI Long-Running Training Cost | CleanCloud</title>
+<meta name="description" content="A Vertex AI Custom Job on 8× A100 GPUs running for 61 hours when it was expected to finish in 18. $4,880 in excess spend. CleanCloud's gcp.vertex.training_job.long_running rule caught it automatically.">
+<meta name="keywords" content="vertex ai training job long running, gcp.vertex.training_job.long_running, Vertex AI Custom Job cost, Vertex AI TrainingPipeline hung, runaway Vertex AI training job, GCP A100 GPU training cost, Vertex AI training job timeout, detect long running Vertex AI job, GCP ML training budget, Vertex AI training job monitoring, vertex ai training job stop, GCP training job hung, Vertex AI training FinOps, vertex ai pipeline cost overrun">
+<meta name="author" content="Suresh, CleanCloud">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://www.getcleancloud.com/blog/gcp-vertex-training-job-long-running.html">
+
+<!-- ── Open Graph ── -->
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://www.getcleancloud.com/blog/gcp-vertex-training-job-long-running.html">
+<meta property="og:title" content="The Training Job That Forgot to Finish: Vertex AI Long-Running Training Cost">
+<meta property="og:description" content="A Vertex AI Custom Job on 8× A100 GPUs ran 61 hours when it was expected to finish in 18. $4,880 in excess spend. CleanCloud caught it with an early warning at 90% of expected duration.">
+<meta property="og:image" content="https://www.getcleancloud.com/og-image.png">
+<meta property="og:site_name" content="CleanCloud">
+<meta property="article:published_time" content="2026-04-22">
+<meta property="article:author" content="Suresh">
+<meta property="article:tag" content="GCP">
+<meta property="article:tag" content="AI/ML">
+<meta property="article:tag" content="FinOps">
+
+<!-- ── Twitter Card ── -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@getcleancloud">
+<meta name="twitter:title" content="The Training Job That Forgot to Finish: Vertex AI Long-Running Training Cost">
+<meta name="twitter:description" content="Vertex AI Custom Job on 8× A100 GPUs running 61 hours against an 18-hour expectation. $4,880 excess spend. CleanCloud caught it with a 90% early warning.">
+
+<!-- ── Schema.org Article ── -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "The Training Job That Forgot to Finish: Vertex AI Long-Running Training Cost",
+  "description": "A Vertex AI Custom Job configured with 8× A100 GPUs ran for 61 hours against an expected 18-hour duration. CleanCloud's gcp.vertex.training_job.long_running rule flagged it automatically with an early warning at 90% of the expected duration.",
+  "author": { "@type": "Person", "name": "Suresh", "url": "https://www.getcleancloud.com" },
+  "publisher": { "@type": "Organization", "name": "CleanCloud", "url": "https://www.getcleancloud.com" },
+  "datePublished": "2026-04-22",
+  "dateModified": "2026-04-22",
+  "keywords": ["Vertex AI training job long running", "gcp.vertex.training_job.long_running", "GCP A100 training waste", "FinOps GCP AI"],
+  "articleSection": "Engineering"
+}
+</script>
+
+<!-- ── FAQ Schema ── -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "How does CleanCloud detect a long-running Vertex AI training job?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "CleanCloud's gcp.vertex.training_job.long_running rule monitors both Vertex AI Custom Jobs and Training Pipelines. It flags jobs that have been running longer than a configurable threshold (default: 24 hours). GPU and TPU jobs approaching 90% of the threshold receive an early warning flag before the threshold is reached."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Does Vertex AI have a built-in timeout for training jobs?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes, but it must be configured explicitly. Custom Jobs support a timeout field in the job spec. If not set, jobs run indefinitely until they complete, fail, or are manually cancelled. CleanCloud's rule flags jobs exceeding 24 hours even without a configured timeout."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How much does a runaway Vertex AI A100 training job cost?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "An 8× A100 node (a2-megagpu-8g) costs approximately $80/hour on Vertex AI. A job that runs 43 hours beyond a 18-hour expectation accumulates roughly $3,440 in excess spend. An H100 node configuration can exceed $200/hour, making runaway jobs extremely expensive."
+      }
+    }
+  ]
+}
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500;600&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+
+<style>
+:root{--bg:#f6f7f9;--white:#ffffff;--border:#e2e6ea;--border2:#d0d5dc;--text:#0d1b2a;--text2:#374151;--muted:#6b7a8d;--muted2:#9aa3af;--accent:#0b7a6e;--accent-lt:#e6f4f2;--accent-md:#c2e8e3;--accent-hi:#0d9488;--sans:'Inter',system-ui,-apple-system,sans-serif;--mono:'JetBrains Mono',monospace;--serif:'Lora',Georgia,serif;--sh-sm:0 1px 3px rgba(13,27,42,.06),0 1px 2px rgba(13,27,42,.04);--sh-md:0 4px 16px rgba(13,27,42,.08),0 2px 4px rgba(13,27,42,.04);--sh-lg:0 12px 40px rgba(13,27,42,.12),0 4px 8px rgba(13,27,42,.06);--content-width:720px}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;background-image:linear-gradient(rgba(13,27,42,.022) 1px,transparent 1px),linear-gradient(90deg,rgba(13,27,42,.022) 1px,transparent 1px);background-size:40px 40px}
+a{color:var(--accent-hi);text-decoration:none}
+a:hover{text-decoration:underline}
+nav{position:sticky;top:0;z-index:100;background:rgba(246,247,249,.93);backdrop-filter:blur(16px);border-bottom:1px solid var(--border)}
+.nav-in{max-width:1120px;margin:0 auto;padding:0 28px;height:58px;display:flex;align-items:center;justify-content:space-between}
+.nav-logo{font-family:var(--mono);font-size:14px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:9px;text-decoration:none}
+.lm{width:26px;height:26px;border-radius:6px;background:var(--text);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.lm svg{width:14px;height:14px}
+.nav-links{display:flex;align-items:center;gap:2px;list-style:none}
+.nav-links a{font-family:var(--sans);font-size:14px;font-weight:600;color:var(--muted);padding:5px 11px;border-radius:5px;transition:color .15s,background .15s}
+.nav-links a:hover{color:var(--text);background:var(--white);text-decoration:none}
+.nav-cta{font-family:var(--sans)!important;font-size:14px!important;font-weight:600!important;color:var(--white)!important;background:var(--text)!important;padding:7px 16px!important;border-radius:6px!important}
+.nav-cta:hover{background:#1a2f44!important}
+.blog-wrap{max-width:1120px;margin:0 auto;padding:0 28px;position:relative;z-index:1}
+.post-hero{padding:64px 0 48px;max-width:var(--content-width);margin:0 auto}
+.post-breadcrumb{font-family:var(--mono);font-size:11px;color:var(--muted);margin-bottom:20px;display:flex;align-items:center;gap:8px}
+.post-breadcrumb a{color:var(--muted)}
+.post-breadcrumb a:hover{color:var(--accent-hi);text-decoration:none}
+.post-breadcrumb span{color:var(--border2)}
+.post-tags{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px}
+.post-tag{font-family:var(--mono);font-size:10px;font-weight:600;padding:3px 10px;border-radius:4px;text-transform:uppercase;letter-spacing:.06em}
+.tag-gcp{background:#e8f5e9;color:#1b5e20;border:1px solid #a5d6a7}
+.tag-ai{background:#fdf4ff;color:#7e22ce;border:1px solid #e9d5ff}
+.tag-finops{background:#fffbeb;color:#d97706;border:1px solid #fde68a}
+.post-h1{font-size:clamp(28px,4vw,44px);font-weight:800;line-height:1.12;letter-spacing:-.025em;color:var(--text);margin-bottom:20px}
+.post-h1 em{font-style:normal;background:linear-gradient(135deg,var(--accent) 0%,var(--accent-hi) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.post-lede{font-size:18px;color:var(--text2);line-height:1.7;margin-bottom:28px;font-family:var(--serif);font-style:italic}
+.post-meta{display:flex;align-items:center;gap:20px;padding:16px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border);font-family:var(--mono);font-size:11px;color:var(--muted)}
+.meta-author{display:flex;align-items:center;gap:8px}
+.meta-avatar{width:28px;height:28px;border-radius:50%;background:var(--text);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#00ffd0;flex-shrink:0}
+.meta-dot{color:var(--border2)}
+.post-layout{display:grid;grid-template-columns:var(--content-width) 1fr;gap:60px;padding:48px 0 96px;align-items:start}
+.post-body{min-width:0}
+.post-body h2{font-size:22px;font-weight:800;color:var(--text);letter-spacing:-.02em;line-height:1.2;margin:48px 0 16px;padding-top:8px}
+.post-body h2:first-child{margin-top:0}
+.post-body h3{font-size:16px;font-weight:700;color:var(--text);letter-spacing:-.01em;margin:28px 0 10px}
+.post-body p{font-size:16px;line-height:1.8;color:var(--text2);margin-bottom:20px}
+.post-body p strong{color:var(--text);font-weight:600}
+.post-body ul,.post-body ol{margin:0 0 20px 0;padding-left:24px}
+.post-body li{font-size:16px;line-height:1.75;color:var(--text2);margin-bottom:8px}
+.post-body li strong{color:var(--text)}
+.callout{border-left:3px solid var(--accent-hi);background:var(--accent-lt);border-radius:0 8px 8px 0;padding:18px 20px;margin:28px 0}
+.callout p{margin:0;font-size:15px;color:var(--accent);font-weight:500;line-height:1.65}
+.callout-warn{border-left-color:#d97706;background:#fffbeb}
+.callout-warn p{color:#92400e}
+.code-block{background:#0d1117;border:1px solid #21262d;border-radius:10px;overflow:hidden;margin:24px 0;box-shadow:var(--sh-md);font-family:var(--mono);font-size:12.5px;line-height:1.7}
+.code-hd{background:#161b22;border-bottom:1px solid #21262d;padding:9px 16px;display:flex;align-items:center;justify-content:space-between}
+.code-fn{font-size:11px;color:#6e7681;font-family:var(--mono)}
+.code-lg{font-size:10px;padding:2px 8px;border-radius:4px;background:#21262d;color:#6e7681;border:1px solid #30363d;font-family:var(--mono)}
+.code-bd{padding:16px 18px;overflow-x:auto;color:#e6edf3}
+.code-bd .c{color:#6e7681}.code-bd .k{color:#79c0ff}.code-bd .v{color:#a5f3a5}.code-bd .s{color:#ffa657}.code-bd .hi{color:#ff7b72}.code-bd .co{color:#3fb950;font-weight:500}.code-bd .me{color:#e3b341}.code-bd .pu{color:#d2a8ff}
+.post-body code{font-family:var(--mono);font-size:13px;background:var(--bg);border:1px solid var(--border);padding:1px 6px;border-radius:4px;color:var(--accent-hi)}
+.compare-table{width:100%;border-collapse:collapse;font-size:13px;border:1px solid var(--border);border-radius:10px;overflow:hidden;box-shadow:var(--sh-sm);margin:24px 0}
+.compare-table th{text-align:left;padding:10px 14px;background:var(--bg);color:var(--muted);border-bottom:1px solid var(--border2);font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.07em;font-weight:600}
+.compare-table td{padding:10px 14px;border-bottom:1px solid var(--border);background:var(--white);color:var(--text2);font-family:var(--mono);font-size:12px;vertical-align:top}
+.compare-table tr:last-child td{border-bottom:none}
+.compare-table tr:hover td{background:var(--bg)}
+.td-good{color:#059669;font-weight:600}.td-bad{color:#dc2626;font-weight:600}.td-warn{color:#d97706;font-weight:600}
+.pull-quote{border-top:3px solid var(--text);border-bottom:1px solid var(--border);padding:24px 0 20px;margin:36px 0}
+.pull-quote p{font-family:var(--serif);font-size:20px;font-style:italic;color:var(--text);line-height:1.5;margin:0}
+.stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:28px 0}
+.stat-card{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:20px;text-align:center;box-shadow:var(--sh-sm)}
+.stat-n{font-size:28px;font-weight:800;color:var(--accent-hi);letter-spacing:-.03em;line-height:1;margin-bottom:6px}
+.stat-l{font-family:var(--mono);font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;line-height:1.4}
+.post-cta{background:var(--text);border-radius:12px;padding:32px 36px;margin:48px 0 0;position:relative;overflow:hidden}
+.post-cta::before{content:'';position:absolute;top:-60px;right:-60px;width:200px;height:200px;border-radius:50%;background:radial-gradient(circle,rgba(13,148,136,.3),transparent 70%);pointer-events:none}
+.post-cta h3{font-size:20px;font-weight:800;color:#fff;letter-spacing:-.02em;margin-bottom:8px}
+.post-cta p{font-family:var(--sans);font-size:15px;color:rgba(255,255,255,.55);margin-bottom:20px;line-height:1.65}
+.post-cta-acts{display:flex;gap:10px;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;gap:7px;font-family:var(--sans);font-size:14px;font-weight:600;padding:10px 20px;border-radius:7px;transition:transform .15s,box-shadow .15s;text-decoration:none!important;letter-spacing:.01em}
+.btn:hover{transform:translateY(-1px)}
+.btn-wh{background:#fff;color:var(--text)}
+.btn-wh:hover{background:#f0f0f0}
+.btn-ow{background:transparent;color:rgba(255,255,255,.75);border:1px solid rgba(255,255,255,.25)}
+.btn-ow:hover{background:rgba(255,255,255,.08);color:#fff}
+.post-sidebar{position:sticky;top:78px}
+.toc{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:20px;box-shadow:var(--sh-sm);margin-bottom:20px}
+.toc-title{font-family:var(--mono);font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:14px}
+.toc-list{list-style:none}
+.toc-list li{margin-bottom:4px}
+.toc-list a{font-family:var(--mono);font-size:12px;color:var(--muted);display:block;padding:4px 8px;border-radius:5px;transition:color .15s,background .15s;line-height:1.4}
+.toc-list a:hover{color:var(--accent-hi);background:var(--accent-lt);text-decoration:none}
+.toc-list a.active{color:var(--accent-hi);background:var(--accent-lt);font-weight:500}
+.sidebar-card{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:20px;box-shadow:var(--sh-sm);margin-bottom:16px}
+.sidebar-card-title{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--text);margin-bottom:10px;text-transform:uppercase;letter-spacing:.06em}
+.sidebar-stat{display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);font-family:var(--mono);font-size:11px}
+.sidebar-stat:last-child{border-bottom:none}
+.ss-label{color:var(--muted)}
+.ss-val{font-weight:600;color:var(--accent-hi)}
+.related{border-top:1px solid var(--border);padding:48px 0 80px}
+.related-title{font-family:var(--mono);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:24px}
+.related-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.related-card{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:20px;transition:box-shadow .2s,transform .2s;box-shadow:var(--sh-sm)}
+.related-card:hover{box-shadow:var(--sh-md);transform:translateY(-2px)}
+.rc-tag{font-family:var(--mono);font-size:10px;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px}
+.rc-title{font-size:14px;font-weight:700;color:var(--text);line-height:1.35;letter-spacing:-.01em;margin-bottom:8px}
+.rc-desc{font-family:var(--mono);font-size:11px;color:var(--muted);line-height:1.6}
+footer{border-top:1px solid var(--border);background:var(--white);position:relative;z-index:1}
+.fi{max-width:1120px;margin:0 auto;padding:40px 28px;display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap}
+.f-logo{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:8px}
+.f-links{display:flex;gap:20px;list-style:none}
+.f-links a{font-family:var(--sans);font-size:13px;color:var(--muted2);transition:color .15s}
+.f-links a:hover{color:var(--text);text-decoration:none}
+.f-copy{font-family:var(--sans);font-size:13px;color:var(--muted2)}
+.rv{opacity:0;transform:translateY(16px);transition:opacity .5s ease,transform .5s ease}
+.rv.in{opacity:1;transform:translateY(0)}
+@media(max-width:960px){.post-layout{grid-template-columns:1fr;gap:0}.post-sidebar{position:static;margin-top:48px}.stat-row{grid-template-columns:1fr 1fr}.related-grid{grid-template-columns:1fr}.nav-links{display:none}}
+@media(max-width:600px){.post-h1{font-size:26px}.stat-row{grid-template-columns:1fr}.post-meta{flex-wrap:wrap;gap:10px}}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-in">
+    <a class="nav-logo" href="/">
+      <div class="lm"><svg viewBox="0 0 14 14" fill="none" stroke="#00ffd0" stroke-width="2"><path d="M2 7L5 10L12 3" stroke-linecap="round" stroke-linejoin="round"/><circle cx="7" cy="7" r="6" stroke="#00ffd0" stroke-width="1.4" opacity=".4"/></svg></div>
+      cleancloud
+    </a>
+    <ul class="nav-links">
+      <li><a href="/#rules">Rules</a></li>
+      <li><a href="/#ci">CI/CD</a></li>
+      <li><a href="/blog">Blog</a></li>
+      <li><a href="https://github.com/cleancloud-io/cleancloud" target="_blank" rel="noopener">GitHub &#9733; 106</a></li>
+      <li><a href="/#contact" class="nav-cta">Contact us &#8594;</a></li>
+    </ul>
+  </div>
+</nav>
+
+<main>
+<div class="blog-wrap">
+
+  <div class="post-hero rv">
+    <div class="post-breadcrumb">
+      <a href="/">Home</a><span>&#8250;</span>
+      <a href="/blog">Blog</a><span>&#8250;</span>
+      Vertex AI Training Job Long-Running Cost
+    </div>
+    <div class="post-tags">
+      <span class="post-tag tag-gcp">GCP</span>
+      <span class="post-tag tag-ai">AI/ML</span>
+      <span class="post-tag tag-finops">FinOps</span>
+    </div>
+    <h1 class="post-h1">
+      The Training Job That<br>
+      <em>Forgot to Finish</em>
+    </h1>
+    <p class="post-lede">
+      A Vertex AI Custom Job configured with <code style="font-style:normal;font-size:15px">8× A100 GPUs</code> running for 61 hours when it was expected to complete in 18. No timeout. No alert. No one watching the console. $4,880 in excess spend on a job that had effectively stalled. CleanCloud caught it with an early warning before the 24-hour threshold was reached.
+    </p>
+    <div class="post-meta">
+      <div class="meta-author"><div class="meta-avatar">S</div><span>Suresh &middot; CleanCloud</span></div>
+      <span class="meta-dot">&middot;</span>
+      <span>April 22, 2026</span>
+      <span class="meta-dot">&middot;</span>
+      <span>9 min read</span>
+    </div>
+  </div>
+
+  <div class="post-layout">
+    <article class="post-body rv">
+
+      <h2 id="story">The Fine-Tune That Wouldn't Stop</h2>
+      <p>
+        The team was fine-tuning a large language model for a domain-specific task. The training configuration had worked before — 3 epochs on a curated dataset, historically completing in 16–18 hours on an 8× A100 node. They submitted the job to Vertex AI, set up a Slack webhook for job completion, and went to sleep.
+      </p>
+      <p>
+        The Slack notification never came. The job was still running the next morning. And the morning after that. A data pipeline change had introduced an infinite repeat loop in the dataset iterator — the model was training on the same data indefinitely without ever completing an epoch. Because there was no timeout configured and the job was technically making forward progress (loss was decreasing, slowly), Vertex AI had no reason to stop it.
+      </p>
+      <p>
+        At $80/hour for 8× A100 compute, 43 extra hours cost $3,440 in excess spend beyond the expected job cost. Total waste: $4,880 — more than the original job budget.
+      </p>
+
+      <div class="callout-warn callout">
+        <p><strong>Vertex AI Custom Jobs do not have default timeouts.</strong> Without an explicit <code>timeout</code> in the job spec, a Custom Job runs until it completes, fails, or is manually cancelled. A stalled or runaway job accumulates compute cost indefinitely on GPU/TPU hardware.</p>
+      </div>
+
+      <h2 id="why-jobs-run-long">Why Training Jobs Exceed Expected Duration</h2>
+      <p>
+        Training jobs are the highest-cost-per-hour AI/ML workload in any cloud environment. GPU and TPU nodes bill at rates that can exceed $80/hour per node. When a job runs significantly longer than expected, the cost impact is immediate and compounding.
+      </p>
+      <p>
+        Common causes of runaway training jobs on Vertex AI:
+      </p>
+      <ul>
+        <li><strong>Data pipeline bugs:</strong> An infinite loop or repeated dataset with no epoch boundary. The job processes data forever, making incremental progress on a never-ending dataset.</li>
+        <li><strong>Convergence failure:</strong> A learning rate issue, gradient explosion, or initialization problem causes loss to oscillate rather than converge. The job continues running but is not making useful progress.</li>
+        <li><strong>Larger-than-expected dataset:</strong> A data pipeline pulls more records than anticipated — perhaps a filter condition was removed or a staging dataset grew. The job finishes, but takes 3× longer than planned.</li>
+        <li><strong>Distributed training imbalance:</strong> One worker node in a multi-node distributed job is slower than others due to hardware variability or a data skew. The fast workers wait for the slow one, stretching wall-clock time.</li>
+        <li><strong>Missing early stopping:</strong> The model reaches a useful quality threshold after 20% of the planned epochs, but training continues through all planned epochs with diminishing returns.</li>
+      </ul>
+
+      <div class="stat-row">
+        <div class="stat-card">
+          <div class="stat-n">$4/hr</div>
+          <div class="stat-l">Single A100 node</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-n">$80/hr</div>
+          <div class="stat-l">8× A100 node</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-n">&gt;$200/hr</div>
+          <div class="stat-l">8× H100 node</div>
+        </div>
+      </div>
+
+      <h2 id="how-detection-works">How the Detection Rule Works</h2>
+      <p>
+        CleanCloud's <code>gcp.vertex.training_job.long_running</code> rule monitors both Vertex AI <strong>Custom Jobs</strong> and <strong>Training Pipelines</strong>. It flags jobs that have been running longer than a configurable threshold (default: 24 hours) and provides an early warning for GPU/TPU jobs approaching that threshold.
+      </p>
+
+      <h3>What's covered</h3>
+      <ul>
+        <li><strong>Custom Jobs</strong> (<code>projects/{project}/locations/{location}/customJobs</code>): Direct training jobs submitted via the Vertex AI API or SDK.</li>
+        <li><strong>Training Pipelines</strong> (<code>projects/{project}/locations/{location}/trainingPipelines</code>): Managed training workflows including AutoML and custom container pipelines.</li>
+      </ul>
+
+      <h3>Detection logic</h3>
+      <ol>
+        <li><strong>State filter:</strong> Only jobs in <code>JOB_STATE_RUNNING</code> (Custom Jobs) or <code>PIPELINE_STATE_RUNNING</code> (Training Pipelines) are evaluated. Queued, completed, failed, and cancelled jobs are excluded.</li>
+        <li><strong>Duration check:</strong> The rule calculates <code>now - createTime</code> (wall-clock elapsed time). Jobs exceeding the <code>max_duration_hours</code> threshold (default: 24 hours) are flagged.</li>
+        <li><strong>GPU/TPU early warning:</strong> For jobs using GPU or TPU accelerators, a warning flag is issued at 90% of the threshold duration. A job configured with A100 GPUs and a 24-hour threshold receives an early warning at ~21.6 hours — before the threshold is crossed, giving teams time to inspect and cancel if needed.</li>
+        <li><strong>Severity ratio:</strong> <code>duration_ratio = elapsed_hours / threshold_hours</code>. A job running 3× the threshold has a ratio of 3.0 and is flagged HIGH confidence.</li>
+      </ol>
+
+      <p>Confidence and risk tiers:</p>
+      <ul>
+        <li><strong>HIGH confidence:</strong> Job has been running for at least 3× the threshold duration (duration_ratio &ge; 3.0).</li>
+        <li><strong>MEDIUM confidence:</strong> Job has exceeded the threshold but duration_ratio &lt; 3.0.</li>
+        <li><strong>CRITICAL risk:</strong> HIGH confidence + GPU/TPU accelerators. A GPU job running 3× its expected duration on expensive hardware.</li>
+        <li><strong>HIGH risk:</strong> HIGH confidence, no GPU/TPU (CPU-only long-running job).</li>
+        <li><strong>MEDIUM risk:</strong> MEDIUM confidence, any hardware configuration.</li>
+      </ul>
+
+      <div class="callout">
+        <p><strong>Early warning is GPU/TPU-specific.</strong> The 90% early warning flag is issued only for jobs using GPU or TPU accelerators. CPU-only jobs are not flagged until they cross the threshold, as CPU training jobs are lower-cost and more likely to have legitimately long runtimes for large-scale data processing tasks.</p>
+      </div>
+
+      <div class="code-block">
+        <div class="code-hd"><span class="code-fn">CleanCloud scan output — gcp.vertex.training_job.long_running</span><span class="code-lg">SHELL</span></div>
+        <div class="code-bd"><pre>
+<span class="co">$ cleancloud scan --provider gcp --category ai</span>
+
+<span class="c">--- Early warning (GPU job approaching threshold) ---</span>
+
+<span class="me">Rule    :</span> <span class="k">gcp.vertex.training_job.long_running</span>  <span class="c">[EARLY WARNING]</span>
+<span class="me">Resource:</span> <span class="v">llm-finetune-job-20260421-0830</span>  <span class="c">(us-central1)</span>
+<span class="me">Type    :</span> <span class="v">CustomJob</span>
+<span class="me">Hardware:</span> <span class="s">a2-megagpu-8g</span>  <span class="c">(8× A100 80GB)</span>
+<span class="me">State   :</span> <span class="v">JOB_STATE_RUNNING</span>
+<span class="me">Elapsed :</span> <span class="s">21h 48m</span>  <span class="c">(90.8% of 24h threshold)</span>
+<span class="me">Conf    :</span> <span class="v">MEDIUM</span>  <span class="c">(threshold not yet reached)</span>
+<span class="me">Risk    :</span> <span class="v">MEDIUM</span>
+<span class="me">Rate    :</span> <span class="s">~$80/hr</span>
+
+<span class="c">--- Threshold exceeded ---</span>
+
+<span class="me">Rule    :</span> <span class="k">gcp.vertex.training_job.long_running</span>
+<span class="me">Resource:</span> <span class="v">llm-finetune-job-20260421-0830</span>  <span class="c">(us-central1)</span>
+<span class="me">Type    :</span> <span class="v">CustomJob</span>
+<span class="me">Hardware:</span> <span class="s">a2-megagpu-8g</span>  <span class="c">(8× A100 80GB)</span>
+<span class="me">Elapsed :</span> <span class="hi">61h 12m</span>  <span class="c">(duration_ratio: 2.55)</span>
+<span class="me">Conf    :</span> <span class="v">MEDIUM</span>  <span class="c">(duration_ratio &lt; 3.0)</span>
+<span class="me">Risk    :</span> <span class="v">MEDIUM</span>  <span class="c">(GPU, MEDIUM confidence)</span>
+<span class="me">Cost    :</span> <span class="s">~$4,897 elapsed</span>  <span class="c">(~$3,440 excess beyond 18h expected)</span>
+</pre></div>
+      </div>
+
+      <h2 id="cost-table">Cost by Hardware Configuration</h2>
+      <p>
+        Vertex AI training job costs depend on the machine type and accelerator configuration. Multi-node GPU configurations make runaway jobs extremely expensive.
+      </p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>Configuration</th>
+            <th>Approx. Rate</th>
+            <th>Cost per extra 24h</th>
+            <th>Risk</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>n1-standard-8 (CPU)</td>
+            <td>~$0.38/hr</td>
+            <td class="td-warn">~$9</td>
+            <td class="td-warn">MEDIUM/HIGH</td>
+          </tr>
+          <tr>
+            <td>n1-standard-8 + 1× T4</td>
+            <td>~$1.13/hr</td>
+            <td class="td-warn">~$27</td>
+            <td class="td-bad">CRITICAL</td>
+          </tr>
+          <tr>
+            <td>a2-highgpu-1g (1× A100)</td>
+            <td>~$4/hr</td>
+            <td class="td-bad">~$96</td>
+            <td class="td-bad">CRITICAL</td>
+          </tr>
+          <tr>
+            <td>a2-megagpu-8g (8× A100)</td>
+            <td>~$80/hr</td>
+            <td class="td-bad">~$1,920</td>
+            <td class="td-bad">CRITICAL</td>
+          </tr>
+          <tr>
+            <td>a3-highgpu-8g (8× H100)</td>
+            <td>&gt;$200/hr</td>
+            <td class="td-bad">&gt;$4,800</td>
+            <td class="td-bad">CRITICAL</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2 id="ci-integration">Catching It Before It Becomes a Budget Crisis</h2>
+      <p>
+        The 90% early warning is the key differentiator. By the time a GPU job on 8× A100 hardware has consumed 90% of its expected duration, your team gets a flag. If everything looks normal — loss is converging, workers are healthy — you can dismiss it. If the job looks stalled, you can cancel before crossing into excess spend territory.
+      </p>
+
+      <div class="code-block">
+        <div class="code-hd"><span class="code-fn">.github/workflows/cleancloud-gcp.yml</span><span class="code-lg">YAML</span></div>
+        <div class="code-bd"><pre>
+<span class="k">name</span>: <span class="v">CleanCloud GCP AI/ML Scan</span>
+<span class="k">on</span>:
+  <span class="k">schedule</span>:
+    - <span class="k">cron</span>: <span class="s">'0 * * * *'</span>  <span class="c"># Hourly — important for active training jobs</span>
+  <span class="k">workflow_dispatch</span>:
+
+<span class="k">jobs</span>:
+  <span class="k">cleancloud-scan</span>:
+    <span class="k">runs-on</span>: <span class="v">ubuntu-latest</span>
+    <span class="k">steps</span>:
+      - <span class="k">uses</span>: <span class="v">actions/checkout@v4</span>
+
+      - <span class="k">name</span>: <span class="v">GCP authentication</span>
+        <span class="k">uses</span>: <span class="v">google-github-actions/auth@v2</span>
+        <span class="k">with</span>:
+          <span class="k">credentials_json</span>: <span class="s">${{ secrets.GCP_CREDENTIALS }}</span>
+
+      - <span class="k">name</span>: <span class="v">CleanCloud — GCP AI/ML scan</span>
+        <span class="k">uses</span>: <span class="v">cleancloud-io/scan-action@v1</span>
+        <span class="k">with</span>:
+          <span class="k">provider</span>: <span class="v">gcp</span>
+          <span class="k">category</span>: <span class="v">ai</span>
+          <span class="k">fail-on-confidence</span>: <span class="v">HIGH</span>
+</pre></div>
+      </div>
+
+      <p>
+        For training job monitoring, consider running scans hourly rather than weekly. GPU training jobs can accumulate significant excess cost within hours. The early warning at 90% of threshold gives you a narrow window to intervene — an hourly scan maximizes the chance of catching it in time.
+      </p>
+
+      <div class="pull-quote">
+        <p>"The model was training forever on a loop that never ended. No one knew because the job status was JOB_STATE_RUNNING — which is indistinguishable from healthy progress."</p>
+      </div>
+
+      <h2 id="native-timeouts">Using Vertex AI Native Timeouts</h2>
+      <p>
+        CleanCloud's rule provides detection and alerting. For prevention, use Vertex AI's built-in timeout mechanism:
+      </p>
+
+      <div class="code-block">
+        <div class="code-hd"><span class="code-fn">Vertex AI Custom Job with timeout (Python SDK)</span><span class="code-lg">PYTHON</span></div>
+        <div class="code-bd"><pre>
+<span class="k">from</span> <span class="v">google.cloud</span> <span class="k">import</span> <span class="v">aiplatform</span>
+<span class="k">from</span> <span class="v">google.protobuf</span> <span class="k">import</span> <span class="v">duration_pb2</span>
+
+<span class="v">job</span> = <span class="v">aiplatform</span>.<span class="v">CustomContainerTrainingJob</span>(
+    <span class="k">display_name</span>=<span class="s">"llm-finetune-job"</span>,
+    <span class="k">container_uri</span>=<span class="s">"us-docker.pkg.dev/my-project/my-repo/trainer:latest"</span>,
+)
+
+<span class="v">job</span>.<span class="v">run</span>(
+    <span class="k">machine_type</span>=<span class="s">"a2-megagpu-8g"</span>,
+    <span class="k">accelerator_type</span>=<span class="s">"NVIDIA_TESLA_A100"</span>,
+    <span class="k">accelerator_count</span>=<span class="v">8</span>,
+    <span class="c"># Set timeout to 20 hours — 2h buffer above 18h expected</span>
+    <span class="k">timeout</span>=<span class="v">duration_pb2</span>.<span class="v">Duration</span>(<span class="k">seconds</span>=<span class="v">72000</span>),  <span class="c"># 20h = 72000s</span>
+)
+</pre></div>
+      </div>
+
+      <p>
+        With a timeout set, Vertex AI will automatically cancel the job and terminate the compute at the configured duration — even if the job is still running. CleanCloud's early warning at 90% of the threshold gives you a CI alert before the timeout fires, allowing a human to inspect the job state and decide whether to let the timeout apply or cancel early.
+      </p>
+
+      <h2 id="permissions">Required GCP Permissions</h2>
+
+      <div class="code-block">
+        <div class="code-hd"><span class="code-fn">Required GCP IAM permissions (Vertex AI training jobs)</span><span class="code-lg">YAML</span></div>
+        <div class="code-bd"><pre>
+<span class="c"># Predefined roles (simplest approach)</span>
+<span class="k">roles/aiplatform.viewer</span>
+
+<span class="c"># Or individual permissions</span>
+<span class="v">aiplatform.customJobs.list</span>
+<span class="v">aiplatform.customJobs.get</span>
+<span class="v">aiplatform.trainingPipelines.list</span>
+<span class="v">aiplatform.trainingPipelines.get</span>
+</pre></div>
+      </div>
+
+      <h2 id="prevention">Preventing Runaway Training Jobs</h2>
+      <p>
+        Detection catches the problem in progress. Prevention stops it from happening:
+      </p>
+      <ul>
+        <li><strong>Always set a timeout:</strong> Every Custom Job and Training Pipeline should have an explicit timeout. Use your expected duration plus a 20–30% buffer. A job that consistently needs more time than the buffer signals a problem worth investigating.</li>
+        <li><strong>Validate dataset sizes before submission:</strong> Run a quick count of records in the training data pipeline before submitting multi-hour GPU jobs. Catch the infinite loop or unexpected dataset growth before the job starts.</li>
+        <li><strong>Implement training callbacks with early stopping:</strong> Configure early stopping based on validation loss plateau. A job that isn't converging after N epochs of no improvement should stop itself.</li>
+        <li><strong>Monitor GPU utilization, not just job state:</strong> A job in <code>JOB_STATE_RUNNING</code> with 5% GPU utilization (data pipeline bottleneck) is effectively wasted spend. Cloud Monitoring can alert on low GPU utilization for running custom jobs.</li>
+        <li><strong>Run CleanCloud hourly for active training periods:</strong> During sprints with active GPU training, hourly scans maximize the chance of catching issues before they compound.</li>
+      </ul>
+
+      <h2 id="faq">Frequently Asked Questions</h2>
+
+      <h3>Does Vertex AI automatically stop long-running training jobs?</h3>
+      <p>
+        Only if you configure a timeout. Without an explicit <code>timeout</code> in the Custom Job spec, Vertex AI runs the job until it completes, fails with an error, or is manually cancelled. The platform has no built-in maximum job duration.
+      </p>
+
+      <h3>What is the 90% early warning based on?</h3>
+      <p>
+        The early warning is issued when a GPU or TPU job's elapsed wall-clock time reaches 90% of the configured <code>max_duration_hours</code> threshold (default: 24 hours). At 90%, the job has not yet exceeded the threshold and may legitimately be close to completion — the flag is informational, not a definitive problem signal. It gives teams a window to check before the threshold is crossed and a full finding is generated.
+      </p>
+
+      <h3>Does this rule cover Vertex AI Pipelines (Kubeflow/Managed Pipelines)?</h3>
+      <p>
+        The <code>gcp.vertex.training_job.long_running</code> rule covers Vertex AI Custom Jobs and Vertex AI Training Pipelines (the managed training-specific pipeline API). It does not cover general Vertex AI Pipelines (the Kubeflow-based workflow orchestration API), which have different use cases and billing models.
+      </p>
+
+      <h3>How is this different from the SageMaker training job rule?</h3>
+      <p>
+        The Vertex AI rule includes the 90% early warning for GPU/TPU jobs. The AWS SageMaker rule (<code>aws.sagemaker.training_job.long_running</code>) does not have an early warning mechanism — it flags jobs only after they have exceeded the configured stopping condition or duration threshold. The early warning is a GCP-specific capability in CleanCloud.
+      </p>
+
+      <div class="post-cta">
+        <h3>Catch your runaway Vertex AI training jobs today</h3>
+        <p>CleanCloud monitors Custom Jobs and Training Pipelines with early warnings for GPU/TPU jobs approaching the duration threshold. Free, open-source, runs in 5 minutes.</p>
+        <div class="post-cta-acts">
+          <a href="https://github.com/cleancloud-io/cleancloud" class="btn btn-wh" target="_blank" rel="noopener">View on GitHub</a>
+          <a href="/#contact" class="btn btn-ow">Get a demo &#8594;</a>
+        </div>
+      </div>
+
+    </article>
+
+    <aside class="post-sidebar rv">
+      <nav class="toc">
+        <div class="toc-title">On This Page</div>
+        <ul class="toc-list">
+          <li><a href="#story">The Fine-Tune That Wouldn't Stop</a></li>
+          <li><a href="#why-jobs-run-long">Why Training Jobs Exceed Duration</a></li>
+          <li><a href="#how-detection-works">How the Detection Rule Works</a></li>
+          <li><a href="#cost-table">Cost by Hardware Configuration</a></li>
+          <li><a href="#ci-integration">Catching It in CI</a></li>
+          <li><a href="#native-timeouts">Using Native Timeouts</a></li>
+          <li><a href="#permissions">Required GCP Permissions</a></li>
+          <li><a href="#prevention">Prevention</a></li>
+          <li><a href="#faq">FAQ</a></li>
+        </ul>
+      </nav>
+
+      <div class="sidebar-card">
+        <div class="sidebar-card-title">Rule Details</div>
+        <div class="sidebar-stat"><span class="ss-label">Rule ID</span><span class="ss-val">gcp.vertex.training_job.long_running</span></div>
+        <div class="sidebar-stat"><span class="ss-label">Provider</span><span class="ss-val">GCP</span></div>
+        <div class="sidebar-stat"><span class="ss-label">Category</span><span class="ss-val">AI/ML</span></div>
+        <div class="sidebar-stat"><span class="ss-label">Covers</span><span class="ss-val">Custom Jobs + Pipelines</span></div>
+        <div class="sidebar-stat"><span class="ss-label">Threshold</span><span class="ss-val">24h (configurable)</span></div>
+        <div class="sidebar-stat"><span class="ss-label">Early warning</span><span class="ss-val">90% for GPU/TPU</span></div>
+        <div class="sidebar-stat"><span class="ss-label">Confidence</span><span class="ss-val">HIGH (&ge;3×) / MEDIUM</span></div>
+        <div class="sidebar-stat"><span class="ss-label">Risk</span><span class="ss-val">CRITICAL / HIGH / MEDIUM</span></div>
+      </div>
+
+      <div class="sidebar-card">
+        <div class="sidebar-card-title">GPU Training Rates (approx.)</div>
+        <div class="sidebar-stat"><span class="ss-label">1× A100 (a2-highgpu-1g)</span><span class="ss-val">~$4/hr</span></div>
+        <div class="sidebar-stat"><span class="ss-label">8× A100 (a2-megagpu-8g)</span><span class="ss-val">~$80/hr</span></div>
+        <div class="sidebar-stat"><span class="ss-label">8× H100 (a3-highgpu-8g)</span><span class="ss-val">&gt;$200/hr</span></div>
+      </div>
+
+      <div class="sidebar-card">
+        <div class="sidebar-card-title">Quick Scan</div>
+        <div class="code-block" style="margin:0;font-size:11.5px">
+          <div class="code-bd" style="padding:12px 14px"><pre style="white-space:pre-wrap"><span class="co">pip install cleancloud</span>
+<span class="co">cleancloud scan \</span>
+<span class="co">  --provider gcp \</span>
+<span class="co">  --category ai</span></pre></div>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+</div>
+
+<div class="blog-wrap">
+  <div class="related rv">
+    <div class="related-title">Related Posts</div>
+    <div class="related-grid">
+      <a class="related-card" href="/blog/gcp-vertex-workbench-idle.html">
+        <div class="rc-tag">GCP &middot; AI/ML</div>
+        <div class="rc-title">The Notebook Nobody Touched for Three Weeks: Vertex AI Workbench Idle Cost</div>
+        <div class="rc-desc">A Vertex AI Workbench V100 instance left ACTIVE after training moved to a pipeline. How CleanCloud's gcp.vertex.workbench.idle rule catches idle notebooks.</div>
+      </a>
+      <a class="related-card" href="/blog/sagemaker-training-job-runaway-cost.html">
+        <div class="rc-tag">AWS &middot; AI/ML</div>
+        <div class="rc-title">SageMaker Training Job Runaway Cost: When the Job Won't Stop</div>
+        <div class="rc-desc">The same problem on AWS: a SageMaker training job exceeding its expected duration. How CleanCloud detects long-running SageMaker jobs.</div>
+      </a>
+      <a class="related-card" href="/blog/vertex-ai-idle-endpoint-cost.html">
+        <div class="rc-tag">GCP &middot; AI/ML</div>
+        <div class="rc-title">Vertex AI Endpoint Running 3 Months After a PoC Ended: $6,300 in Avoidable Spend</div>
+        <div class="rc-desc">After training completes, the inference endpoint becomes the next cost risk. How CleanCloud detects idle Vertex AI prediction endpoints.</div>
+      </a>
+    </div>
+  </div>
+</div>
+</main>
+
+<footer>
+  <div class="fi">
+    <div class="f-logo">
+      <div class="lm"><svg viewBox="0 0 14 14" fill="none" stroke="#00ffd0" stroke-width="2"><path d="M2 7L5 10L12 3" stroke-linecap="round" stroke-linejoin="round"/><circle cx="7" cy="7" r="6" stroke="#00ffd0" stroke-width="1.4" opacity=".4"/></svg></div>
+      cleancloud
+    </div>
+    <ul class="f-links">
+      <li><a href="https://github.com/cleancloud-io/cleancloud" target="_blank" rel="noopener">GitHub</a></li>
+      <li><a href="https://pypi.org/project/cleancloud/" target="_blank" rel="noopener">PyPI</a></li>
+      <li><a href="/blog">Blog</a></li>
+      <li><a href="/#contact">Contact</a></li>
+    </ul>
+    <span class="f-copy">&copy; 2026 CleanCloud &mdash; MIT License</span>
+  </div>
+</footer>
+
+<script>
+(function(){
+  const els = document.querySelectorAll('.rv');
+  const io = new IntersectionObserver(entries => {
+    entries.forEach(e => { if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); } });
+  }, {threshold:0.08});
+  els.forEach(el => io.observe(el));
+
+  const tocLinks = document.querySelectorAll('.toc-list a');
+  const headings = Array.from(document.querySelectorAll('.post-body h2[id], .post-body h3[id]'));
+  const hio = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if(e.isIntersecting){
+        tocLinks.forEach(a => a.classList.remove('active'));
+        const active = document.querySelector('.toc-list a[href="#'+e.target.id+'"]');
+        if(active) active.classList.add('active');
+      }
+    });
+  }, {rootMargin:'-20% 0px -70% 0px'});
+  headings.forEach(h => hio.observe(h));
+})();
+</script>
+</body>
+</html>

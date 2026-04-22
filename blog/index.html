@@ -305,6 +305,132 @@ footer{border-top:1px solid var(--border);background:var(--white);position:relat
         </div>
       </article>
 
+      <!-- PUBLISHED: azure-openai-provisioned-deployment-ptu-cost -->
+      <article class="bc rv" data-tags="all azure ai">
+        <span class="bc-tag tag-azure">Azure</span>
+        <div class="bc-title">
+          <a href="/blog/azure-openai-provisioned-deployment-ptu-cost.html">Azure OpenAI Provisioned Deployments: $1,460/PTU/Month Whether You Use Them or Not</a>
+          <span class="new-badge">New</span>
+        </div>
+        <p class="bc-excerpt">Azure OpenAI PTU reservations bill at full rate with zero API requests. Here&#8217;s how CleanCloud detects idle provisioned deployments before they quietly drain your budget.</p>
+        <div class="bc-meta">
+          <span>April 2026 &#183; 8 min read</span>
+          <a href="/blog/azure-openai-provisioned-deployment-ptu-cost.html" class="bc-read">Read &#8594;</a>
+        </div>
+      </article>
+
+      <!-- PUBLISHED: sagemaker-training-job-runaway-cost -->
+      <article class="bc rv" data-tags="all aws ai">
+        <span class="bc-tag tag-aws">AWS</span>
+        <div class="bc-title">
+          <a href="/blog/sagemaker-training-job-runaway-cost.html">Runaway SageMaker Training Jobs: How a Hung GPU Job Can Cost $2,000 a Day</a>
+          <span class="new-badge">New</span>
+        </div>
+        <p class="bc-excerpt">A SageMaker training job that never terminates keeps billing GPU capacity at full on-demand rates. CleanCloud flags long-running training jobs before they become a runaway cost.</p>
+        <div class="bc-meta">
+          <span>April 2026 &#183; 8 min read</span>
+          <a href="/blog/sagemaker-training-job-runaway-cost.html" class="bc-read">Read &#8594;</a>
+        </div>
+      </article>
+
+      <!-- PUBLISHED: gcp-tpu-idle-cost -->
+      <article class="bc rv" data-tags="all gcp ai">
+        <span class="bc-tag tag-new">GCP</span>
+        <div class="bc-title">
+          <a href="/blog/gcp-tpu-idle-cost.html">Cloud TPU Idle Costs: $12 an Hour for a Node That Isn&#8217;t Training Anything</a>
+          <span class="new-badge">New</span>
+        </div>
+        <p class="bc-excerpt">Cloud TPU nodes in READY state keep billing even with zero workload. An idle v4 TPU costs $12.88/hr; a v5p can exceed $33/hr. CleanCloud detects near-zero utilization automatically.</p>
+        <div class="bc-meta">
+          <span>April 2026 &#183; 7 min read</span>
+          <a href="/blog/gcp-tpu-idle-cost.html" class="bc-read">Read &#8594;</a>
+        </div>
+      </article>
+
+      <!-- PUBLISHED: vertex-ai-feature-store-idle-cost -->
+      <article class="bc rv" data-tags="all gcp ai">
+        <span class="bc-tag tag-new">GCP</span>
+        <div class="bc-title">
+          <a href="/blog/vertex-ai-feature-store-idle-cost.html">Vertex AI Feature Store: $197/Node/Month for a Store Nobody Is Querying</a>
+          <span class="new-badge">New</span>
+        </div>
+        <p class="bc-excerpt">Bigtable-backed Vertex AI Feature Stores bill continuously regardless of ReadFeatureValues traffic. If your online store has had zero requests in 30 days, that&#8217;s pure waste.</p>
+        <div class="bc-meta">
+          <span>April 2026 &#183; 7 min read</span>
+          <a href="/blog/vertex-ai-feature-store-idle-cost.html" class="bc-read">Read &#8594;</a>
+        </div>
+      </article>
+
+      <!-- PUBLISHED: azure-ml-compute-instance-idle -->
+      <article class="bc rv" data-tags="all azure ai">
+        <span class="bc-tag tag-azure">Azure</span>
+        <div class="bc-title">
+          <a href="/blog/azure-ml-compute-instance-idle.html">$8,812/Month for a Jupyter Instance Nobody Was Using: Azure ML Compute Instance Idle Cost</a>
+          <span class="new-badge">New</span>
+        </div>
+        <p class="bc-excerpt">An Azure ML Compute Instance with a Standard_NC24s_v3 GPU left Running after a sprint ended. 19 idle days. CleanCloud's azure.ml.compute_instance.idle rule caught it automatically.</p>
+        <div class="bc-meta">
+          <span>April 2026 &#183; 8 min read</span>
+          <a href="/blog/azure-ml-compute-instance-idle.html" class="bc-read">Read &#8594;</a>
+        </div>
+      </article>
+
+      <!-- PUBLISHED: azure-ml-online-endpoint-idle -->
+      <article class="bc rv" data-tags="all azure ai">
+        <span class="bc-tag tag-azure">Azure</span>
+        <div class="bc-title">
+          <a href="/blog/azure-ml-online-endpoint-idle.html">The Demo That Never Got Cleaned Up: Azure ML Online Endpoint Idle Cost</a>
+          <span class="new-badge">New</span>
+        </div>
+        <p class="bc-excerpt">An Azure ML managed online endpoint with a Standard_NC6 GPU answering zero scoring requests for 31 days after a product demo. $657/month billed with nothing to show for it.</p>
+        <div class="bc-meta">
+          <span>April 2026 &#183; 8 min read</span>
+          <a href="/blog/azure-ml-online-endpoint-idle.html" class="bc-read">Read &#8594;</a>
+        </div>
+      </article>
+
+      <!-- PUBLISHED: azure-ai-search-idle -->
+      <article class="bc rv" data-tags="all azure ai">
+        <span class="bc-tag tag-azure">Azure</span>
+        <div class="bc-title">
+          <a href="/blog/azure-ai-search-idle.html">The RAG Prototype That Kept Billing: Azure AI Search Idle Cost</a>
+          <span class="new-badge">New</span>
+        </div>
+        <p class="bc-excerpt">An Azure AI Search Standard S2 service with zero queries for 47 days after a RAG prototype was shelved. $523/month per replica-partition, billed regardless of query volume.</p>
+        <div class="bc-meta">
+          <span>April 2026 &#183; 8 min read</span>
+          <a href="/blog/azure-ai-search-idle.html" class="bc-read">Read &#8594;</a>
+        </div>
+      </article>
+
+      <!-- PUBLISHED: gcp-vertex-workbench-idle -->
+      <article class="bc rv" data-tags="all gcp ai">
+        <span class="bc-tag tag-new">GCP</span>
+        <div class="bc-title">
+          <a href="/blog/gcp-vertex-workbench-idle.html">The Notebook Nobody Touched for Three Weeks: Vertex AI Workbench Idle Cost</a>
+          <span class="new-badge">New</span>
+        </div>
+        <p class="bc-excerpt">A Vertex AI Workbench V100 instance left ACTIVE for 23 days after training moved to a pipeline. $1,523/month billed continuously. CleanCloud caught it on the first scan.</p>
+        <div class="bc-meta">
+          <span>April 2026 &#183; 8 min read</span>
+          <a href="/blog/gcp-vertex-workbench-idle.html" class="bc-read">Read &#8594;</a>
+        </div>
+      </article>
+
+      <!-- PUBLISHED: gcp-vertex-training-job-long-running -->
+      <article class="bc rv" data-tags="all gcp ai">
+        <span class="bc-tag tag-new">GCP</span>
+        <div class="bc-title">
+          <a href="/blog/gcp-vertex-training-job-long-running.html">The Training Job That Forgot to Finish: Vertex AI Long-Running Training Cost</a>
+          <span class="new-badge">New</span>
+        </div>
+        <p class="bc-excerpt">A Vertex AI Custom Job on 8&#215; A100 GPUs running 61 hours when it was expected to finish in 18. $4,880 in excess spend. CleanCloud caught it with an early warning at 90% of the threshold.</p>
+        <div class="bc-meta">
+          <span>April 2026 &#183; 9 min read</span>
+          <a href="/blog/gcp-vertex-training-job-long-running.html" class="bc-read">Read &#8594;</a>
+        </div>
+      </article>
+
       <!-- COMING SOON -->
       <article class="bc dim" data-tags="all aws hygiene">
         <span class="bc-tag tag-aws">AWS</span>
@@ -342,7 +468,7 @@ footer{border-top:1px solid var(--border);background:var(--white);position:relat
         <div class="sb-n">1</div>
         <div>
           <div class="sb-item-title">
-            <a href="/blog/policy-as-code-cloud-governance.html">Policy-as-Code Cloud Governance</a>
+            <a href="/blog/gcp-vertex-training-job-long-running.html">Vertex AI Training Job Long-Running Cost</a>
             <span class="new-badge" style="font-size:9px;padding:1px 6px">New</span>
           </div>
           <div class="sb-item-meta">April 2026 &#183; 9 min</div>
@@ -352,24 +478,40 @@ footer{border-top:1px solid var(--border);background:var(--white);position:relat
         <div class="sb-n">2</div>
         <div>
           <div class="sb-item-title">
-            <a href="/blog/idle-ai-ml-infrastructure-cost.html">Idle AI/ML Infrastructure Cost</a>
+            <a href="/blog/gcp-vertex-workbench-idle.html">Vertex AI Workbench Idle Cost</a>
             <span class="new-badge" style="font-size:9px;padding:1px 6px">New</span>
           </div>
-          <div class="sb-item-meta">March 2026 &#183; 10 min</div>
+          <div class="sb-item-meta">April 2026 &#183; 8 min</div>
         </div>
       </div>
       <div class="sb-item">
         <div class="sb-n">3</div>
         <div>
-          <div class="sb-item-title"><a href="/blog/sagemaker-idle-endpoint-cost.html">$25K in Idle SageMaker Endpoints</a></div>
-          <div class="sb-item-meta">March 2026 &#183; 8 min</div>
+          <div class="sb-item-title">
+            <a href="/blog/azure-ai-search-idle.html">Azure AI Search Idle Cost</a>
+            <span class="new-badge" style="font-size:9px;padding:1px 6px">New</span>
+          </div>
+          <div class="sb-item-meta">April 2026 &#183; 8 min</div>
         </div>
       </div>
       <div class="sb-item">
         <div class="sb-n">4</div>
         <div>
-          <div class="sb-item-title"><a href="/blog/azure-vm-stopped-vs-deallocated.html">Azure VM Stopped vs Deallocated</a></div>
-          <div class="sb-item-meta">March 2026 &#183; 6 min</div>
+          <div class="sb-item-title">
+            <a href="/blog/azure-ml-online-endpoint-idle.html">Azure ML Online Endpoint Idle Cost</a>
+            <span class="new-badge" style="font-size:9px;padding:1px 6px">New</span>
+          </div>
+          <div class="sb-item-meta">April 2026 &#183; 8 min</div>
+        </div>
+      </div>
+      <div class="sb-item">
+        <div class="sb-n">5</div>
+        <div>
+          <div class="sb-item-title">
+            <a href="/blog/azure-ml-compute-instance-idle.html">Azure ML Compute Instance Idle Cost</a>
+            <span class="new-badge" style="font-size:9px;padding:1px 6px">New</span>
+          </div>
+          <div class="sb-item-meta">April 2026 &#183; 8 min</div>
         </div>
       </div>
     </div>
